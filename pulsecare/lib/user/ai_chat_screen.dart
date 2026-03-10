@@ -84,8 +84,16 @@ class _NewAiChatScreenState extends ConsumerState<AiChatScreen> {
   }
 
   String _formatSymptomsForBooking() {
-    if (_detectedSymptoms.isEmpty) return '';
-    return 'Symptoms: ${_detectedSymptoms.join(", ")}';
+    if (_detectedSymptoms.isEmpty) {
+      print(
+        '❌ DEBUG: _detectedSymptoms is EMPTY! Symptoms list: $_detectedSymptoms',
+      );
+      return '';
+    }
+    final formatted = 'Symptoms: ${_detectedSymptoms.join(", ")}';
+    print('✅ DEBUG: Formatted symptoms: $formatted');
+    print('✅ DEBUG: Raw symptoms list: $_detectedSymptoms');
+    return formatted;
   }
 
   @override
@@ -425,10 +433,26 @@ class _NewAiChatScreenState extends ConsumerState<AiChatScreen> {
     final intakeCompleted =
         aiResponse.stage == IntakeStage.completed ||
         aiResponse.summaryId != null;
+
+    print('🔍 DEBUG sendMessage:');
+    print('   - aiResponse.stage: ${aiResponse.stage}');
+    print('   - aiResponse.summaryId: ${aiResponse.summaryId}');
+    print('   - intakeCompleted: $intakeCompleted');
+    print('   - aiResponse.detectedSymptoms: ${aiResponse.detectedSymptoms}');
+
     setState(() {
       // Always capture detected symptoms when intake is completed
       if (intakeCompleted) {
         _detectedSymptoms = aiResponse.detectedSymptoms;
+        print('✅ DEBUG: Setting _detectedSymptoms to: $_detectedSymptoms');
+      } else {
+        // Also capture symptoms from intermediate stages
+        if (aiResponse.detectedSymptoms.isNotEmpty) {
+          _detectedSymptoms = aiResponse.detectedSymptoms;
+          print(
+            '✅ DEBUG: Intermediate stage - Setting _detectedSymptoms to: $_detectedSymptoms',
+          );
+        }
       }
       if (aiResponse.summaryId != null) {
         _completedSummaryId = aiResponse.summaryId;
@@ -481,8 +505,15 @@ Widget doctorSuggestionCard(
   String doctorPhone,
   String prefilledSymptoms,
 ) {
+  print('🔍 DEBUG doctorSuggestionCard:');
+  print('   - doctor: ${doctor.name}');
+  print('   - prefilledSymptoms: "$prefilledSymptoms"');
+  print('   - prefilledSymptoms.isEmpty: ${prefilledSymptoms.isEmpty}');
+
   return InkWell(
     onTap: () {
+      print('👆 DEBUG: Doctor card tapped for ${doctor.name}');
+      print('   - Passing prefilledSymptoms: "$prefilledSymptoms"');
       FocusScope.of(context).unfocus();
       FocusManager.instance.primaryFocus?.unfocus();
       Navigator.push(
