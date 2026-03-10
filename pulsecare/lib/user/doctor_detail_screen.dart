@@ -7,18 +7,23 @@ import 'package:pulsecare/model/doctor_model.dart';
 import 'package:pulsecare/user/patient_detail_screen.dart';
 import '../providers/repository_providers.dart';
 
-final _doctorDetailUserProvider = StreamProvider.autoDispose.family((ref, String userId) {
+final _doctorDetailUserProvider = StreamProvider.autoDispose.family((
+  ref,
+  String userId,
+) {
   return ref.read(userRepositoryProvider).watchUserById(userId);
 });
 
 class DoctorDetailScreen extends ConsumerStatefulWidget {
   final String doctorId;
   final String? aiSummaryId;
+  final String? prefilledSymptoms;
 
   const DoctorDetailScreen({
     super.key,
     required this.doctorId,
     this.aiSummaryId,
+    this.prefilledSymptoms,
   });
 
   @override
@@ -58,7 +63,9 @@ class _DoctorDetailScreenState extends ConsumerState<DoctorDetailScreen> {
   }
 
   Future<void> _initialize() async {
-    doctor = await ref.read(doctorRepositoryProvider).getDoctorById(widget.doctorId);
+    doctor = await ref
+        .read(doctorRepositoryProvider)
+        .getDoctorById(widget.doctorId);
     if (!mounted) return;
     setState(() {
       _ready = true;
@@ -133,7 +140,9 @@ class _DoctorDetailScreenState extends ConsumerState<DoctorDetailScreen> {
     }
     final doctorUser = currentDoctor.userId.isEmpty
         ? null
-        : ref.watch(_doctorDetailUserProvider(currentDoctor.userId)).valueOrNull;
+        : ref
+              .watch(_doctorDetailUserProvider(currentDoctor.userId))
+              .valueOrNull;
     final doctorPhone = doctorUser?.phone ?? '';
 
     return Scaffold(
@@ -553,7 +562,10 @@ class _DoctorDetailScreenState extends ConsumerState<DoctorDetailScreen> {
                                 alignment: Alignment.centerLeft,
                                 child: Text(
                                   _fullDayName(schedule.day),
-                                  style: TextStyle(fontSize: 16, color: Colors.grey),
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.grey,
+                                  ),
                                 ),
                               ),
                             ),
@@ -568,8 +580,10 @@ class _DoctorDetailScreenState extends ConsumerState<DoctorDetailScreen> {
                                   width: 160,
                                   child: hasTwoSlots
                                       ? Column(
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: List.generate(2, (index) {
                                             final text = lines[index];
                                             return SizedBox(
@@ -580,7 +594,8 @@ class _DoctorDetailScreenState extends ConsumerState<DoctorDetailScreen> {
                                                   text,
                                                   maxLines: 1,
                                                   softWrap: false,
-                                                  overflow: TextOverflow.visible,
+                                                  overflow:
+                                                      TextOverflow.visible,
                                                   textAlign: TextAlign.left,
                                                   style: const TextStyle(
                                                     fontSize: 16,
@@ -610,8 +625,7 @@ class _DoctorDetailScreenState extends ConsumerState<DoctorDetailScreen> {
                                 ),
                               ),
                             ),
-                            ),
-                    
+                          ),
                         ],
                       ),
                     ),
@@ -645,6 +659,7 @@ class _DoctorDetailScreenState extends ConsumerState<DoctorDetailScreen> {
                     MaterialPageRoute(
                       builder: (_) => PatientDetailScreen(
                         doctor: currentDoctor,
+                        prefilledSymptoms: widget.prefilledSymptoms,
                         aiSummaryId: widget.aiSummaryId,
                       ),
                     ),
