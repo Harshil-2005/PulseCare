@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "745315899081",
+    "project_id": "pulsecare-2026",
+    "storage_bucket": "pulsecare-2026.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:745315899081:android:62ff30904b8a0b428cdf18",
+        "android_client_info": {
+          "package_name": "com.example.pulsecare"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "745315899081-2fa0kns6rmubd30avub5qdk7su1fidh7.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.pulsecare",
+            "certificate_hash": "78f514b8fe79db70ea1a2b70d945b411b249143b"
+          }
+        },
+        {
+          "client_id": "745315899081-92718mr4gsvp9g70m8no6mr56edagiek.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDhi377k9G2Xt2EDCWIuKmK9bPLiWksYJ8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "745315899081-92718mr4gsvp9g70m8no6mr56edagiek.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "745315899081-g0m72ep1k0cnojd14kdunge0r9e4g019.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.pulsecare"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

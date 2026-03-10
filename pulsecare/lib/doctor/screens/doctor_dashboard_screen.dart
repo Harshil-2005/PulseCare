@@ -1,0 +1,695 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:pulsecare/doctor/doctor_onboarding_screen.dart';
+import 'package:pulsecare/doctor/screens/doctor_profile_screen.dart';
+import 'package:pulsecare/model/appointment_model.dart';
+import 'package:pulsecare/repositories/appointment_repository.dart';
+import 'package:pulsecare/providers/session_provider.dart';
+import 'package:pulsecare/utils/time_utils.dart';
+import '../../providers/repository_providers.dart';
+import 'doctor_appointment_detail_screen.dart';
+
+class _DashboardIdentity {
+  const _DashboardIdentity({required this.doctor, required this.user});
+  final dynamic doctor;
+  final dynamic user;
+}
+
+final _dashboardIdentityProvider = StreamProvider.autoDispose.family((ref, String currentUserId) {
+  return ref
+      .read(doctorRepositoryProvider)
+      .watchDoctorByUserId(currentUserId)
+      .asyncMap((doctor) async {
+        if (doctor == null) {
+          return const _DashboardIdentity(doctor: null, user: null);
+        }
+        final user = await ref.read(userRepositoryProvider).getUserById(
+          doctor.userId,
+        );
+        return _DashboardIdentity(doctor: doctor, user: user);
+      });
+});
+
+class DoctorDashboardScreen extends ConsumerStatefulWidget {
+  const DoctorDashboardScreen({
+    super.key,
+    required this.appointments,
+    this.onStatusChanged,
+    this.onViewAppointments,
+    this.onStatTap,
+  });
+
+  final List<Appointment> appointments;
+  final void Function(Appointment, AppointmentStatus)?
+  onStatusChanged;
+  final VoidCallback? onViewAppointments;
+  final void Function(int filterIndex)? onStatTap;
+
+  @override
+  ConsumerState<DoctorDashboardScreen> createState() =>
+      _DoctorDashboardScreenState();
+}
+
+class _DoctorDashboardScreenState extends ConsumerState<DoctorDashboardScreen> {
+  late AppointmentRepository _appointmentRepository;
+
+  @override
+  void initState() {
+    super.initState();
+    _appointmentRepository = ref.read(appointmentRepositoryProvider);
+    _appointmentRepository.addListener(_onAppointmentsUpdated);
+  }
+
+  void _onAppointmentsUpdated() {
+    setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _appointmentRepository.removeListener(_onAppointmentsUpdated);
+    super.dispose();
+  }
+
+  int get totalAppointments => widget.appointments.length;
+
+  int get pendingCount => widget.appointments
+      .where((a) => a.status == AppointmentStatus.pending)
+      .length;
+
+  int get confirmedCount => widget.appointments
+      .where((a) => a.status == AppointmentStatus.confirmed)
+      .length;
+
+  int get completedCount => widget.appointments
+      .where((a) => a.status == AppointmentStatus.completed)
+      .length;
+
+  int get cancelledCount => widget.appointments
+      .where((a) => a.status == AppointmentStatus.cancelled)
+      .length;
+
+  @override
+  Widget build(BuildContext context) {
+    final userId = ref.watch(sessionUserIdProvider);
+    if (userId == null) {
+      return const SizedBox.shrink();
+    }
+    final identityAsync = ref.watch(
+      _dashboardIdentityProvider(userId),
+    );
+    if (identityAsync.isLoading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    final currentDoctor = identityAsync.valueOrNull?.doctor;
+    final user = identityAsync.valueOrNull?.user;
+    if (currentDoctor == null) {
+      return Scaffold(
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Doctor onboarding is not completed yet.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                ),
+                const SizedBox(height: 12),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const DoctorOnboardingScreen(),
+                      ),
+                    );
+                  },
+                  child: const Text('Complete Onboarding'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    final firstName = user?.firstName.trim() ?? '';
+    final lastName = user?.lastName.trim() ?? '';
+    final fullName = [firstName, lastName]
+        .where((part) => part.isNotEmpty)
+        .join(' ')
+        .trim();
+    final fallbackName = (currentDoctor?.name.trim() ?? '').isNotEmpty
+        ? (currentDoctor!.name.trim().startsWith('Dr.')
+              ? currentDoctor.name.trim()
+              : 'Dr. ${currentDoctor.name.trim()}')
+        : 'Doctor';
+    final doctorName = fullName.isNotEmpty ? 'Dr. $fullName' : fallbackName;
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final isCompact = screenWidth < 380;
+    final horizontalPadding = isCompact ? 14.0 : 16.0;
+    final topSpacing = isCompact ? 6.0 : 8.0;
+    final sectionGap = isCompact ? 14.0 : 16.0;
+
+    return Scaffold(
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(height: topSpacing),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+              child: Row(
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Hi, $doctorName',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 24,
+                        ),
+                      ),
+                      Text(
+                        'Here is your schedule overview',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w400,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Spacer(),
+                  InkWell(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          settings: const RouteSettings(name: '/doctorProfile'),
+                          builder: (_) => DoctorProfileScreen(
+                            doctorId: currentDoctor?.id ?? '',
+                          ),
+                        ),
+                      );
+                    },
+                    child: CircleAvatar(
+                      radius: 28,
+                      backgroundColor: Color.fromARGB(255, 210, 219, 255),
+                      child: SvgPicture.asset(
+                        'assets/icons/Avatar.svg',
+                        width: 28,
+                        height: 28,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: sectionGap),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+              child: _TodayScheduleCard(
+                isCompact: isCompact,
+                totalAppointments: totalAppointments,
+                pendingCount: pendingCount,
+                confirmedCount: confirmedCount,
+                completedCount: completedCount,
+                cancelledCount: cancelledCount,
+                onViewAppointments: widget.onViewAppointments ?? () {},
+                onStatTap: widget.onStatTap,
+              ),
+            ),
+            SizedBox(height: sectionGap),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+              child: Text(
+                "Today's Appointments",
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+              ),
+            ),
+            SizedBox(height: isCompact ? 4 : 2),
+            Expanded(
+              child: ListView.builder(
+                padding: EdgeInsets.only(bottom: isCompact ? 20 : 24),
+                itemCount: widget.appointments.length,
+                itemBuilder: (context, index) {
+                  return _DoctorAppointmentPreviewCard(
+                    item: widget.appointments[index],
+                    onStatusUpdated: (appointment, updatedStatus) {
+                      widget.onStatusChanged?.call(appointment, updatedStatus);
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TodayScheduleCard extends StatelessWidget {
+  const _TodayScheduleCard({
+    required this.onViewAppointments,
+    this.onStatTap,
+    required this.isCompact,
+    required this.totalAppointments,
+    required this.pendingCount,
+    required this.confirmedCount,
+    required this.completedCount,
+    required this.cancelledCount,
+  });
+
+  final VoidCallback onViewAppointments;
+  final void Function(int filterIndex)? onStatTap;
+  final bool isCompact;
+  final int totalAppointments;
+  final int pendingCount;
+  final int confirmedCount;
+  final int completedCount;
+  final int cancelledCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final cardHeight = isCompact ? 265.0 : 246.0;
+
+    return Container(
+      height: cardHeight,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        borderRadius: const BorderRadius.all(Radius.circular(30)),
+        gradient: const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color.fromARGB(255, 174, 192, 255), Color(0xFF3F67FD)],
+        ),
+      ),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Align(
+            alignment: Alignment.topRight,
+            child: Container(
+              height: 220,
+              width: 209,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(30),
+                image: const DecorationImage(
+                  fit: BoxFit.cover,
+                  image: AssetImage('assets/images/c_bg_lines.png'),
+                ),
+              ),
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.fromLTRB(16, 16, 16, 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.all(Radius.circular(10)),
+                        color: Colors.white,
+                      ),
+                      width: 50,
+                      height: 50,
+                      child: Center(
+                        child: Image.asset(
+                          'assets/images/msg.png',
+                          color: Color(0xff3F67FD),
+                          width: 30,
+                          height: 30,
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 16),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Today's Schedule",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          'You have $totalAppointments appointments today',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w400,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+
+                SizedBox(height: 16),
+                SizedBox(
+                  width: 300,
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: GestureDetector(
+                                onTap: () => onStatTap?.call(0),
+                                child: _StatPill(
+                                  label: 'Pending',
+                                  value: pendingCount.toString(),
+                                  color: Color(0xffF59E0B),
+                                ),
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: Align(
+                              alignment: Alignment.centerRight,
+                              child: GestureDetector(
+                                onTap: () => onStatTap?.call(0),
+                                child: _StatPill(
+                                  label: 'Confirmed',
+                                  value: confirmedCount.toString(),
+                                  color: Color(0xFF3F67FD),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 10),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: GestureDetector(
+                                onTap: () => onStatTap?.call(1),
+                                child: _StatPill(
+                                  label: 'Completed',
+                                  value: completedCount.toString(),
+                                  color: Color(0xff059669),
+                                ),
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: Align(
+                              alignment: Alignment.centerRight,
+                              child: GestureDetector(
+                                onTap: () => onStatTap?.call(2),
+                                child: _StatPill(
+                                  label: 'Cancelled',
+                                  value: cancelledCount.toString(),
+                                  color: Color(0xffE12D1D),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 12),
+                
+              ],
+            ),
+          ),
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: InkWell(
+                onTap: onViewAppointments,
+                borderRadius: BorderRadius.circular(30),
+                child: Container(
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  child: const Center(
+                    child: Text(
+                      'View Appointments',
+                      style: TextStyle(
+                        color: Color(0xFF3F67FD),
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatPill extends StatelessWidget {
+  const _StatPill({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 130,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(22),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            '$value $label',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DoctorAppointmentPreviewCard extends StatelessWidget {
+  const _DoctorAppointmentPreviewCard({
+    required this.item,
+    required this.onStatusUpdated,
+  });
+
+  final Appointment item;
+  final void Function(
+    Appointment appointment,
+    AppointmentStatus updatedStatus,
+  )
+  onStatusUpdated;
+
+  @override
+  Widget build(BuildContext context) {
+    final status = _statusUi(item.status);
+    final intakeSummary = item.symptoms;
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 16, left: 16, right: 16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () async {
+          final updatedStatus = await Navigator.push<AppointmentStatus>(
+            context,
+            MaterialPageRoute(
+              builder: (_) => DoctorAppointmentDetailScreen(appointment: item),
+            ),
+          );
+          if (updatedStatus != null) {
+            onStatusUpdated(item, updatedStatus);
+          }
+        },
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.1),
+                blurRadius: 10,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    _StatusBadge(
+                      text: status.text,
+                      color: status.color,
+                      backgroundColor: status.backgroundColor,
+                    ),
+                    const Spacer(),
+                    const Icon(
+                      Icons.schedule_rounded,
+                      size: 16,
+                      color: Colors.grey,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      TimeUtils.formatTime(item.scheduledAt),
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.grey.shade700,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  item.patientName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  intakeSummary,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.grey,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _StatusUi {
+  const _StatusUi({
+    required this.text,
+    required this.color,
+    required this.backgroundColor,
+  });
+
+  final String text;
+  final Color color;
+  final Color backgroundColor;
+}
+
+_StatusUi _statusUi(AppointmentStatus status) {
+  switch (status) {
+    case AppointmentStatus.confirmed:
+      return const _StatusUi(
+        text: 'Confirmed',
+        color: Color(0xff3F67FD),
+        backgroundColor: Color(0xffE4E9FC),
+      );
+    case AppointmentStatus.pending:
+      return const _StatusUi(
+        text: 'Pending',
+        color: Color(0xffF59E0B),
+        backgroundColor: Color(0xffFFE2AF),
+      );
+    case AppointmentStatus.completed:
+      return const _StatusUi(
+        text: 'Completed',
+        color: Color(0xff059669),
+        backgroundColor: Color.fromARGB(255, 203, 248, 233),
+      );
+    case AppointmentStatus.cancelled:
+      return const _StatusUi(
+        text: 'Cancelled',
+        color: Color(0xffE12D1D),
+        backgroundColor: Color(0xffFFDFDC),
+      );
+  }
+}
+
+class _StatusBadge extends StatelessWidget {
+  const _StatusBadge({
+    required this.text,
+    required this.color,
+    required this.backgroundColor,
+  });
+
+  final String text;
+  final Color color;
+  final Color backgroundColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 25,
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(30),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            text,
+            style: TextStyle(
+              color: color,
+              fontSize: 10,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
