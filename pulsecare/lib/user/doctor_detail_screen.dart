@@ -654,6 +654,15 @@ class _DoctorDetailScreenState extends ConsumerState<DoctorDetailScreen> {
                 text: 'Book Appointment',
                 iconPath: 'assets/images/chat.png',
                 onTap: () {
+                  print('🔍 DEBUG DoctorDetailScreen.BookAppointment:');
+                  print('   - doctor: ${currentDoctor?.name}');
+                  print(
+                    '   - prefilledSymptoms: "${widget.prefilledSymptoms}"',
+                  );
+                  print(
+                    '   - prefilledSymptoms.isEmpty: ${(widget.prefilledSymptoms?.isEmpty ?? true)}',
+                  );
+
                   Navigator.push(
                     context,
                     MaterialPageRoute(

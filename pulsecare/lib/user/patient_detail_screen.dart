@@ -57,6 +57,13 @@ class _UserDetailScreenState extends ConsumerState<PatientDetailScreen> {
   }
 
   Future<void> _initialize() async {
+    print('🔍 DEBUG PatientDetailScreen._initialize:');
+    print('   - widget.prefilledSymptoms: "${widget.prefilledSymptoms}"');
+    print(
+      '   - widget.prefilledSymptoms?.isEmpty: ${widget.prefilledSymptoms?.isEmpty}',
+    );
+    print('   - widget.aiSummaryId: ${widget.aiSummaryId}');
+
     final user = await ref
         .read(userRepositoryProvider)
         .getUserById(SessionRepository().getCurrentUserId());
@@ -71,8 +78,11 @@ class _UserDetailScreenState extends ConsumerState<PatientDetailScreen> {
         widget.prefilledSymptoms != null &&
         widget.prefilledSymptoms!.isNotEmpty;
 
+    print('   - hasPrefilledSymptoms: $hasPrefilledSymptoms');
+
     if (hasPrefilledSymptoms) {
       symptomsController.text = widget.prefilledSymptoms!;
+      print('✅ DEBUG: Using prefilledSymptoms: "${widget.prefilledSymptoms}"');
     } else {
       // Only use summary if no prefilledSymptoms
       final summaryId = widget.aiSummaryId;
@@ -88,6 +98,7 @@ class _UserDetailScreenState extends ConsumerState<PatientDetailScreen> {
               'Medications: ${summary.medications ?? "N/A"}\n'
               'Severity: ${summary.severity ?? "N/A"}\n'
               'Temperature: ${summary.temperature ?? "N/A"}';
+          print('⚠️ DEBUG: Using AI Summary (fallback): ${summary.symptoms}');
         }
       }
     }
