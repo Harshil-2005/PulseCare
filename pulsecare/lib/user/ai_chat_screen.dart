@@ -25,17 +25,17 @@ final _chatDoctorsProvider = FutureProvider<List<Doctor>>((ref) async {
   return ref.read(doctorRepositoryProvider).getAllDoctors();
 });
 
-final _chatDoctorUserProvider = StreamProvider.autoDispose.family((ref, String userId) {
+final _chatDoctorUserProvider = StreamProvider.autoDispose.family((
+  ref,
+  String userId,
+) {
   return ref.read(userRepositoryProvider).watchUserById(userId);
 });
 
 class AiChatScreen extends ConsumerStatefulWidget {
   final bool showDoctorRecommendations;
 
-  const AiChatScreen({
-    super.key,
-    this.showDoctorRecommendations = true,
-  });
+  const AiChatScreen({super.key, this.showDoctorRecommendations = true});
 
   @override
   ConsumerState<AiChatScreen> createState() => _NewAiChatScreenState();
@@ -128,7 +128,9 @@ class _NewAiChatScreenState extends ConsumerState<AiChatScreen> {
                 FocusScope.of(context).unfocus();
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const NewAiChatScreen()),
+                  MaterialPageRoute(
+                    builder: (context) => const NewAiChatScreen(),
+                  ),
                 ).then((_) {
                   if (!context.mounted) return;
                   FocusScope.of(context).unfocus();
@@ -190,57 +192,59 @@ class _NewAiChatScreenState extends ConsumerState<AiChatScreen> {
       data: (chats) {
         final doctors = doctorsAsync.valueOrNull ?? const <Doctor>[];
         return ListView.builder(
-      controller: _chatScrollController,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      itemCount: chats.length + (shouldShowRecommendations ? 1 : 0),
-      itemBuilder: (context, index) {
-        if (shouldShowRecommendations && index == chats.length) {
-          return TweenAnimationBuilder<double>(
-            tween: Tween(begin: 0, end: 1),
-            duration: const Duration(milliseconds: 420),
-            curve: Curves.easeOutCubic,
-            builder: (context, value, child) {
-              return Opacity(
-                opacity: value,
-                child: Transform.translate(
-                  offset: Offset((1 - value) * -36, 0),
-                  child: child,
-                ),
-              );
-            },
-            child: SizedBox(
-              height: 140,
-              child: ListView.builder(
-                padding: const EdgeInsets.only(top: 4),
-                scrollDirection: Axis.horizontal,
-                itemCount: doctors.length,
-                itemBuilder: (context, doctorIndex) {
-                  final doctor = doctors[doctorIndex];
-                  final doctorPhone = doctor.userId.isEmpty
-                      ? ''
-                      : ref
-                            .watch(_chatDoctorUserProvider(doctor.userId))
-                            .valueOrNull
-                            ?.phone ??
-                        '';
-                  return doctorSuggestionCard(
-                    doctor,
-                    context,
-                    _completedSummaryId,
-                    doctorPhone,
+          controller: _chatScrollController,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          itemCount: chats.length + (shouldShowRecommendations ? 1 : 0),
+          itemBuilder: (context, index) {
+            if (shouldShowRecommendations && index == chats.length) {
+              return TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0, end: 1),
+                duration: const Duration(milliseconds: 420),
+                curve: Curves.easeOutCubic,
+                builder: (context, value, child) {
+                  return Opacity(
+                    opacity: value,
+                    child: Transform.translate(
+                      offset: Offset((1 - value) * -36, 0),
+                      child: child,
+                    ),
                   );
                 },
-              ),
-            ),
-          );
-        }
-        final chat = chats[index];
-        final messageId = chat.id;
-        return KeyedSubtree(
-          key: _messageKeys.putIfAbsent(messageId, GlobalKey.new),
-          child: chatBubble(chat),
-        );
-      },
+                child: SizedBox(
+                  height: 140,
+                  child: ListView.builder(
+                    padding: const EdgeInsets.only(top: 4),
+                    scrollDirection: Axis.horizontal,
+                    itemCount: doctors.length,
+                    itemBuilder: (context, doctorIndex) {
+                      final doctor = doctors[doctorIndex];
+                      final doctorPhone = doctor.userId.isEmpty
+                          ? ''
+                          : ref
+                                    .watch(
+                                      _chatDoctorUserProvider(doctor.userId),
+                                    )
+                                    .valueOrNull
+                                    ?.phone ??
+                                '';
+                      return doctorSuggestionCard(
+                        doctor,
+                        context,
+                        _completedSummaryId,
+                        doctorPhone,
+                      );
+                    },
+                  ),
+                ),
+              );
+            }
+            final chat = chats[index];
+            final messageId = chat.id;
+            return KeyedSubtree(
+              key: _messageKeys.putIfAbsent(messageId, GlobalKey.new),
+              child: chatBubble(chat),
+            );
+          },
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -268,8 +272,9 @@ class _NewAiChatScreenState extends ConsumerState<AiChatScreen> {
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 6),
         child: Row(
-          mainAxisAlignment:
-              isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+          mainAxisAlignment: isUser
+              ? MainAxisAlignment.end
+              : MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (!isUser)
@@ -300,7 +305,9 @@ class _NewAiChatScreenState extends ConsumerState<AiChatScreen> {
                 children: [
                   Text(
                     chat.message,
-                    style: TextStyle(color: isUser ? Colors.white : Colors.black),
+                    style: TextStyle(
+                      color: isUser ? Colors.white : Colors.black,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -408,7 +415,8 @@ class _NewAiChatScreenState extends ConsumerState<AiChatScreen> {
       _userId,
     );
     if (!mounted) return;
-    final intakeCompleted = aiResponse.stage == IntakeStage.completed ||
+    final intakeCompleted =
+        aiResponse.stage == IntakeStage.completed ||
         aiResponse.summaryId != null;
     setState(() {
       if (aiResponse.summaryId != null) {
@@ -468,10 +476,8 @@ Widget doctorSuggestionCard(
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => DoctorDetailScreen(
-            doctorId: doctor.id,
-            aiSummaryId: aiSummaryId,
-          ),
+          builder: (context) =>
+              DoctorDetailScreen(doctorId: doctor.id, aiSummaryId: aiSummaryId),
         ),
       ).then((_) {
         if (!context.mounted) return;
@@ -572,7 +578,10 @@ Widget doctorSuggestionCard(
                         child: SvgPicture.asset('assets/icons/call.svg'),
                       ),
                       const SizedBox(width: 8),
-                      Text(doctorPhone, style: TextStyle(fontWeight: FontWeight.w400)),
+                      Text(
+                        doctorPhone,
+                        style: TextStyle(fontWeight: FontWeight.w400),
+                      ),
                     ],
                   ),
                 ),
