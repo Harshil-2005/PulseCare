@@ -655,7 +655,7 @@ class _DoctorDetailScreenState extends ConsumerState<DoctorDetailScreen> {
                 iconPath: 'assets/images/chat.png',
                 onTap: () {
                   print('🔍 DEBUG DoctorDetailScreen.BookAppointment:');
-                  print('   - doctor: ${currentDoctor?.name}');
+                  print('   - doctor: ${currentDoctor.name}');
                   print(
                     '   - prefilledSymptoms: "${widget.prefilledSymptoms}"',
                   );
