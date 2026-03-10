@@ -426,9 +426,12 @@ class _NewAiChatScreenState extends ConsumerState<AiChatScreen> {
         aiResponse.stage == IntakeStage.completed ||
         aiResponse.summaryId != null;
     setState(() {
+      // Always capture detected symptoms when intake is completed
+      if (intakeCompleted) {
+        _detectedSymptoms = aiResponse.detectedSymptoms;
+      }
       if (aiResponse.summaryId != null) {
         _completedSummaryId = aiResponse.summaryId;
-        _detectedSymptoms = aiResponse.detectedSymptoms;
       }
       _latestIntakeCompleted = intakeCompleted;
     });

@@ -65,21 +65,30 @@ class _UserDetailScreenState extends ConsumerState<PatientDetailScreen> {
     ageController.text =
         widget.prefilledAge?.toString() ?? (user?.age.toString() ?? '');
     patientName = user?.fullName ?? '';
-    symptomsController.text = widget.prefilledSymptoms ?? '';
 
-    final summaryId = widget.aiSummaryId;
+    // Prioritize prefilledSymptoms from AI chat
+    final hasPrefilledSymptoms =
+        widget.prefilledSymptoms != null &&
+        widget.prefilledSymptoms!.isNotEmpty;
 
-    if (summaryId != null) {
-      final summary = ref.read(aiSummaryRepositoryProvider).getById(summaryId);
-
-      if (summary != null) {
-        symptomsController.text =
-            'Summary:\n'
-            'Symptoms: ${summary.symptoms.join(", ")}\n'
-            'Duration: ${summary.duration ?? "N/A"}\n'
-            'Medications: ${summary.medications ?? "N/A"}\n'
-            'Severity: ${summary.severity ?? "N/A"}\n'
-            'Temperature: ${summary.temperature ?? "N/A"}';
+    if (hasPrefilledSymptoms) {
+      symptomsController.text = widget.prefilledSymptoms!;
+    } else {
+      // Only use summary if no prefilledSymptoms
+      final summaryId = widget.aiSummaryId;
+      if (summaryId != null) {
+        final summary = ref
+            .read(aiSummaryRepositoryProvider)
+            .getById(summaryId);
+        if (summary != null) {
+          symptomsController.text =
+              'Summary:\n'
+              'Symptoms: ${summary.symptoms.join(", ")}\n'
+              'Duration: ${summary.duration ?? "N/A"}\n'
+              'Medications: ${summary.medications ?? "N/A"}\n'
+              'Severity: ${summary.severity ?? "N/A"}\n'
+              'Temperature: ${summary.temperature ?? "N/A"}';
+        }
       }
     }
     if (!mounted) return;
@@ -622,9 +631,12 @@ class _UserDetailScreenState extends ConsumerState<PatientDetailScreen> {
                                           context,
                                           onReportUploaded: (report) {
                                             if (!mounted) return;
-                                            final alreadyExists = _selectedReports.any(
-                                              (r) => r.pdfPath == report.pdfPath,
-                                            );
+                                            final alreadyExists =
+                                                _selectedReports.any(
+                                                  (r) =>
+                                                      r.pdfPath ==
+                                                      report.pdfPath,
+                                                );
 
                                             if (!alreadyExists) {
                                               setState(() {
@@ -675,9 +687,11 @@ class _UserDetailScreenState extends ConsumerState<PatientDetailScreen> {
                                         context,
                                         onReportUploaded: (report) {
                                           if (!mounted) return;
-                                          final alreadyExists = _selectedReports.any(
-                                            (r) => r.pdfPath == report.pdfPath,
-                                          );
+                                          final alreadyExists = _selectedReports
+                                              .any(
+                                                (r) =>
+                                                    r.pdfPath == report.pdfPath,
+                                              );
 
                                           if (!alreadyExists) {
                                             setState(() {
