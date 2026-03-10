@@ -74,7 +74,6 @@ class _UserDetailScreenState extends ConsumerState<PatientDetailScreen> {
 
       if (summary != null) {
         symptomsController.text =
-            'Summary:\n'
             'Symptoms: ${summary.symptoms.join(", ")}\n'
             'Duration: ${summary.duration ?? "N/A"}\n'
             'Medications: ${summary.medications ?? "N/A"}\n'
@@ -622,9 +621,12 @@ class _UserDetailScreenState extends ConsumerState<PatientDetailScreen> {
                                           context,
                                           onReportUploaded: (report) {
                                             if (!mounted) return;
-                                            final alreadyExists = _selectedReports.any(
-                                              (r) => r.pdfPath == report.pdfPath,
-                                            );
+                                            final alreadyExists =
+                                                _selectedReports.any(
+                                                  (r) =>
+                                                      r.pdfPath ==
+                                                      report.pdfPath,
+                                                );
 
                                             if (!alreadyExists) {
                                               setState(() {
@@ -675,9 +677,11 @@ class _UserDetailScreenState extends ConsumerState<PatientDetailScreen> {
                                         context,
                                         onReportUploaded: (report) {
                                           if (!mounted) return;
-                                          final alreadyExists = _selectedReports.any(
-                                            (r) => r.pdfPath == report.pdfPath,
-                                          );
+                                          final alreadyExists = _selectedReports
+                                              .any(
+                                                (r) =>
+                                                    r.pdfPath == report.pdfPath,
+                                              );
 
                                           if (!alreadyExists) {
                                             setState(() {
