@@ -38,7 +38,9 @@ class AppointmentRepository extends ChangeNotifier {
         : await _dataSource.getForDoctor(doctorId!);
     final hydrated = <Appointment>[];
     for (final appointment in appointments) {
-      final doctor = await _doctorRepository.getDoctorById(appointment.doctorId);
+      final doctor = await _doctorRepository.getDoctorById(
+        appointment.doctorId,
+      );
       if (doctor == null) {
         hydrated.add(appointment);
         continue;
@@ -52,7 +54,9 @@ class AppointmentRepository extends ChangeNotifier {
     return _dataSource.watchForUser(userId).asyncMap((appointments) async {
       final hydrated = <Appointment>[];
       for (final appointment in appointments) {
-        final doctor = await _doctorRepository.getDoctorById(appointment.doctorId);
+        final doctor = await _doctorRepository.getDoctorById(
+          appointment.doctorId,
+        );
         if (doctor == null) {
           hydrated.add(appointment);
           continue;
@@ -67,7 +71,9 @@ class AppointmentRepository extends ChangeNotifier {
     return _dataSource.watchForDoctor(doctorId).asyncMap((appointments) async {
       final hydrated = <Appointment>[];
       for (final appointment in appointments) {
-        final doctor = await _doctorRepository.getDoctorById(appointment.doctorId);
+        final doctor = await _doctorRepository.getDoctorById(
+          appointment.doctorId,
+        );
         if (doctor == null) {
           hydrated.add(appointment);
           continue;
@@ -78,8 +84,8 @@ class AppointmentRepository extends ChangeNotifier {
     });
   }
 
-  void addAppointment(Appointment appointment) {
-    _dataSource.add(appointment);
+  Future<void> addAppointment(Appointment appointment) async {
+    await _dataSource.add(appointment);
     notifyListeners();
   }
 

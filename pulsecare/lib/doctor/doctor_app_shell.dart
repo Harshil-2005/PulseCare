@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'dart:async';
 import 'package:pulsecare/auth/auth_screen.dart';
 import 'package:pulsecare/model/appointment_model.dart';
 import 'package:pulsecare/doctor/screens/doctor_appointments_screen.dart';
@@ -40,6 +41,7 @@ class DoctorAppShellState extends ConsumerState<DoctorAppShell> {
   late List<DaySchedule> weeklySchedule;
   late Doctor currentDoctor;
   late DoctorRepository _doctorRepository;
+  StreamSubscription<List<Appointment>>? _appointmentsSubscription;
   List<DateTime> leaveDates = [];
   bool isAvailableForBooking = true;
   final GlobalKey<DoctorAppointmentsScreenState> doctorAppointmentsKey =
@@ -111,14 +113,17 @@ class DoctorAppShellState extends ConsumerState<DoctorAppShell> {
       throw StateError('Doctor not found for active doctor session');
     }
     currentDoctor = doctor;
+    appointments = <Appointment>[];
     final appointmentRepository = ref.read(appointmentRepositoryProvider);
-    appointments = await appointmentRepository
+    _appointmentsSubscription = appointmentRepository
         .watchAppointmentsForDoctor(doctor.id)
-        .first;
-    if (!mounted) return;
-    setState(() {
-      _ready = true;
-    });
+        .listen((nextAppointments) {
+          if (!mounted) return;
+          setState(() {
+            appointments = nextAppointments;
+            _ready = true;
+          });
+        });
   }
 
   void addAppointment(Appointment newAppointment) {
@@ -139,36 +144,30 @@ class DoctorAppShellState extends ConsumerState<DoctorAppShell> {
       throw StateError('Doctor not found for active doctor session');
     }
     final appointmentRepository = ref.read(appointmentRepositoryProvider);
-    final sourceAppointments = await appointmentRepository
-        .watchAppointmentsForDoctor(doctor.id)
-        .first;
-    final index = sourceAppointments.indexWhere(
-      (a) =>
-          a.doctorId == doctor.id &&
-          a.patientName == appointment.patientName &&
-          a.scheduledAt.hour == appointment.scheduledAt.hour &&
-          a.scheduledAt.minute == appointment.scheduledAt.minute &&
-          a.symptoms == appointment.symptoms &&
-          a.status == appointment.status,
-    );
-    if (index < 0) return;
+    String appointmentId = appointment.id;
+    if (appointmentId.isEmpty) {
+      final fallback = appointments.firstWhere(
+        (a) =>
+            a.doctorId == doctor.id &&
+            a.patientName == appointment.patientName &&
+            a.scheduledAt.year == appointment.scheduledAt.year &&
+            a.scheduledAt.month == appointment.scheduledAt.month &&
+            a.scheduledAt.day == appointment.scheduledAt.day &&
+            a.scheduledAt.hour == appointment.scheduledAt.hour &&
+            a.scheduledAt.minute == appointment.scheduledAt.minute,
+        orElse: () => appointment,
+      );
+      appointmentId = fallback.id;
+    }
+    if (appointmentId.isEmpty) return;
 
-    final existing = sourceAppointments[index];
-    await appointmentRepository.updateAppointmentStatus(existing.id, status);
-    if (!mounted) return;
-
-    final refreshedAppointments = await appointmentRepository
-        .watchAppointmentsForDoctor(doctor.id)
-        .first;
-    if (!mounted) return;
-    setState(() {
-      appointments = refreshedAppointments;
-    });
+    await appointmentRepository.updateAppointmentStatus(appointmentId, status);
   }
 
   @override
   void dispose() {
     _doctorRepository.removeListener(_onDoctorUpdated);
+    _appointmentsSubscription?.cancel();
     super.dispose();
   }
 

@@ -13,9 +13,11 @@ class LocalAISummaryDataSource implements AISummaryDataSource {
 
   @override
   AISummaryModel addSummary(AISummaryModel summary) {
-    final generatedSummary = summary.copyWith(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-    );
+    final generatedSummary = summary.id.isNotEmpty
+        ? summary
+        : summary.copyWith(
+            id: DateTime.now().millisecondsSinceEpoch.toString(),
+          );
     _storage.removeWhere((s) => s.id == generatedSummary.id);
     _storage.add(generatedSummary);
     return generatedSummary;

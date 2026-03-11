@@ -70,7 +70,9 @@ class _UserDetailScreenState extends ConsumerState<PatientDetailScreen> {
     final summaryId = widget.aiSummaryId;
 
     if (summaryId != null) {
-      final summary = ref.read(aiSummaryRepositoryProvider).getById(summaryId);
+      final summary = await ref
+          .read(aiSummaryRepositoryProvider)
+          .getByIdAsync(summaryId);
 
       if (summary != null) {
         symptomsController.text =

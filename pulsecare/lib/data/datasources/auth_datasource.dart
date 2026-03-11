@@ -4,4 +4,5 @@ abstract class AuthDatasource {
   Future<String> signInWithGoogle();
   Future<void> logout();
   String? getCurrentUserId();
+  String? getCurrentUserEmail();
 }

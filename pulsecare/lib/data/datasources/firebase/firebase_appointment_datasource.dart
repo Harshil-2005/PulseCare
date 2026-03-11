@@ -4,7 +4,7 @@ import 'package:pulsecare/model/appointment_model.dart';
 
 class FirebaseAppointmentDataSource implements AppointmentDataSource {
   FirebaseAppointmentDataSource({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+    : _firestore = firestore ?? FirebaseFirestore.instance;
 
   final FirebaseFirestore _firestore;
 
@@ -20,7 +20,9 @@ class FirebaseAppointmentDataSource implements AppointmentDataSource {
 
   @override
   Future<List<Appointment>> getForUser(String userId) async {
-    final snapshot = await _appointments.where('userId', isEqualTo: userId).get();
+    final snapshot = await _appointments
+        .where('userId', isEqualTo: userId)
+        .get();
     return snapshot.docs
         .map((doc) => Appointment.fromJson(_normalizeMap(doc.data())))
         .toList(growable: false);
@@ -63,7 +65,28 @@ class FirebaseAppointmentDataSource implements AppointmentDataSource {
         ? _appointments.doc(appointment.id)
         : _appointments.doc();
     final toStore = appointment.copyWith(id: docRef.id);
-    await docRef.set(toStore.toJson());
+
+    await _firestore.runTransaction((transaction) async {
+      final duplicateQuery = await _appointments
+          .where('doctorId', isEqualTo: toStore.doctorId)
+          .where(
+            'scheduledAt',
+            isEqualTo: toStore.scheduledAt.toIso8601String(),
+          )
+          .limit(1)
+          .get();
+
+      final hasConflict = duplicateQuery.docs.any((doc) {
+        final status = (doc.data()['status'] ?? '').toString().toLowerCase();
+        return status != 'cancelled';
+      });
+
+      if (hasConflict) {
+        throw StateError('duplicate_slot');
+      }
+
+      transaction.set(docRef, toStore.toJson());
+    });
   }
 
   @override
@@ -78,14 +101,17 @@ class FirebaseAppointmentDataSource implements AppointmentDataSource {
     await _appointments.doc(appointment.id).delete();
   }
 
+  @override
   Stream<List<Appointment>> watchForUser(String userId) {
     return _firestore
         .collection('appointments')
         .where('userId', isEqualTo: userId)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => Appointment.fromJson(_normalizeMap(doc.data())))
-            .toList());
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => Appointment.fromJson(_normalizeMap(doc.data())))
+              .toList(),
+        );
   }
 
   @override
@@ -94,9 +120,11 @@ class FirebaseAppointmentDataSource implements AppointmentDataSource {
         .collection('appointments')
         .where('doctorId', isEqualTo: doctorId)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => Appointment.fromJson(_normalizeMap(doc.data())))
-            .toList());
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => Appointment.fromJson(_normalizeMap(doc.data())))
+              .toList(),
+        );
   }
 
   Map<String, dynamic> _normalizeMap(Map<String, dynamic> raw) {
@@ -104,25 +132,33 @@ class FirebaseAppointmentDataSource implements AppointmentDataSource {
     map['id'] = (map['id'] ?? '').toString();
 
     if (map['scheduledAt'] is Timestamp) {
-      map['scheduledAt'] = (map['scheduledAt'] as Timestamp).toDate().toIso8601String();
+      map['scheduledAt'] = (map['scheduledAt'] as Timestamp)
+          .toDate()
+          .toIso8601String();
     }
     if (map['createdAt'] is Timestamp) {
-      map['createdAt'] = (map['createdAt'] as Timestamp).toDate().toIso8601String();
+      map['createdAt'] = (map['createdAt'] as Timestamp)
+          .toDate()
+          .toIso8601String();
     }
     if (map['updatedAt'] is Timestamp) {
-      map['updatedAt'] = (map['updatedAt'] as Timestamp).toDate().toIso8601String();
+      map['updatedAt'] = (map['updatedAt'] as Timestamp)
+          .toDate()
+          .toIso8601String();
     }
 
     final doctor = map['doctor'];
     if (doctor is Map<String, dynamic>) {
       final doctorMap = Map<String, dynamic>.from(doctor);
       if (doctorMap['createdAt'] is Timestamp) {
-        doctorMap['createdAt'] =
-            (doctorMap['createdAt'] as Timestamp).toDate().toIso8601String();
+        doctorMap['createdAt'] = (doctorMap['createdAt'] as Timestamp)
+            .toDate()
+            .toIso8601String();
       }
       if (doctorMap['updatedAt'] is Timestamp) {
-        doctorMap['updatedAt'] =
-            (doctorMap['updatedAt'] as Timestamp).toDate().toIso8601String();
+        doctorMap['updatedAt'] = (doctorMap['updatedAt'] as Timestamp)
+            .toDate()
+            .toIso8601String();
       }
       map['doctor'] = doctorMap;
     }

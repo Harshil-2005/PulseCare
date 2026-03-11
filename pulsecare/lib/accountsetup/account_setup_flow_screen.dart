@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:pulsecare/constrains/schedule_date_picker_dialog.dart';
 import 'package:pulsecare/constrains/next_action_button.dart';
 import 'package:pulsecare/doctor/doctor_onboarding_screen.dart';
@@ -121,6 +120,7 @@ class _AccountSetupFlowScreenState
     }
 
     final userRepository = ref.read(userRepositoryProvider);
+    final authRepository = ref.read(authRepositoryProvider);
     final fullName = _nameController.text.trim();
     final parts = fullName
         .split(RegExp(r'\s+'))
@@ -143,7 +143,7 @@ class _AccountSetupFlowScreenState
       fullName: fullName,
       firstName: firstName,
       lastName: lastName,
-      email: firebase_auth.FirebaseAuth.instance.currentUser?.email ?? '',
+      email: authRepository.getCurrentUserEmail() ?? '',
       phone: _phoneController.text.trim(),
       dateOfBirth: _selectedDob,
       age: int.parse(_ageController.text),

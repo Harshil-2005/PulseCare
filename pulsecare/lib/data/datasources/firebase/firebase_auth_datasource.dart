@@ -4,7 +4,7 @@ import 'package:pulsecare/data/datasources/auth_datasource.dart';
 
 class FirebaseAuthDatasource implements AuthDatasource {
   FirebaseAuthDatasource({FirebaseAuth? firebaseAuth})
-      : _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance;
+    : _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance;
 
   final FirebaseAuth _firebaseAuth;
 
@@ -34,7 +34,8 @@ class FirebaseAuthDatasource implements AuthDatasource {
       throw Exception('Google sign in aborted');
     }
 
-    final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+    final GoogleSignInAuthentication googleAuth =
+        await googleUser.authentication;
 
     final credential = GoogleAuthProvider.credential(
       accessToken: googleAuth.accessToken,
@@ -48,11 +49,16 @@ class FirebaseAuthDatasource implements AuthDatasource {
 
   @override
   Future<void> logout() async {
-    await FirebaseAuth.instance.signOut();
+    await _firebaseAuth.signOut();
   }
 
   @override
   String? getCurrentUserId() {
     return _firebaseAuth.currentUser?.uid;
+  }
+
+  @override
+  String? getCurrentUserEmail() {
+    return _firebaseAuth.currentUser?.email;
   }
 }

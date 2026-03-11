@@ -1,4 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pulsecare/controllers/ai_controller.dart';
+import 'package:pulsecare/controllers/appointment_controller.dart';
+import 'package:pulsecare/controllers/auth_controller.dart';
+import 'package:pulsecare/controllers/report_controller.dart';
 
 import '../data/datasources/appointment_datasource.dart';
 import '../data/datasources/auth_datasource.dart';
@@ -43,8 +47,9 @@ final appointmentDatasourceProvider = Provider<AppointmentDataSource>(
 );
 
 final userDatasourceProvider = Provider<UserDataSource>(
-  (ref) =>
-      _useFirebaseUserDatasource ? FirebaseUserDataSource() : LocalUserDataSource(),
+  (ref) => _useFirebaseUserDatasource
+      ? FirebaseUserDataSource()
+      : LocalUserDataSource(),
 );
 
 final reportDatasourceProvider = Provider<ReportDataSource>(
@@ -104,11 +109,25 @@ final aiSummaryRepositoryProvider = Provider<AISummaryRepository>(
   (ref) => AISummaryRepository(),
 );
 
-final aiServiceProvider = Provider<AIService>(
-  (ref) => MockAIService(),
-);
+final aiServiceProvider = Provider<AIService>((ref) => MockAIService());
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   final datasource = ref.read(authDatasourceProvider);
   return AuthRepository(datasource);
+});
+
+final authControllerProvider = Provider<AuthController>((ref) {
+  return AuthController(ref.read(authRepositoryProvider));
+});
+
+final appointmentControllerProvider = Provider<AppointmentController>((ref) {
+  return AppointmentController(ref.read(appointmentRepositoryProvider));
+});
+
+final reportControllerProvider = Provider<ReportController>((ref) {
+  return ReportController(ref.read(reportRepositoryProvider));
+});
+
+final aiControllerProvider = Provider<AIController>((ref) {
+  return AIController(ref.read(aiSummaryRepositoryProvider));
 });

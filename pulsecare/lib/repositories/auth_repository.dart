@@ -30,6 +30,10 @@ class AuthRepository {
     return _datasource.getCurrentUserId();
   }
 
+  String? getCurrentUserEmail() {
+    return _datasource.getCurrentUserEmail();
+  }
+
   Future<void> deleteAuthAccount() async {
     try {
       final user = FirebaseAuth.instance.currentUser;

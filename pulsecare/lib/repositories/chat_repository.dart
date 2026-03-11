@@ -21,7 +21,6 @@ class ChatRepository extends ChangeNotifier {
   final AISummaryRepository _aiSummaryRepository;
   final AIService _aiService;
 
-
   String startNewConversation(String userId) {
     return _dataSource.startNewConversation(userId);
   }
@@ -41,9 +40,7 @@ class ChatRepository extends ChangeNotifier {
   }
 
   Future<List<ChatMessage>> getMessages(String conversationId) async {
-    return List.unmodifiable(
-      await _dataSource.getMessages(conversationId),
-    );
+    return List.unmodifiable(await _dataSource.getMessages(conversationId));
   }
 
   Future<ChatMessage> addUserMessage(String conversationId, String text) async {
@@ -100,7 +97,7 @@ class ChatRepository extends ChangeNotifier {
         generatedAt: DateTime.now(),
       );
 
-      final storedSummary = _aiSummaryRepository.addSummary(summary);
+      final storedSummary = await _aiSummaryRepository.addSummaryAsync(summary);
 
       final completedResponse = AIResponse(
         rawText: aiResponse.rawText,

@@ -9,6 +9,7 @@ class ReportModel {
   final DateTime uploadedAt;
   final String icon;
   final String? pdfPath;
+  final String? storageUrl;
 
   ReportModel({
     required this.id,
@@ -21,6 +22,7 @@ class ReportModel {
     required this.uploadedAt,
     required this.icon,
     this.pdfPath,
+    this.storageUrl,
   });
 
   Map<String, dynamic> toJson() {
@@ -35,6 +37,7 @@ class ReportModel {
       'uploadedAt': uploadedAt.toIso8601String(),
       'icon': icon,
       'pdfPath': pdfPath,
+      'storageUrl': storageUrl,
     };
   }
 
@@ -56,6 +59,7 @@ class ReportModel {
           DateTime.now(),
       icon: (json['icon'] ?? '').toString(),
       pdfPath: json['pdfPath'] as String?,
+      storageUrl: json['storageUrl'] as String?,
     );
   }
 }

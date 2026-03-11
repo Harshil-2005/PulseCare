@@ -1,13 +1,20 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:pulsecare/data/datasources/report_datasource.dart';
 import 'package:pulsecare/data/report_upload_service.dart';
 import 'package:pulsecare/model/report_model.dart';
 
 class FirebaseReportDataSource implements ReportDataSource {
-  FirebaseReportDataSource({FirebaseFirestore? firestore})
-    : _firestore = firestore ?? FirebaseFirestore.instance;
+  FirebaseReportDataSource({
+    FirebaseFirestore? firestore,
+    FirebaseStorage? storage,
+  }) : _firestore = firestore ?? FirebaseFirestore.instance,
+       _storage = storage ?? FirebaseStorage.instance;
 
   final FirebaseFirestore _firestore;
+  final FirebaseStorage _storage;
 
   CollectionReference<Map<String, dynamic>> get _reports =>
       _firestore.collection('reports');
@@ -49,8 +56,10 @@ class FirebaseReportDataSource implements ReportDataSource {
       uploadedAt: report.uploadedAt,
       icon: report.icon,
       pdfPath: report.pdfPath,
+      storageUrl: report.storageUrl,
     );
-    await docRef.set(_toFirestoreMap(toStore));
+    final reportWithStorage = await _ensureStorageUpload(toStore);
+    await docRef.set(_toFirestoreMap(reportWithStorage));
   }
 
   @override
@@ -80,10 +89,11 @@ class FirebaseReportDataSource implements ReportDataSource {
       appointmentId: appointmentId,
       doctorId: doctorId,
     );
-    final data = _toFirestoreMap(uploaded);
+    final reportWithStorage = await _ensureStorageUpload(uploaded);
+    final data = _toFirestoreMap(reportWithStorage);
     data['userId'] = userId;
-    await _reports.doc(uploaded.id).set(data);
-    return uploaded;
+    await _reports.doc(reportWithStorage.id).set(data);
+    return reportWithStorage;
   }
 
   @override
@@ -100,10 +110,11 @@ class FirebaseReportDataSource implements ReportDataSource {
       appointmentId: appointmentId,
       doctorId: doctorId,
     );
-    final data = _toFirestoreMap(uploaded);
+    final reportWithStorage = await _ensureStorageUpload(uploaded);
+    final data = _toFirestoreMap(reportWithStorage);
     data['userId'] = userId;
-    await _reports.doc(uploaded.id).set(data);
-    return uploaded;
+    await _reports.doc(reportWithStorage.id).set(data);
+    return reportWithStorage;
   }
 
   ReportModel _buildLocalReport(
@@ -125,7 +136,49 @@ class FirebaseReportDataSource implements ReportDataSource {
       uploadedAt: local.uploadedAt,
       icon: local.icon,
       pdfPath: local.pdfPath,
+      storageUrl: local.storageUrl,
     );
+  }
+
+  Future<ReportModel> _ensureStorageUpload(ReportModel report) async {
+    if (report.storageUrl != null && report.storageUrl!.trim().isNotEmpty) {
+      return report;
+    }
+
+    final localPath = report.pdfPath;
+    if (localPath == null || localPath.trim().isEmpty) {
+      return report;
+    }
+
+    final file = File(localPath);
+    if (!await file.exists()) {
+      return report;
+    }
+
+    try {
+      final ref = _storage
+          .ref()
+          .child('reports')
+          .child(report.userId)
+          .child('${report.id}.pdf');
+      await ref.putFile(file);
+      final downloadUrl = await ref.getDownloadURL();
+      return ReportModel(
+        id: report.id,
+        userId: report.userId,
+        appointmentId: report.appointmentId,
+        doctorId: report.doctorId,
+        createdAt: report.createdAt,
+        updatedAt: report.updatedAt,
+        title: report.title,
+        uploadedAt: report.uploadedAt,
+        icon: report.icon,
+        pdfPath: report.pdfPath,
+        storageUrl: downloadUrl,
+      );
+    } catch (_) {
+      return report;
+    }
   }
 
   Map<String, dynamic> _toFirestoreMap(ReportModel report) {
@@ -135,6 +188,9 @@ class FirebaseReportDataSource implements ReportDataSource {
     }
     if (report.doctorId == null) {
       data.remove('doctorId');
+    }
+    if (report.storageUrl == null || report.storageUrl!.trim().isEmpty) {
+      data.remove('storageUrl');
     }
     return data;
   }

@@ -80,196 +80,221 @@ class _ContentSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    AISummaryModel? summary;
+    final summaryFuture = appointment.aiSummaryId == null
+        ? null
+        : ref
+              .read(aiSummaryRepositoryProvider)
+              .getByIdAsync(appointment.aiSummaryId!);
 
-    if (appointment.aiSummaryId != null) {
-      summary = ref
-          .read(aiSummaryRepositoryProvider)
-          .getById(appointment.aiSummaryId!);
-    }
+    return FutureBuilder<AISummaryModel?>(
+      future: summaryFuture,
+      builder: (context, summarySnapshot) {
+        final summary = summarySnapshot.data;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          appointment.patientName,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
-        ),
-        const SizedBox(height: 12),
-        _BaseCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  _StatusBadge(
-                    text: statusUi.text,
-                    color: statusUi.color,
-                    backgroundColor: statusUi.backgroundColor,
-                  ),
-                  const Spacer(),
-                  SvgPicture.asset(
-                    'assets/icons/date.svg',
-                    width: 16,
-                    height: 16,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    TimeUtils.formatDate(appointment.scheduledAt),
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.grey.shade700,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  const Text('|', style: TextStyle(color: Colors.grey)),
-                  const SizedBox(width: 8),
-                  SvgPicture.asset(
-                    'assets/icons/round.svg',
-                    width: 16,
-                    height: 16,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    TimeUtils.formatTime(appointment.scheduledAt),
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.grey.shade700,
-                    ),
-                  ),
-                ],
-              ),
-              Padding(
-                padding: const EdgeInsets.only(top: 14, bottom: 14),
-                child: Divider(height: 2, color: Colors.grey.shade300),
-              ),
-              Row(
-                children: [
-                  const Text(
-                    'Age',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-                  ),
-                  const Spacer(),
-                  Text(
-                    _ageFromAppointment(appointment),
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w400,
-                      color: Colors.grey.shade700,
-                    ),
-                  ),
-                ],
-              ),
-              Padding(
-                padding: const EdgeInsets.only(top: 14, bottom: 14),
-                child: Divider(height: 2, color: Colors.grey.shade300),
-              ),
-              Row(
-                children: [
-                  const Text(
-                    'Gender',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-                  ),
-                  const Spacer(),
-                  Text(
-                    _genderFromAppointment(appointment),
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w400,
-                      color: Colors.grey.shade700,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 20),
-        _BaseCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  CircleAvatar(
-                    radius: 18,
-                    backgroundColor: const Color.fromARGB(255, 180, 212, 255),
-                    child: SvgPicture.asset('assets/icons/ai_chat.svg'),
-                  ),
-                  const SizedBox(width: 12),
-                  const Text(
-                    'Patient Intake Summary',
-                    style: TextStyle(fontWeight: FontWeight.w500, fontSize: 18),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              if (summary != null) ...[
-                _buildSummaryRow('Symptoms', summary.symptoms.join(', ')),
-                _buildSummaryRow('Duration', summary.duration ?? 'N/A'),
-                _buildSummaryRow('Medications', summary.medications ?? 'N/A'),
-                _buildSummaryRow('Severity', summary.severity ?? 'N/A'),
-                _buildSummaryRow('Temperature', summary.temperature ?? 'N/A'),
-                _buildSummaryRow('Triage Level', summary.triageLevel),
-                _buildSummaryRow(
-                  'AI Confidence',
-                  (summary.confidence * 100).toStringAsFixed(0) + '%',
-                ),
-              ] else ...[
-                Text(
-                  appointment.symptoms,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w400,
-                    color: Colors.grey.shade500,
-                    height: 1.4,
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-        if (reports.isNotEmpty) ...[
-          const SizedBox(height: 20),
-          const Padding(
-            padding: EdgeInsets.only(left: 2),
-            child: Text(
-              'Uploaded Reports',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              appointment.patientName,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
             ),
-          ),
-          const SizedBox(height: 12),
-          ListView.builder(
-            shrinkWrap: true,
-            physics: NeverScrollableScrollPhysics(),
-            itemCount: reports.length,
-            itemBuilder: (context, index) {
-              final report = reports[index];
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: Stack(
-                  children: [
-                    ReportCard(
-                      report: report,
-                      title: report.title,
-                      date:
-                          "Uploaded ${TimeUtils.formatDate(report.uploadedAt)}",
-                      icon: report.icon,
-                      isDoctorView: true,
-                      outerPadding: EdgeInsets.zero,
+            const SizedBox(height: 12),
+            _BaseCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      _StatusBadge(
+                        text: statusUi.text,
+                        color: statusUi.color,
+                        backgroundColor: statusUi.backgroundColor,
+                      ),
+                      const Spacer(),
+                      SvgPicture.asset(
+                        'assets/icons/date.svg',
+                        width: 16,
+                        height: 16,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        TimeUtils.formatDate(appointment.scheduledAt),
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.grey.shade700,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Text('|', style: TextStyle(color: Colors.grey)),
+                      const SizedBox(width: 8),
+                      SvgPicture.asset(
+                        'assets/icons/round.svg',
+                        width: 16,
+                        height: 16,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        TimeUtils.formatTime(appointment.scheduledAt),
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.grey.shade700,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 14, bottom: 14),
+                    child: Divider(height: 2, color: Colors.grey.shade300),
+                  ),
+                  Row(
+                    children: [
+                      const Text(
+                        'Age',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        _ageFromAppointment(appointment),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w400,
+                          color: Colors.grey.shade700,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 14, bottom: 14),
+                    child: Divider(height: 2, color: Colors.grey.shade300),
+                  ),
+                  Row(
+                    children: [
+                      const Text(
+                        'Gender',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        _genderFromAppointment(appointment),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w400,
+                          color: Colors.grey.shade700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            _BaseCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 18,
+                        backgroundColor: const Color.fromARGB(
+                          255,
+                          180,
+                          212,
+                          255,
+                        ),
+                        child: SvgPicture.asset('assets/icons/ai_chat.svg'),
+                      ),
+                      const SizedBox(width: 12),
+                      const Text(
+                        'Patient Intake Summary',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w500,
+                          fontSize: 18,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  if (summary != null) ...[
+                    _buildSummaryRow('Symptoms', summary.symptoms.join(', ')),
+                    _buildSummaryRow('Duration', summary.duration ?? 'N/A'),
+                    _buildSummaryRow(
+                      'Medications',
+                      summary.medications ?? 'N/A',
+                    ),
+                    _buildSummaryRow('Severity', summary.severity ?? 'N/A'),
+                    _buildSummaryRow(
+                      'Temperature',
+                      summary.temperature ?? 'N/A',
+                    ),
+                    _buildSummaryRow('Triage Level', summary.triageLevel),
+                    _buildSummaryRow(
+                      'AI Confidence',
+                      (summary.confidence * 100).toStringAsFixed(0) + '%',
+                    ),
+                  ] else ...[
+                    Text(
+                      appointment.symptoms,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w400,
+                        color: Colors.grey.shade500,
+                        height: 1.4,
+                      ),
                     ),
                   ],
+                ],
+              ),
+            ),
+            if (reports.isNotEmpty) ...[
+              const SizedBox(height: 20),
+              const Padding(
+                padding: EdgeInsets.only(left: 2),
+                child: Text(
+                  'Uploaded Reports',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
                 ),
-              );
-            },
-          ),
-          const SizedBox(height: 20),
-        ],
-      ],
+              ),
+              const SizedBox(height: 12),
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: reports.length,
+                itemBuilder: (context, index) {
+                  final report = reports[index];
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: Stack(
+                      children: [
+                        ReportCard(
+                          report: report,
+                          title: report.title,
+                          date:
+                              'Uploaded ${TimeUtils.formatDate(report.uploadedAt)}',
+                          icon: report.icon,
+                          isDoctorView: true,
+                          outerPadding: EdgeInsets.zero,
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 20),
+            ],
+          ],
+        );
+      },
     );
   }
 }
