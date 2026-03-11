@@ -5,6 +5,7 @@ import 'package:pulsecare/doctor/widgets/leave_calendar_card.dart';
 import 'package:pulsecare/model/day_schedule.dart';
 import 'package:pulsecare/model/date_override.dart';
 import 'package:pulsecare/providers/repository_providers.dart';
+import 'package:pulsecare/repositories/doctor_repository.dart';
 import 'package:pulsecare/repositories/session_repository.dart';
 
 final _leaveDoctorProvider = StreamProvider((ref) {
@@ -26,7 +27,7 @@ class AddLeaveDateSheet extends ConsumerWidget {
     BuildContext context,
     DateTime start,
     DateTime end,
-    WidgetRef ref,
+    DoctorRepository doctorRepository,
   ) {
     showModalBottomSheet(
       context: context,
@@ -55,11 +56,9 @@ class AddLeaveDateSheet extends ConsumerWidget {
               ),
               InkWell(
                 onTap: () async {
-                  Navigator.pop(modalContext);
-
                   final doctorId = SessionRepository().getCurrentDoctorId();
 
-                  await ref.read(doctorRepositoryProvider).addOverride(
+                  await doctorRepository.addOverride(
                     doctorId: doctorId,
                     override: DateOverride(
                       startDate: start,
@@ -67,6 +66,10 @@ class AddLeaveDateSheet extends ConsumerWidget {
                       customSchedule: null,
                     ),
                   );
+
+                  if (modalContext.mounted) {
+                    Navigator.pop(modalContext);
+                  }
 
                   onUpdated();
                 },
@@ -78,7 +81,7 @@ class AddLeaveDateSheet extends ConsumerWidget {
               InkWell(
                 onTap: () {
                   Navigator.pop(modalContext);
-                  _openCustomLeaveEditor(context, start, end, ref);
+                  _openCustomLeaveEditor(context, start, end, doctorRepository);
                 },
                 child: _leaveTypeOption(
                   icon: Icons.schedule,
@@ -140,11 +143,10 @@ class AddLeaveDateSheet extends ConsumerWidget {
     BuildContext context,
     DateTime start,
     DateTime end,
-    WidgetRef ref,
+    DoctorRepository doctorRepository,
   ) async {
     final doctorId = SessionRepository().getCurrentDoctorId();
 
-    final doctorRepository = ref.read(doctorRepositoryProvider);
     final doctor = await doctorRepository.getDoctorById(doctorId);
     final slotDuration = doctor?.slotDuration ?? 30;
     final rangeLabel = _formatLeaveRangeLabel(start, end);
@@ -192,7 +194,9 @@ class AddLeaveDateSheet extends ConsumerWidget {
               ),
             );
 
-            Navigator.pop(modalContext);
+            if (modalContext.mounted) {
+              Navigator.pop(modalContext);
+            }
             onUpdated();
           },
         );
@@ -234,9 +238,13 @@ class AddLeaveDateSheet extends ConsumerWidget {
           child: LeaveCalendarCard(
             overrides: doctor?.overrides ?? [],
             onRangeSelected: (start, end) {
-              final rootContext = Navigator.of(context, rootNavigator: true).context;
+              final doctorRepository = ref.read(doctorRepositoryProvider);
+              final rootContext = Navigator.of(
+                context,
+                rootNavigator: true,
+              ).context;
               Navigator.of(context, rootNavigator: true).pop();
-              _openLeaveTypeSheet(rootContext, start, end, ref);
+              _openLeaveTypeSheet(rootContext, start, end, doctorRepository);
             },
           ),
         ),

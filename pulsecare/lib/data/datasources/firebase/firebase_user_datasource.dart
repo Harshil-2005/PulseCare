@@ -4,7 +4,7 @@ import 'package:pulsecare/model/user_model.dart';
 
 class FirebaseUserDataSource implements UserDataSource {
   FirebaseUserDataSource({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+    : _firestore = firestore ?? FirebaseFirestore.instance;
 
   final FirebaseFirestore _firestore;
 
@@ -49,17 +49,27 @@ class FirebaseUserDataSource implements UserDataSource {
         .collection('users')
         .doc(userId)
         .snapshots()
-        .map((doc) => User.fromJson(doc.data()!));
+        .where((doc) => doc.exists && doc.data() != null)
+        .map((doc) => User.fromJson(_normalizeMap(doc.data()!)));
   }
 
   Map<String, dynamic> _normalizeMap(Map<String, dynamic> raw) {
     final map = Map<String, dynamic>.from(raw);
     map['id'] = (map['id'] ?? '').toString();
     if (map['createdAt'] is Timestamp) {
-      map['createdAt'] = (map['createdAt'] as Timestamp).toDate().toIso8601String();
+      map['createdAt'] = (map['createdAt'] as Timestamp)
+          .toDate()
+          .toIso8601String();
     }
     if (map['updatedAt'] is Timestamp) {
-      map['updatedAt'] = (map['updatedAt'] as Timestamp).toDate().toIso8601String();
+      map['updatedAt'] = (map['updatedAt'] as Timestamp)
+          .toDate()
+          .toIso8601String();
+    }
+    if (map['dateOfBirth'] is Timestamp) {
+      map['dateOfBirth'] = (map['dateOfBirth'] as Timestamp)
+          .toDate()
+          .toIso8601String();
     }
     return map;
   }

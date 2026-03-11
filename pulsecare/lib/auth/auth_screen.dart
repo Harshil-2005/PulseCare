@@ -51,7 +51,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
     currentPage = widget.startWithRegister ? 1 : 0;
     _pageController = PageController(initialPage: currentPage);
     _loginEmailFocus.addListener(() {
-      if (!_loginEmailFocus.hasFocus && loginemailController.text.trim().isNotEmpty) {
+      if (!_loginEmailFocus.hasFocus &&
+          loginemailController.text.trim().isNotEmpty) {
         setState(() {
           _loginEmailTouched = true;
         });
@@ -115,9 +116,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
       goToLogin();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Registration failed: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Registration failed: $e')));
     }
   }
 
@@ -145,9 +146,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
       await _navigateAfterLogin(uid);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Login failed: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Login failed: $e')));
     }
   }
 
@@ -171,7 +172,11 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
         if (!mounted) return;
 
         if (doctor != null) {
-          await SessionRepository().setCurrentDoctor(doctor.id);
+          final sessionRepository = SessionRepository();
+          await sessionRepository.clearSession();
+          await sessionRepository.setCurrentUser(uid);
+          await sessionRepository.setCurrentDoctor(doctor.id);
+          ref.read(sessionUserIdProvider.notifier).state = uid;
           if (!mounted) return;
           Navigator.pushAndRemoveUntil(
             context,
@@ -266,7 +271,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
     if (text != registerpasswordController.text) {
       return 'Passwords do not match';
     }
-  
+
     return null;
   }
 
@@ -291,7 +296,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
           AppTextField(
             controller: loginpasswordController,
             hintText: 'Password',
-            
+
             textInputAction: TextInputAction.done,
             autofillHints: const [AutofillHints.password],
             validator: _validateLoginPassword,
@@ -557,15 +562,19 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                                             SessionRepository();
                                         sessionRepository.setCurrentUser(uid);
                                         ref
-                                            .read(
-                                              sessionUserIdProvider.notifier,
-                                            )
-                                            .state = uid;
+                                                .read(
+                                                  sessionUserIdProvider
+                                                      .notifier,
+                                                )
+                                                .state =
+                                            uid;
 
                                         await _navigateAfterLogin(uid);
                                       } catch (e) {
                                         if (!context.mounted) return;
-                                        ScaffoldMessenger.of(context).showSnackBar(
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
                                           SnackBar(
                                             content: Text(
                                               'Google login failed: $e',

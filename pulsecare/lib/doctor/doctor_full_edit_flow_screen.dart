@@ -4,11 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:pulsecare/constrains/primary_icon_button.dart';
+import 'package:pulsecare/constrains/schedule_date_picker_dialog.dart';
 import 'package:pulsecare/model/doctor_model.dart';
 import 'package:pulsecare/repositories/doctor_repository.dart';
 import 'package:pulsecare/repositories/session_repository.dart';
 import 'package:pulsecare/repositories/user_repository.dart';
 import 'package:pulsecare/model/user_model.dart';
+import 'package:pulsecare/utils/age_dob_input.dart';
 import '../providers/repository_providers.dart';
 
 class DoctorFullEditFlowScreen extends ConsumerStatefulWidget {
@@ -42,6 +44,7 @@ class _DoctorFullEditFlowScreenState
   late final TextEditingController _specializationController;
   late final TextEditingController _hospitalController;
   late final TextEditingController _feeController;
+  DateTime? _lastDobFromInput;
   String _selectedGender = 'Male';
   late int _selectedDuration;
   int _currentStep = 0;
@@ -84,6 +87,7 @@ class _DoctorFullEditFlowScreenState
     _firstNameController = TextEditingController(text: firstName);
     _phoneController = TextEditingController(text: _user.phone);
     _ageController = TextEditingController(text: _user.age.toString());
+    _lastDobFromInput = _user.dateOfBirth;
     _lastNameController = TextEditingController(text: lastName);
     _experienceController = TextEditingController(
       text: _doctor.experience.toString(),
@@ -106,6 +110,20 @@ class _DoctorFullEditFlowScreenState
   }
 
   Future<void> _onNext() async {
+    if (_currentStep == 2) {
+      final parsedAge = parseAgeInput(_ageController.text.trim());
+      if (parsedAge == null) {
+        final raw = _ageController.text.trim();
+        final message = raw.isEmpty
+            ? 'Please enter your age.'
+            : 'Please enter a valid age or DOB (dd/MM/yyyy).';
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(message)));
+        return;
+      }
+    }
+
     await _saveDoctorUpdates();
     if (!mounted) return;
 
@@ -150,7 +168,9 @@ class _DoctorFullEditFlowScreenState
       firstName: _firstNameController.text.trim(),
       lastName: _lastNameController.text.trim(),
       phone: _phoneController.text.trim(),
-      age: int.tryParse(_ageController.text.trim()) ?? _user.age,
+      age: parseAgeInput(_ageController.text.trim()) ?? _user.age,
+      dateOfBirth: _lastDobFromInput,
+      clearDateOfBirth: _lastDobFromInput == null,
       gender: _selectedGender,
     );
     await _repository.updateDoctor(updatedDoctor);
@@ -204,7 +224,13 @@ class _DoctorFullEditFlowScreenState
         imagePath: _doctor.image,
       ),
       EditPhoneContent(phoneController: _phoneController),
-      EditAgeContent(ageController: _ageController),
+      EditAgeContent(
+        ageController: _ageController,
+        onDobChanged: (value) {
+          _lastDobFromInput = value;
+        },
+        lastDobFromInput: _lastDobFromInput,
+      ),
       EditGenderContent(
         selectedGender: _selectedGender,
         onGenderChanged: (value) {
@@ -548,14 +574,39 @@ class EditPhoneContent extends StatelessWidget {
 
 class EditAgeContent extends StatefulWidget {
   final TextEditingController ageController;
+  final ValueChanged<DateTime?> onDobChanged;
+  final DateTime? lastDobFromInput;
 
-  const EditAgeContent({super.key, required this.ageController});
+  const EditAgeContent({
+    super.key,
+    required this.ageController,
+    required this.onDobChanged,
+    required this.lastDobFromInput,
+  });
 
   @override
   State<EditAgeContent> createState() => _EditAgeContentState();
 }
 
 class _EditAgeContentState extends State<EditAgeContent> {
+  void _onAgeChanged(String value) {
+    final dob = parseTypedDob(value.trim());
+    if (dob == null) {
+      if (int.tryParse(value.trim()) != null) {
+        widget.onDobChanged(null);
+      }
+      return;
+    }
+
+    widget.onDobChanged(dob);
+    final age = calculateAgeFromDob(dob).toString();
+    widget.ageController.value = TextEditingValue(
+      text: age,
+      selection: TextSelection.collapsed(offset: age.length),
+      composing: TextRange.empty,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -609,12 +660,47 @@ class _EditAgeContentState extends State<EditAgeContent> {
         const SizedBox(height: 10),
         TextField(
           controller: widget.ageController,
-          keyboardType: TextInputType.number,
+          keyboardType: TextInputType.datetime,
           textInputAction: TextInputAction.done,
-          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          inputFormatters: [AgeOrDobInputFormatter()],
+          onChanged: _onAgeChanged,
           onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
           decoration: InputDecoration(
-            hintText: 'Enter age',
+            hintText: 'Enter age or DOB',
+            suffixIcon: InkWell(
+              onTap: () async {
+                final now = DateTime.now();
+                final initialDate = resolveAgePickerInitialDate(
+                  widget.ageController.text,
+                  lastDobFromInput: widget.lastDobFromInput,
+                  now: now,
+                );
+
+                final pickedDate = await showScheduleDatePicker(
+                  context: context,
+                  initialDate: initialDate,
+                  firstDate: DateTime(1900),
+                  lastDate: now,
+                );
+                if (!context.mounted) return;
+                if (pickedDate == null) return;
+                widget.onDobChanged(pickedDate);
+                widget.ageController.text = calculateAgeFromDob(
+                  pickedDate,
+                ).toString();
+              },
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: SvgPicture.asset(
+                    'assets/icons/calender.svg',
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ),
+            ),
             hintStyle: TextStyle(color: Colors.grey.shade400),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(30),

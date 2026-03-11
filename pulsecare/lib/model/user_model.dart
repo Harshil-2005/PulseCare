@@ -7,6 +7,7 @@ class User {
   final String lastName;
   final String email;
   final String phone;
+  final DateTime? dateOfBirth;
   final int age;
   final String gender;
   final String role;
@@ -21,6 +22,7 @@ class User {
     String? lastName,
     required this.email,
     required this.phone,
+    this.dateOfBirth,
     required this.age,
     required this.gender,
     this.role = 'patient',
@@ -37,6 +39,8 @@ class User {
     String? lastName,
     String? email,
     String? phone,
+    DateTime? dateOfBirth,
+    bool clearDateOfBirth = false,
     int? age,
     String? gender,
     String? role,
@@ -52,6 +56,7 @@ class User {
       lastName: lastName ?? (fullName != null ? null : this.lastName),
       email: email ?? this.email,
       phone: phone ?? this.phone,
+      dateOfBirth: clearDateOfBirth ? null : (dateOfBirth ?? this.dateOfBirth),
       age: age ?? this.age,
       gender: gender ?? this.gender,
       role: role ?? this.role,
@@ -73,6 +78,9 @@ class User {
       lastName: json['lastName']?.toString(),
       email: (json['email'] ?? '').toString(),
       phone: (json['phone'] ?? '').toString(),
+      dateOfBirth: json['dateOfBirth'] != null
+          ? DateTime.tryParse(json['dateOfBirth'].toString())
+          : null,
       age: json['age'] is int
           ? json['age'] as int
           : int.tryParse((json['age'] ?? '').toString()) ?? 0,
@@ -92,6 +100,7 @@ class User {
       'lastName': lastName,
       'email': email,
       'phone': phone,
+      'dateOfBirth': dateOfBirth?.toIso8601String(),
       'age': age,
       'gender': gender,
       'role': role,

@@ -63,6 +63,7 @@ class FirebaseDoctorDataSource implements DoctorDataSource {
         .collection('doctors')
         .orderBy('rating', descending: true)
         .orderBy('patients', descending: true)
+        .orderBy('experience', descending: true)
         .snapshots()
         .map(
           (snapshot) => snapshot.docs

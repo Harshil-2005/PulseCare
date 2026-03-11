@@ -1,47 +1,99 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:pulsecare/model/date_override.dart';
 import 'package:table_calendar/table_calendar.dart';
 
-class LeaveCalendarCard extends StatefulWidget {
-  final Function(DateTime start, DateTime end) onRangeSelected;
-  final List<DateOverride> overrides;
+Future<DateTime?> showScheduleDatePicker({
+  required BuildContext context,
+  required DateTime initialDate,
+  required DateTime firstDate,
+  required DateTime lastDate,
+}) {
+  final normalizedFirst = DateUtils.dateOnly(firstDate);
+  final normalizedLast = DateUtils.dateOnly(lastDate);
+  final safeFirst = normalizedFirst.isAfter(normalizedLast)
+      ? normalizedLast
+      : normalizedFirst;
+  final safeLast = normalizedLast.isBefore(normalizedFirst)
+      ? normalizedFirst
+      : normalizedLast;
 
-  const LeaveCalendarCard({
-    super.key,
-    required this.onRangeSelected,
-    required this.overrides,
-  });
+  DateTime clamp(DateTime value) {
+    final normalized = DateUtils.dateOnly(value);
+    final min = safeFirst;
+    final max = safeLast;
+    if (normalized.isBefore(min)) return min;
+    if (normalized.isAfter(max)) return max;
+    return normalized;
+  }
 
-  @override
-  State<LeaveCalendarCard> createState() => _LeaveCalendarCardState();
+  final safeInitial = clamp(initialDate);
+
+  return showDialog<DateTime>(
+    context: context,
+    barrierDismissible: true,
+    builder: (dialogContext) {
+      return Dialog(
+        insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+        backgroundColor: Colors.transparent,
+        child: _ScheduleDatePickerDialog(
+          initialDate: safeInitial,
+          firstDate: safeFirst,
+          lastDate: safeLast,
+        ),
+      );
+    },
+  );
 }
 
-class _LeaveCalendarCardState extends State<LeaveCalendarCard> {
-  static final DateTime _firstDay = DateTime(2000, 1, 1);
-  static final DateTime _lastDay = DateTime(2100, 12, 31);
-  DateTime _focusedDay = DateTime.now();
-  DateTime? _rangeStart;
-  DateTime? _rangeEnd;
-  RangeSelectionMode _rangeSelectionMode = RangeSelectionMode.toggledOn;
+class _ScheduleDatePickerDialog extends StatefulWidget {
+  const _ScheduleDatePickerDialog({
+    required this.initialDate,
+    required this.firstDate,
+    required this.lastDate,
+  });
+
+  final DateTime initialDate;
+  final DateTime firstDate;
+  final DateTime lastDate;
+
+  @override
+  State<_ScheduleDatePickerDialog> createState() =>
+      _ScheduleDatePickerDialogState();
+}
+
+class _ScheduleDatePickerDialogState extends State<_ScheduleDatePickerDialog> {
+  late DateTime _focusedDay;
+  late DateTime _selectedDay;
   bool _showYearPicker = false;
   ScrollController? _yearScrollController;
 
-  void _shiftMonth(int delta) {
-    setState(() {
-      _focusedDay = DateTime(_focusedDay.year, _focusedDay.month + delta, 1);
-    });
+  DateTime _clampToBounds(DateTime value) {
+    final normalized = DateUtils.dateOnly(value);
+    if (normalized.isBefore(widget.firstDate)) return widget.firstDate;
+    if (normalized.isAfter(widget.lastDate)) return widget.lastDate;
+    return normalized;
   }
 
-  Widget _headerChevron(IconData icon, VoidCallback onTap) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
-      child: Padding(
-        padding: const EdgeInsets.all(2),
-        child: Icon(icon, color: const Color(0xFF3F67FD), size: 34),
-      ),
-    );
+  @override
+  void initState() {
+    super.initState();
+    _selectedDay = _clampToBounds(widget.initialDate);
+    _focusedDay = _selectedDay;
+  }
+
+  void _shiftMonth(int delta) {
+    setState(() {
+      final shifted = _clampToBounds(
+        DateTime(_focusedDay.year, _focusedDay.month + delta, _focusedDay.day),
+      );
+
+      if (shifted.year == _focusedDay.year &&
+          shifted.month == _focusedDay.month) {
+        return;
+      }
+
+      _focusedDay = shifted;
+    });
   }
 
   void _toggleYearPicker() {
@@ -58,23 +110,20 @@ class _LeaveCalendarCardState extends State<LeaveCalendarCard> {
 
   void _selectYear(int year) {
     setState(() {
-      _focusedDay = DateTime(year, _focusedDay.month, 1);
+      final month = _focusedDay.month;
+      final candidate = DateTime(year, month, _focusedDay.day);
+      _focusedDay = _clampToBounds(candidate);
       _showYearPicker = false;
     });
   }
 
-  bool _hasLeave(DateTime day) {
+  bool _isEnabledDay(DateTime day) {
     final normalized = DateUtils.dateOnly(day);
-
-    for (final override in widget.overrides) {
-      final start = DateUtils.dateOnly(override.startDate);
-      final end = DateUtils.dateOnly(override.endDate);
-
-      if (!normalized.isBefore(start) && !normalized.isAfter(end)) {
-        return true;
-      }
-    }
-    return false;
+    final isVisibleMonth =
+        day.year == _focusedDay.year && day.month == _focusedDay.month;
+    return isVisibleMonth &&
+        !normalized.isBefore(widget.firstDate) &&
+        !normalized.isAfter(widget.lastDate);
   }
 
   @override
@@ -118,7 +167,7 @@ class _LeaveCalendarCardState extends State<LeaveCalendarCard> {
                           Text(
                             DateFormat('MMMM yyyy').format(_focusedDay),
                             style: const TextStyle(
-                              fontSize: 20,
+                              fontSize: 32 / 1.6,
                               fontWeight: FontWeight.w700,
                               color: Color(0xFF3A3A40),
                             ),
@@ -136,8 +185,30 @@ class _LeaveCalendarCardState extends State<LeaveCalendarCard> {
                     ),
                     const Spacer(),
                     if (!_showYearPicker) ...[
-                      _headerChevron(Icons.chevron_left, () => _shiftMonth(-1)),
-                      _headerChevron(Icons.chevron_right, () => _shiftMonth(1)),
+                      InkWell(
+                        onTap: () => _shiftMonth(-1),
+                        borderRadius: BorderRadius.circular(20),
+                        child: const Padding(
+                          padding: EdgeInsets.all(2),
+                          child: Icon(
+                            Icons.chevron_left,
+                            color: Color(0xFF3F67FD),
+                            size: 34,
+                          ),
+                        ),
+                      ),
+                      InkWell(
+                        onTap: () => _shiftMonth(1),
+                        borderRadius: BorderRadius.circular(20),
+                        child: const Padding(
+                          padding: EdgeInsets.all(2),
+                          child: Icon(
+                            Icons.chevron_right,
+                            color: Color(0xFF3F67FD),
+                            size: 34,
+                          ),
+                        ),
+                      ),
                     ],
                   ],
                 ),
@@ -151,9 +222,10 @@ class _LeaveCalendarCardState extends State<LeaveCalendarCard> {
                           const crossAxisSpacing = 8.0;
                           const childAspectRatio = 2.1;
 
-                          final totalYears = _lastDay.year - _firstDay.year + 1;
+                          final totalYears =
+                              widget.lastDate.year - widget.firstDate.year + 1;
                           final selectedIndex =
-                              (_focusedDay.year - _firstDay.year).clamp(
+                              (_focusedDay.year - widget.firstDate.year).clamp(
                                 0,
                                 totalYears - 1,
                               );
@@ -187,7 +259,7 @@ class _LeaveCalendarCardState extends State<LeaveCalendarCard> {
                                   childAspectRatio: childAspectRatio,
                                 ),
                             itemBuilder: (context, index) {
-                              final year = _firstDay.year + index;
+                              final year = widget.firstDate.year + index;
                               final isSelected = year == _focusedDay.year;
                               return InkWell(
                                 onTap: () => _selectYear(year),
@@ -222,64 +294,44 @@ class _LeaveCalendarCardState extends State<LeaveCalendarCard> {
                         },
                       )
                     : TableCalendar(
-                        firstDay: _firstDay,
-                        lastDay: _lastDay,
+                        firstDay: widget.firstDate,
+                        lastDay: widget.lastDate,
                         focusedDay: _focusedDay,
                         rowHeight: rowHeight,
                         daysOfWeekHeight: daysOfWeekHeight,
                         availableGestures: AvailableGestures.horizontalSwipe,
-                        rangeStartDay: _rangeStart,
-                        rangeEndDay: _rangeEnd,
-                        rangeSelectionMode: _rangeSelectionMode,
+                        selectedDayPredicate: (day) =>
+                            isSameDay(day, _selectedDay),
                         calendarFormat: CalendarFormat.month,
                         sixWeekMonthsEnforced: true,
                         headerVisible: false,
-                        calendarStyle: CalendarStyle(
-                          cellMargin: const EdgeInsets.symmetric(
+                        calendarStyle: const CalendarStyle(
+                          cellMargin: EdgeInsets.symmetric(
                             horizontal: 2,
                             vertical: 2,
                           ),
                           todayDecoration: BoxDecoration(
-                            color: const Color.fromARGB(255, 172, 205, 255),
+                            color: Color.fromARGB(255, 172, 205, 255),
                             shape: BoxShape.circle,
                           ),
-                          selectedDecoration: const BoxDecoration(
+                          selectedDecoration: BoxDecoration(
                             color: Color(0xFF0066FF),
                             shape: BoxShape.circle,
                           ),
-                          rangeStartDecoration: const BoxDecoration(
-                            color: Color(0xFF0066FF),
-                            shape: BoxShape.circle,
-                          ),
-                          rangeEndDecoration: const BoxDecoration(
-                            color: Color(0xFF0066FF),
-                            shape: BoxShape.circle,
-                          ),
-                          rangeHighlightColor: const Color(0x330066FF),
-                          weekendTextStyle: const TextStyle(
+                          weekendTextStyle: TextStyle(
                             color: Colors.black,
                             fontSize: 16,
                           ),
-                          defaultTextStyle: const TextStyle(
+                          defaultTextStyle: TextStyle(
                             color: Colors.black,
                             fontSize: 16,
                           ),
-                          selectedTextStyle: const TextStyle(
+                          selectedTextStyle: TextStyle(
                             color: Colors.white,
                             fontSize: 17,
                             fontWeight: FontWeight.w600,
                           ),
-                          rangeStartTextStyle: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 17,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          rangeEndTextStyle: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 17,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          outsideTextStyle: const TextStyle(
+                          outsideTextStyle: TextStyle(
                             color: Color(0xFF8A8A8A),
                             fontSize: 16,
                           ),
@@ -294,43 +346,11 @@ class _LeaveCalendarCardState extends State<LeaveCalendarCard> {
                             fontSize: 15,
                           ),
                         ),
-                        enabledDayPredicate: (day) {
-                          final todayLimit = DateTime.now().subtract(
-                            const Duration(days: 1),
-                          );
-                          final isVisibleMonth =
-                              day.year == _focusedDay.year &&
-                              day.month == _focusedDay.month;
-                          return isVisibleMonth && !day.isBefore(todayLimit);
-                        },
-                        calendarBuilders: CalendarBuilders(
-                          defaultBuilder: (context, day, focusedDay) {
-                            if (_hasLeave(day)) {
-                              return Container(
-                                decoration: const BoxDecoration(
-                                  color: Color(0x33FF4D4F),
-                                  shape: BoxShape.circle,
-                                ),
-                                alignment: Alignment.center,
-                                child: Text(
-                                  '${day.day}',
-                                  style: const TextStyle(color: Colors.black),
-                                ),
-                              );
-                            }
-                            return null;
-                          },
-                        ),
+                        enabledDayPredicate: _isEnabledDay,
                         onDaySelected: (selectedDay, focusedDay) {
                           setState(() {
-                            _focusedDay = focusedDay;
-                          });
-                        },
-                        onRangeSelected: (start, end, focusedDay) {
-                          setState(() {
-                            _focusedDay = focusedDay;
-                            _rangeStart = start;
-                            _rangeEnd = end ?? start;
+                            _focusedDay = _clampToBounds(focusedDay);
+                            _selectedDay = _clampToBounds(selectedDay);
                           });
                         },
                       ),
@@ -340,10 +360,7 @@ class _LeaveCalendarCardState extends State<LeaveCalendarCard> {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   InkWell(
-                    onTap: (_rangeStart == null || _rangeEnd == null)
-                        ? null
-                        : () =>
-                              widget.onRangeSelected(_rangeStart!, _rangeEnd!),
+                    onTap: () => Navigator.of(context).pop(_selectedDay),
                     child: Container(
                       width: 96,
                       height: saveRowHeight,

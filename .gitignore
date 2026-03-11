@@ -1,0 +1,3 @@
+# ignore scratch notes
+_temp_untracked/
+*.litcoffee

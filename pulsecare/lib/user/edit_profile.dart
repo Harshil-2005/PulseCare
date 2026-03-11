@@ -4,11 +4,20 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:pulsecare/constrains/primary_icon_button.dart';
+import 'package:pulsecare/constrains/schedule_date_picker_dialog.dart';
 import 'package:pulsecare/providers/repository_providers.dart';
 import 'package:pulsecare/repositories/session_repository.dart';
+import 'package:pulsecare/utils/age_dob_input.dart';
 
 class EditProfile extends ConsumerStatefulWidget {
-  const EditProfile({super.key});
+  const EditProfile({
+    super.key,
+    this.initialStep = 0,
+    this.singleStepMode = false,
+  });
+
+  final int initialStep;
+  final bool singleStepMode;
 
   @override
   ConsumerState<EditProfile> createState() => _EditProfileState();
@@ -23,6 +32,7 @@ class _EditProfileState extends ConsumerState<EditProfile> {
   late final TextEditingController ageController;
   final FocusNode _lastNameFocusNode = FocusNode();
   int _currentStep = 0;
+  DateTime? _lastDobFromInput;
   String _selectedGender = 'Female';
 
   static const List<String> _titles = [
@@ -39,7 +49,9 @@ class _EditProfileState extends ConsumerState<EditProfile> {
   }
 
   Future<void> _initialize() async {
-    _pageController = PageController();
+    _pageController = PageController(
+      initialPage: widget.singleStepMode ? 0 : widget.initialStep,
+    );
     final user = await ref
         .read(userRepositoryProvider)
         .getUserById(SessionRepository().getCurrentUserId());
@@ -50,7 +62,9 @@ class _EditProfileState extends ConsumerState<EditProfile> {
     lastNameController = TextEditingController(text: lastName);
     phoneController = TextEditingController(text: user?.phone ?? '');
     ageController = TextEditingController(text: user?.age.toString() ?? '');
+    _lastDobFromInput = user?.dateOfBirth;
     _selectedGender = user?.gender ?? 'Female';
+    _currentStep = widget.initialStep;
     if (!mounted) return;
     setState(() {
       _ready = true;
@@ -72,47 +86,22 @@ class _EditProfileState extends ConsumerState<EditProfile> {
     );
   }
 
-  DateTime? _parseTypedDob(String text) {
-    final match = RegExp(r'^(\d{2})\/(\d{2})\/(\d{4})$').firstMatch(text);
-    if (match == null) return null;
-
-    final day = int.tryParse(match.group(1)!);
-    final month = int.tryParse(match.group(2)!);
-    final year = int.tryParse(match.group(3)!);
-    if (day == null || month == null || year == null) return null;
-
-    final candidate = DateTime(year, month, day);
-    final isValidDate =
-        candidate.year == year && candidate.month == month && candidate.day == day;
-    if (!isValidDate) return null;
-
-    final now = DateTime.now();
-    if (candidate.isAfter(now) || year < 1900) return null;
-    return candidate;
-  }
-
-  int _calculateAgeFromDob(DateTime dob) {
-    final now = DateTime.now();
-    var age = now.year - dob.year;
-    final hadBirthday =
-        now.month > dob.month || (now.month == dob.month && now.day >= dob.day);
-    if (!hadBirthday) age -= 1;
-    return age;
-  }
-
-  int? _parseAgeInput(String text) {
-    final value = text.trim();
-    if (value.isEmpty) return null;
-
-    final numericAge = int.tryParse(value);
-    if (numericAge != null) {
-      if (numericAge < 1 || numericAge > 120) return null;
-      return numericAge;
+  void _onAgeChanged(String value) {
+    final dob = parseTypedDob(value.trim());
+    if (dob == null) {
+      if (int.tryParse(value.trim()) != null) {
+        _lastDobFromInput = null;
+      }
+      return;
     }
 
-    final dob = _parseTypedDob(value);
-    if (dob == null) return null;
-    return _calculateAgeFromDob(dob);
+    _lastDobFromInput = dob;
+    final age = calculateAgeFromDob(dob).toString();
+    ageController.value = TextEditingValue(
+      text: age,
+      selection: TextSelection.collapsed(offset: age.length),
+      composing: TextRange.empty,
+    );
   }
 
   Future<void> _saveCurrentStep() async {
@@ -122,7 +111,8 @@ class _EditProfileState extends ConsumerState<EditProfile> {
     if (user == null) return;
 
     if (_currentStep == 0) {
-      final fullName = '${firstNameController.text} ${lastNameController.text}'.trim();
+      final fullName = '${firstNameController.text} ${lastNameController.text}'
+          .trim();
       final updatedUser = user.copyWith(
         fullName: fullName,
         firstName: firstNameController.text.trim(),
@@ -147,17 +137,24 @@ class _EditProfileState extends ConsumerState<EditProfile> {
 
     if (_currentStep == 2) {
       final rawAge = ageController.text.trim();
-      final parsedAge = _parseAgeInput(rawAge);
+      final parsedAge = parseAgeInput(rawAge);
       if (parsedAge == null) {
         final message = rawAge.isEmpty
             ? 'Please enter your age.'
             : 'Please enter a valid age or DOB (dd/MM/yyyy).';
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(message)));
         return;
       }
-      ageController.text = parsedAge.toString();
       final updatedUser = user.copyWith(age: parsedAge);
-      await ref.read(userRepositoryProvider).updateUser(userId, updatedUser);
+      final updatedUserWithDob = updatedUser.copyWith(
+        dateOfBirth: _lastDobFromInput,
+        clearDateOfBirth: _lastDobFromInput == null,
+      );
+      await ref
+          .read(userRepositoryProvider)
+          .updateUser(userId, updatedUserWithDob);
       return;
     }
 
@@ -167,13 +164,15 @@ class _EditProfileState extends ConsumerState<EditProfile> {
 
   Future<void> _onNext() async {
     if (_currentStep == 2) {
-      final parsedAge = _parseAgeInput(ageController.text.trim());
+      final parsedAge = parseAgeInput(ageController.text.trim());
       if (parsedAge == null) {
         final raw = ageController.text.trim();
         final message = raw.isEmpty
             ? 'Please enter your age.'
             : 'Please enter a valid age or DOB (dd/MM/yyyy).';
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(message)));
         return;
       }
     }
@@ -185,6 +184,11 @@ class _EditProfileState extends ConsumerState<EditProfile> {
       disposition: UnfocusDisposition.scope,
     );
     SystemChannels.textInput.invokeMethod('TextInput.hide');
+
+    if (widget.singleStepMode) {
+      Navigator.pop(context);
+      return;
+    }
 
     if (_currentStep < 3) {
       _pageController.nextPage(
@@ -198,6 +202,11 @@ class _EditProfileState extends ConsumerState<EditProfile> {
   }
 
   void _onBack() {
+    if (widget.singleStepMode) {
+      Navigator.pop(context);
+      return;
+    }
+
     if (_currentStep == 0) {
       Navigator.pop(context);
       return;
@@ -289,12 +298,11 @@ class _EditProfileState extends ConsumerState<EditProfile> {
         TextField(
           controller: firstNameController,
           textInputAction: TextInputAction.next,
-          onSubmitted: (_) => FocusScope.of(context).requestFocus(_lastNameFocusNode),
-          onChanged: (value) => _autoCapitalizeFirstLetter(firstNameController, value),
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-          ),
+          onSubmitted: (_) =>
+              FocusScope.of(context).requestFocus(_lastNameFocusNode),
+          onChanged: (value) =>
+              _autoCapitalizeFirstLetter(firstNameController, value),
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
           decoration: InputDecoration(
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(30),
@@ -320,11 +328,9 @@ class _EditProfileState extends ConsumerState<EditProfile> {
           controller: lastNameController,
           focusNode: _lastNameFocusNode,
           textInputAction: TextInputAction.done,
-          onChanged: (value) => _autoCapitalizeFirstLetter(lastNameController, value),
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-          ),
+          onChanged: (value) =>
+              _autoCapitalizeFirstLetter(lastNameController, value),
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
           decoration: InputDecoration(
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(30),
@@ -356,7 +362,10 @@ class _EditProfileState extends ConsumerState<EditProfile> {
                     Center(
                       child: Text(
                         'Update Your Age',
-                        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 24),
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 24,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -390,20 +399,21 @@ class _EditProfileState extends ConsumerState<EditProfile> {
         TextField(
           controller: ageController,
           keyboardType: TextInputType.datetime,
+          inputFormatters: [AgeOrDobInputFormatter()],
+          onChanged: _onAgeChanged,
           onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
           decoration: InputDecoration(
+            hintText: 'Enter age or DOB',
             suffixIcon: InkWell(
               onTap: () async {
                 final now = DateTime.now();
-                final typedAge = int.tryParse(ageController.text.trim());
-                final typedDob = _parseTypedDob(ageController.text.trim());
-                final initialDate =
-                    typedDob ??
-                    ((typedAge != null && typedAge >= 1 && typedAge <= 120)
-                        ? DateTime(now.year - typedAge, now.month, now.day)
-                        : DateTime(now.year - 20, now.month, now.day));
+                final initialDate = resolveAgePickerInitialDate(
+                  ageController.text,
+                  lastDobFromInput: _lastDobFromInput,
+                  now: now,
+                );
 
-                final pickedDate = await showDatePicker(
+                final pickedDate = await showScheduleDatePicker(
                   context: context,
                   initialDate: initialDate,
                   firstDate: DateTime(1900),
@@ -411,7 +421,8 @@ class _EditProfileState extends ConsumerState<EditProfile> {
                 );
                 if (!mounted) return;
                 if (pickedDate == null) return;
-                ageController.text = _calculateAgeFromDob(pickedDate).toString();
+                _lastDobFromInput = pickedDate;
+                ageController.text = calculateAgeFromDob(pickedDate).toString();
               },
               child: Padding(
                 padding: const EdgeInsets.all(12),
@@ -456,7 +467,10 @@ class _EditProfileState extends ConsumerState<EditProfile> {
                     Center(
                       child: Text(
                         'Update your phone',
-                        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 24),
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 24,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -582,7 +596,10 @@ class _EditProfileState extends ConsumerState<EditProfile> {
                     Center(
                       child: Text(
                         'Select Gender',
-                        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 24),
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 24,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -623,71 +640,87 @@ class _EditProfileState extends ConsumerState<EditProfile> {
     if (!_ready) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
-    return Scaffold(
-      resizeToAvoidBottomInset: true,
-      appBar: AppBar(
-        leadingWidth: 40,
-        titleSpacing: 0,
-        toolbarHeight: 85,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
-        ),
-        elevation: 0.3,
-        title: Center(
-          child: Text(
-            _titles[_currentStep],
+    final allPages = List.generate(4, _buildStep);
+    final visiblePages = widget.singleStepMode
+        ? [allPages[widget.initialStep]]
+        : allPages;
+
+    return WillPopScope(
+      onWillPop: () async {
+        _onBack();
+        return false;
+      },
+      child: Scaffold(
+        resizeToAvoidBottomInset: true,
+        appBar: AppBar(
+          leadingWidth: 40,
+          titleSpacing: 0,
+          toolbarHeight: 85,
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
+          ),
+          elevation: 0.3,
+          centerTitle: true,
+          title: Text(
+            widget.singleStepMode
+                ? _titles[widget.initialStep]
+                : _titles[_currentStep],
             style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
           ),
-        ),
-        shadowColor: Colors.black,
-        automaticallyImplyLeading: true,
-        leading: IconButton(
-          onPressed: _onBack,
-          icon: SvgPicture.asset(
-            'assets/icons/backarrow.svg',
-            width: 24,
-            height: 20,
+          shadowColor: Colors.black,
+          leading: IconButton(
+            onPressed: _onBack,
+            icon: SvgPicture.asset(
+              'assets/icons/backarrow.svg',
+              width: 24,
+              height: 20,
+            ),
           ),
         ),
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: PageView(
-              controller: _pageController,
-              physics: const NeverScrollableScrollPhysics(),
-              onPageChanged: (index) {
-                setState(() {
-                  _currentStep = index;
-                });
-              },
-              children: List.generate(
-                4,
-                (index) => SingleChildScrollView(
-                  keyboardDismissBehavior:
-                      ScrollViewKeyboardDismissBehavior.onDrag,
-                  padding: EdgeInsets.only(
-                    top: 30,
-                    left: 16,
-                    right: 16,
-                    bottom: MediaQuery.of(context).viewInsets.bottom + 40,
-                  ),
-                  child: _buildStep(index),
-                ),
+        body: Column(
+          children: [
+            Expanded(
+              child: PageView(
+                controller: _pageController,
+                physics: const NeverScrollableScrollPhysics(),
+                onPageChanged: (index) {
+                  if (!widget.singleStepMode) {
+                    setState(() {
+                      _currentStep = index;
+                    });
+                  }
+                },
+                children: visiblePages.map((page) {
+                  return SingleChildScrollView(
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
+                    padding: EdgeInsets.only(
+                      top: 30,
+                      left: 16,
+                      right: 16,
+                      bottom: MediaQuery.of(context).viewInsets.bottom + 40,
+                    ),
+                    child: page,
+                  );
+                }).toList(),
               ),
             ),
-          ),
-          
-          Padding(
-            padding: const EdgeInsets.only(bottom: 50, top: 12, left: 16, right: 16),
-            child: PrimaryIconButton(
-              text: 'Save Changes',
-              iconPath: 'assets/icons/save.svg',
-          onTap: () => _onNext(),
-              height: 60,
+            Padding(
+              padding: const EdgeInsets.only(
+                left: 16,
+                right: 16,
+                bottom: 50,
+                top: 12,
+              ),
+              child: PrimaryIconButton(
+                text: 'Save Changes',
+                iconPath: 'assets/icons/save.svg',
+                onTap: () => _onNext(),
+                height: 60,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:intl/intl.dart';
+import 'package:pulsecare/constrains/schedule_date_picker_dialog.dart';
 import 'package:pulsecare/model/appointment_model.dart';
 import 'package:pulsecare/model/doctor_availability.dart';
 import 'package:pulsecare/model/report_model.dart';
@@ -156,9 +157,11 @@ class _DateTimeScreenState extends ConsumerState<DateTimeScreen> {
     await _loadSlotsForDate(pickedDate, triggerSetState: false);
 
     if (_isSameDay(pickedDate, now) && !_hasAnyFutureSlotForToday(now)) {
-      finalDate = DateTime(now.year, now.month, now.day).add(
-        const Duration(days: 1),
-      );
+      finalDate = DateTime(
+        now.year,
+        now.month,
+        now.day,
+      ).add(const Duration(days: 1));
       await _loadSlotsForDate(finalDate, triggerSetState: false);
     }
 
@@ -438,7 +441,7 @@ class _DateTimeScreenState extends ConsumerState<DateTimeScreen> {
                         initialDate = DateTime.now();
                       }
 
-                      DateTime? picked = await showDatePicker(
+                      DateTime? picked = await showScheduleDatePicker(
                         context: context,
                         initialDate: initialDate,
                         firstDate: DateTime.now(),
@@ -448,7 +451,9 @@ class _DateTimeScreenState extends ConsumerState<DateTimeScreen> {
 
                       if (picked != null) {
                         setState(() {
-                          selectedDate = DateFormat('dd/MM/yyyy').format(picked);
+                          selectedDate = DateFormat(
+                            'dd/MM/yyyy',
+                          ).format(picked);
                           _dateController.text = selectedDate;
                         });
                         unawaited(_setSelectedDateWithAutoShift(picked));
@@ -528,12 +533,13 @@ class _DateTimeScreenState extends ConsumerState<DateTimeScreen> {
                             shrinkWrap: true,
                             physics: NeverScrollableScrollPhysics(),
                             itemCount: morningSlots.length,
-                            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 3,
-                              mainAxisSpacing: 12,
-                              crossAxisSpacing: 12,
-                              childAspectRatio: 110 / 45,
-                            ),
+                            gridDelegate:
+                                SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 3,
+                                  mainAxisSpacing: 12,
+                                  crossAxisSpacing: 12,
+                                  childAspectRatio: 110 / 45,
+                                ),
                             itemBuilder: (context, index) {
                               return InkWell(
                                 onTap: () => onSlotTap(morningSlots[index]),
@@ -560,12 +566,13 @@ class _DateTimeScreenState extends ConsumerState<DateTimeScreen> {
                             shrinkWrap: true,
                             physics: NeverScrollableScrollPhysics(),
                             itemCount: afternoonSlots.length,
-                            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 3,
-                              mainAxisSpacing: 12,
-                              crossAxisSpacing: 12,
-                              childAspectRatio: 110 / 45,
-                            ),
+                            gridDelegate:
+                                SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 3,
+                                  mainAxisSpacing: 12,
+                                  crossAxisSpacing: 12,
+                                  childAspectRatio: 110 / 45,
+                                ),
                             itemBuilder: (context, index) {
                               return InkWell(
                                 onTap: () => onSlotTap(afternoonSlots[index]),
@@ -602,7 +609,9 @@ class _DateTimeScreenState extends ConsumerState<DateTimeScreen> {
                                   SizedBox(width: 3),
                                   Text(
                                     'Available',
-                                    style: TextStyle(color: Colors.grey.shade400),
+                                    style: TextStyle(
+                                      color: Colors.grey.shade400,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -623,7 +632,9 @@ class _DateTimeScreenState extends ConsumerState<DateTimeScreen> {
                                   SizedBox(width: 3),
                                   Text(
                                     'Selected',
-                                    style: TextStyle(color: Colors.grey.shade400),
+                                    style: TextStyle(
+                                      color: Colors.grey.shade400,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -644,7 +655,9 @@ class _DateTimeScreenState extends ConsumerState<DateTimeScreen> {
                                   SizedBox(width: 3),
                                   Text(
                                     'Booked',
-                                    style: TextStyle(color: Colors.grey.shade400),
+                                    style: TextStyle(
+                                      color: Colors.grey.shade400,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -658,7 +671,12 @@ class _DateTimeScreenState extends ConsumerState<DateTimeScreen> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.only(top: 24, left: 16, right: 16,bottom: 16),
+              padding: const EdgeInsets.only(
+                top: 24,
+                left: 16,
+                right: 16,
+                bottom: 16,
+              ),
               child: Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(35),
@@ -730,7 +748,9 @@ class _DateTimeScreenState extends ConsumerState<DateTimeScreen> {
 
                     // ✅ Create Appointment
                     // 🔁 If rescheduling
-                    final appointmentRepository = ref.read(appointmentRepositoryProvider);
+                    final appointmentRepository = ref.read(
+                      appointmentRepositoryProvider,
+                    );
                     final userRepository = ref.read(userRepositoryProvider);
                     final currentUser = await userRepository.getUserById(
                       SessionRepository().getCurrentUserId(),
@@ -748,8 +768,7 @@ class _DateTimeScreenState extends ConsumerState<DateTimeScreen> {
                         newTime: selectedTime,
                       );
                       if (!mounted) return;
-                    }
-                    else {
+                    } else {
                       await appointmentRepository.createAppointment(
                         doctorId: widget.doctorId,
                         userId: currentUser?.id ?? '',
@@ -846,5 +865,3 @@ Widget timeSlotItem(TimeSlot slot) {
     ),
   );
 }
-
-

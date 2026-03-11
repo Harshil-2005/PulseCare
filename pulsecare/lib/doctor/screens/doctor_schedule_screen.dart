@@ -12,10 +12,6 @@ import 'package:pulsecare/providers/session_provider.dart';
 
 final _doctorScheduleDoctorProvider = StreamProvider.autoDispose
     .family<Doctor?, String>((ref, userId) {
-      final link = ref.keepAlive();
-      ref.onDispose(() {
-        link.close();
-      });
       final doctorRepository = ref.watch(doctorRepositoryProvider);
       return doctorRepository.watchDoctorByUserId(userId);
     });

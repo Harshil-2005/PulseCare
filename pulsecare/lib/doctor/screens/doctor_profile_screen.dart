@@ -7,9 +7,6 @@ import 'package:pulsecare/doctor/doctor_full_edit_flow_screen.dart';
 import 'package:pulsecare/doctor/screens/edit_about_screen.dart';
 import 'package:pulsecare/providers/session_provider.dart';
 import 'package:pulsecare/repositories/session_repository.dart';
-import 'package:pulsecare/user/edit_age.dart';
-import 'package:pulsecare/user/edit_gender.dart';
-import 'package:pulsecare/user/edit_phone.dart';
 import '../../providers/repository_providers.dart';
 
 final _doctorProfileDoctorProvider = StreamProvider.autoDispose.family((
@@ -51,21 +48,36 @@ class _DoctorProfileScreenState extends ConsumerState<DoctorProfileScreen> {
     String? value,
     VoidCallback? onTap,
     Color? iconColor,
+    double iconSize = 22,
+    bool emboldenIcon = false,
     bool showDivider = true,
   }) {
+    final icon = SvgPicture.asset(
+      iconPath,
+      width: iconSize,
+      height: iconSize,
+      fit: BoxFit.contain,
+      colorFilter: iconColor == null
+          ? null
+          : ColorFilter.mode(iconColor, BlendMode.srcIn),
+    );
+
     final row = Row(
       children: [
         CircleAvatar(
           backgroundColor: const Color.fromARGB(255, 196, 209, 255),
-          child: SvgPicture.asset(
-            iconPath,
-            width: 22,
-            height: 22,
-            fit: BoxFit.contain,
-            colorFilter: iconColor == null
-                ? null
-                : ColorFilter.mode(iconColor, BlendMode.srcIn),
-          ),
+          child: emboldenIcon
+              ? Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    icon,
+                    Transform.translate(
+                      offset: const Offset(0.35, 0),
+                      child: icon,
+                    ),
+                  ],
+                )
+              : icon,
         ),
         const SizedBox(width: 12),
         Text(
@@ -272,7 +284,11 @@ class _DoctorProfileScreenState extends ConsumerState<DoctorProfileScreen> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (_) => const EditPhone(),
+                                  builder: (_) =>
+                                      const DoctorFullEditFlowScreen(
+                                        initialStep: 1,
+                                        singleStepMode: true,
+                                      ),
                                 ),
                               );
                             },
@@ -285,7 +301,11 @@ class _DoctorProfileScreenState extends ConsumerState<DoctorProfileScreen> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (_) => const EditAge(),
+                                  builder: (_) =>
+                                      const DoctorFullEditFlowScreen(
+                                        initialStep: 2,
+                                        singleStepMode: true,
+                                      ),
                                 ),
                               );
                             },
@@ -298,7 +318,11 @@ class _DoctorProfileScreenState extends ConsumerState<DoctorProfileScreen> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (_) => const EditGender(),
+                                  builder: (_) =>
+                                      const DoctorFullEditFlowScreen(
+                                        initialStep: 3,
+                                        singleStepMode: true,
+                                      ),
                                 ),
                               );
                             },
@@ -396,6 +420,9 @@ class _DoctorProfileScreenState extends ConsumerState<DoctorProfileScreen> {
                             iconPath: 'assets/icons/about.svg',
                             title: 'About',
                             value: doctor.about,
+                            iconSize: 24,
+                            iconColor: const Color(0xff3F67FD),
+                            emboldenIcon: true,
                             onTap: () {
                               Navigator.push(
                                 context,

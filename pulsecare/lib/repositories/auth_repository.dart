@@ -33,9 +33,13 @@ class AuthRepository {
   Future<void> deleteAuthAccount() async {
     try {
       final user = FirebaseAuth.instance.currentUser;
-      if (user != null) {
-        await user.delete();
+      if (user == null) {
+        throw FirebaseAuthException(
+          code: 'no-current-user',
+          message: 'No authenticated user found for account deletion.',
+        );
       }
+      await user.delete();
     } on FirebaseAuthException catch (e) {
       if (e.code == 'requires-recent-login') {
         rethrow;

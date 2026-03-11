@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
+import 'package:pulsecare/constrains/schedule_date_picker_dialog.dart';
 import 'package:pulsecare/constrains/next_action_button.dart';
 import 'package:pulsecare/doctor/doctor_onboarding_screen.dart';
 import 'package:pulsecare/model/user_model.dart';
@@ -55,13 +56,15 @@ class AccountSetupFlowScreen extends ConsumerStatefulWidget {
       _AccountSetupFlowScreenState();
 }
 
-class _AccountSetupFlowScreenState extends ConsumerState<AccountSetupFlowScreen> {
+class _AccountSetupFlowScreenState
+    extends ConsumerState<AccountSetupFlowScreen> {
   final PageController _pageController = PageController();
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _ageController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
 
   int _currentPage = 0;
+  DateTime? _selectedDob;
   String _selectedGender = 'Female';
   String _selectedRole = 'Patient';
 
@@ -87,13 +90,14 @@ class _AccountSetupFlowScreenState extends ConsumerState<AccountSetupFlowScreen>
     if (_currentPage == 2) {
       final rawAge = _ageController.text.trim();
       final parsedAge = _parseAgeInput(rawAge);
+      _selectedDob = _parseTypedDob(rawAge);
       if (parsedAge == null) {
         final message = rawAge.isEmpty
             ? 'Please enter your age.'
             : 'Please enter a valid age or DOB (dd/MM/yyyy).';
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(message)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(message)));
         return;
       }
       _ageController.text = parsedAge.toString();
@@ -118,7 +122,10 @@ class _AccountSetupFlowScreenState extends ConsumerState<AccountSetupFlowScreen>
 
     final userRepository = ref.read(userRepositoryProvider);
     final fullName = _nameController.text.trim();
-    final parts = fullName.split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+    final parts = fullName
+        .split(RegExp(r'\s+'))
+        .where((p) => p.isNotEmpty)
+        .toList();
     final firstName = parts.isNotEmpty ? parts.first : '';
     final lastName = parts.length > 1 ? parts.sublist(1).join(' ') : '';
     final sessionRepository = SessionRepository();
@@ -138,6 +145,7 @@ class _AccountSetupFlowScreenState extends ConsumerState<AccountSetupFlowScreen>
       lastName: lastName,
       email: firebase_auth.FirebaseAuth.instance.currentUser?.email ?? '',
       phone: _phoneController.text.trim(),
+      dateOfBirth: _selectedDob,
       age: int.parse(_ageController.text),
       gender: _selectedGender,
       role: _selectedRole == 'Doctor' ? 'doctor' : 'patient',
@@ -149,9 +157,7 @@ class _AccountSetupFlowScreenState extends ConsumerState<AccountSetupFlowScreen>
     if (_selectedRole == 'Doctor') {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(
-          builder: (_) => const DoctorAccountSetupFlowScreen(),
-        ),
+        MaterialPageRoute(builder: (_) => const DoctorAccountSetupFlowScreen()),
       );
       return;
     }
@@ -196,7 +202,9 @@ class _AccountSetupFlowScreenState extends ConsumerState<AccountSetupFlowScreen>
 
     final candidate = DateTime(year, month, day);
     final isValidDate =
-        candidate.year == year && candidate.month == month && candidate.day == day;
+        candidate.year == year &&
+        candidate.month == month &&
+        candidate.day == day;
     if (!isValidDate) return null;
 
     final now = DateTime.now();
@@ -228,18 +236,6 @@ class _AccountSetupFlowScreenState extends ConsumerState<AccountSetupFlowScreen>
     return _calculateAgeFromDob(dob);
   }
 
-  void _onAgeFieldChanged(String value) {
-    final dob = _parseTypedDob(value.trim());
-    if (dob == null) return;
-
-    final age = _calculateAgeFromDob(dob).toString();
-    _ageController.value = TextEditingValue(
-      text: age,
-      selection: TextSelection.collapsed(offset: age.length),
-      composing: TextRange.empty,
-    );
-  }
-
   Widget _textFieldStep({
     required String label,
     required String hintText,
@@ -247,6 +243,8 @@ class _AccountSetupFlowScreenState extends ConsumerState<AccountSetupFlowScreen>
     TextInputType? keyboardType,
     String? suffixIconPath,
     VoidCallback? onSuffixTap,
+    VoidCallback? onTap,
+    bool readOnly = false,
     List<TextInputFormatter>? inputFormatters,
     ValueChanged<String>? onChanged,
   }) {
@@ -261,6 +259,8 @@ class _AccountSetupFlowScreenState extends ConsumerState<AccountSetupFlowScreen>
         TextField(
           controller: controller,
           keyboardType: keyboardType,
+          readOnly: readOnly,
+          onTap: onTap,
           inputFormatters: inputFormatters,
           onChanged: onChanged,
           onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
@@ -377,34 +377,37 @@ class _AccountSetupFlowScreenState extends ConsumerState<AccountSetupFlowScreen>
           keyboardType: TextInputType.phone,
         );
       case 2:
+        Future<void> openAgeCalendar() async {
+          final now = DateTime.now();
+          final typedAge = int.tryParse(_ageController.text.trim());
+          final typedDob = _parseTypedDob(_ageController.text.trim());
+          final initialDate =
+              typedDob ??
+              ((typedAge != null && typedAge >= 1 && typedAge <= 120)
+                  ? DateTime(now.year - typedAge, now.month, now.day)
+                  : DateTime(now.year - 20, now.month, now.day));
+          final pickedDate = await showScheduleDatePicker(
+            context: context,
+            initialDate: initialDate,
+            firstDate: DateTime(1900),
+            lastDate: now,
+          );
+          if (!mounted) return;
+
+          if (pickedDate == null) return;
+          _selectedDob = pickedDate;
+          _ageController.text = _calculateAgeFromDob(pickedDate).toString();
+        }
+
         return _textFieldStep(
           label: 'Age',
           hintText: 'Enter age or DOB',
           controller: _ageController,
           keyboardType: TextInputType.datetime,
-          inputFormatters: [AgeOrDobInputFormatter()],
-          onChanged: _onAgeFieldChanged,
+          readOnly: true,
+          onTap: openAgeCalendar,
           suffixIconPath: 'assets/icons/calender.svg',
-          onSuffixTap: () async {
-            final now = DateTime.now();
-            final typedAge = int.tryParse(_ageController.text.trim());
-            final typedDob = _parseTypedDob(_ageController.text.trim());
-            final initialDate =
-                typedDob ??
-                ((typedAge != null && typedAge >= 1 && typedAge <= 120)
-                    ? DateTime(now.year - typedAge, now.month, now.day)
-                    : DateTime(now.year - 20, now.month, now.day));
-            final pickedDate = await showDatePicker(
-              context: context,
-              initialDate: initialDate,
-              firstDate: DateTime(1900),
-              lastDate: now,
-            );
-            if (!mounted) return;
-
-            if (pickedDate == null) return;
-            _ageController.text = _calculateAgeFromDob(pickedDate).toString();
-          },
+          onSuffixTap: openAgeCalendar,
         );
       case 3:
         return Column(

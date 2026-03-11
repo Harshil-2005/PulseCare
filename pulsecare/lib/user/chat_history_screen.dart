@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:intl/intl.dart';
+import 'package:pulsecare/constrains/schedule_date_picker_dialog.dart';
 import 'package:pulsecare/model/chat_history_entry.dart';
 import 'package:pulsecare/repositories/chat_repository.dart';
 import 'package:pulsecare/repositories/session_repository.dart';
@@ -141,8 +142,25 @@ class _ChatHistoryScreenState extends ConsumerState<ChatHistoryScreen> {
                     )
                     .reduce((a, b) => a.isBefore(b) ? a : b);
 
+                final latest = _entries
+                    .map(
+                      (e) => DateTime(
+                        e.createdAt.year,
+                        e.createdAt.month,
+                        e.createdAt.day,
+                      ),
+                    )
+                    .reduce((a, b) => a.isAfter(b) ? a : b);
+
+                final hasChatToday = _entries.any(
+                  (entry) =>
+                      entry.createdAt.year == today.year &&
+                      entry.createdAt.month == today.month &&
+                      entry.createdAt.day == today.day,
+                );
+
                 final initial = _selectedDate == null
-                    ? today
+                    ? (hasChatToday ? today : latest)
                     : DateTime(
                         _selectedDate!.year,
                         _selectedDate!.month,
@@ -153,7 +171,7 @@ class _ChatHistoryScreenState extends ConsumerState<ChatHistoryScreen> {
                     ? oldest
                     : (initial.isAfter(today) ? today : initial);
 
-                final picked = await showDatePicker(
+                final picked = await showScheduleDatePicker(
                   context: context,
                   initialDate: clampedInitial,
                   firstDate: oldest,

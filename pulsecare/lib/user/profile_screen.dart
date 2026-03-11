@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:pulsecare/auth/auth_screen.dart';
 import 'package:pulsecare/constrains/logout_delete.dart';
 import 'package:pulsecare/providers/repository_providers.dart';
 import 'package:pulsecare/providers/session_provider.dart';
 import 'package:pulsecare/repositories/session_repository.dart';
-import 'package:pulsecare/user/edit_age.dart';
-import 'package:pulsecare/user/edit_gender.dart';
-import 'package:pulsecare/user/edit_phone.dart';
 import 'package:pulsecare/user/edit_profile.dart';
 
 final _profileUserProvider = StreamProvider.autoDispose.family((
@@ -86,7 +84,10 @@ class ProfileScreen extends ConsumerWidget {
                             await Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => EditProfile(),
+                                builder: (context) => const EditProfile(
+                                  initialStep: 0,
+                                  singleStepMode: false,
+                                ),
                               ),
                             );
                             ref.invalidate(_profileUserProvider(userId));
@@ -151,7 +152,10 @@ class ProfileScreen extends ConsumerWidget {
                               await Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (_) => const EditPhone(),
+                                  builder: (_) => const EditProfile(
+                                    initialStep: 1,
+                                    singleStepMode: true,
+                                  ),
                                 ),
                               );
                               ref.invalidate(_profileUserProvider(userId));
@@ -201,7 +205,10 @@ class ProfileScreen extends ConsumerWidget {
                               await Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (_) => const EditAge(),
+                                  builder: (_) => const EditProfile(
+                                    initialStep: 2,
+                                    singleStepMode: true,
+                                  ),
                                 ),
                               );
                               ref.invalidate(_profileUserProvider(userId));
@@ -252,7 +259,10 @@ class ProfileScreen extends ConsumerWidget {
                               await Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (_) => const EditGender(),
+                                  builder: (_) => const EditProfile(
+                                    initialStep: 3,
+                                    singleStepMode: true,
+                                  ),
                                 ),
                               );
                               ref.invalidate(_profileUserProvider(userId));
@@ -498,6 +508,12 @@ class ProfileScreen extends ConsumerWidget {
                                       sessionRepository: sessionRepository,
                                     );
                                     if (!loadingContext.mounted) return;
+                                    ref
+                                            .read(
+                                              sessionUserIdProvider.notifier,
+                                            )
+                                            .state =
+                                        null;
                                     Navigator.of(loadingContext).pop();
                                     Navigator.of(
                                       loadingContext,
@@ -506,6 +522,18 @@ class ProfileScreen extends ConsumerWidget {
                                         builder: (_) => const AuthScreen(),
                                       ),
                                       (route) => false,
+                                    );
+                                  } on FirebaseAuthException catch (e) {
+                                    if (!loadingContext.mounted) return;
+                                    Navigator.of(loadingContext).pop();
+                                    final message =
+                                        e.code == 'requires-recent-login'
+                                        ? 'For security, please log in again and then delete your account.'
+                                        : 'Unable to delete account. Please try again.';
+                                    ScaffoldMessenger.of(
+                                      loadingContext,
+                                    ).showSnackBar(
+                                      SnackBar(content: Text(message)),
                                     );
                                   } catch (_) {
                                     if (!loadingContext.mounted) return;
