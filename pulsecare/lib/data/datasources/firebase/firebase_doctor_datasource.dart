@@ -4,7 +4,7 @@ import 'package:pulsecare/model/doctor_model.dart';
 
 class FirebaseDoctorDataSource implements DoctorDataSource {
   FirebaseDoctorDataSource({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+    : _firestore = firestore ?? FirebaseFirestore.instance;
 
   final FirebaseFirestore _firestore;
 
@@ -28,22 +28,21 @@ class FirebaseDoctorDataSource implements DoctorDataSource {
 
   @override
   Future<Doctor?> getByUserId(String userId) async {
-    final snapshot = await _doctors.where('userId', isEqualTo: userId).limit(1).get();
+    final snapshot = await _doctors
+        .where('userId', isEqualTo: userId)
+        .limit(1)
+        .get();
     if (snapshot.docs.isEmpty) return null;
     return Doctor.fromJson(_normalizeMap(snapshot.docs.first.data()));
   }
 
   @override
   Stream<Doctor?> watchById(String id) {
-    return _firestore
-        .collection('doctors')
-        .doc(id)
-        .snapshots()
-        .map((doc) {
-          final data = doc.data();
-          if (data == null) return null;
-          return Doctor.fromJson(_normalizeMap(data));
-        });
+    return _firestore.collection('doctors').doc(id).snapshots().map((doc) {
+      final data = doc.data();
+      if (data == null) return null;
+      return Doctor.fromJson(_normalizeMap(data));
+    });
   }
 
   @override
@@ -62,10 +61,18 @@ class FirebaseDoctorDataSource implements DoctorDataSource {
   Stream<List<Doctor>> watchAll() {
     return _firestore
         .collection('doctors')
+        .orderBy('rating', descending: true)
+        .orderBy('patients', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => Doctor.fromJson(_normalizeMap(doc.data())))
-            .toList(growable: false));
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) {
+                final data = doc.data();
+                data['id'] = doc.id;
+                return Doctor.fromJson(_normalizeMap(data));
+              })
+              .toList(growable: false),
+        );
   }
 
   @override
@@ -83,12 +90,9 @@ class FirebaseDoctorDataSource implements DoctorDataSource {
 
   @override
   Future<void> incrementPatients(String doctorId) async {
-    await _doctors.doc(doctorId).set(
-      {
-        'patients': FieldValue.increment(1),
-      },
-      SetOptions(merge: true),
-    );
+    await _doctors.doc(doctorId).set({
+      'patients': FieldValue.increment(1),
+    }, SetOptions(merge: true));
   }
 
   @override
@@ -105,14 +109,11 @@ class FirebaseDoctorDataSource implements DoctorDataSource {
     required int reviews,
     required double ratingTotal,
   }) async {
-    await _doctors.doc(doctorId).set(
-      {
-        'rating': rating,
-        'reviews': reviews,
-        'ratingTotal': ratingTotal,
-      },
-      SetOptions(merge: true),
-    );
+    await _doctors.doc(doctorId).set({
+      'rating': rating,
+      'reviews': reviews,
+      'ratingTotal': ratingTotal,
+    }, SetOptions(merge: true));
   }
 
   Future<_DoctorRatingStats> getRatingStats(String doctorId) async {
@@ -138,10 +139,14 @@ class FirebaseDoctorDataSource implements DoctorDataSource {
     final map = Map<String, dynamic>.from(raw);
     map['id'] = (map['id'] ?? '').toString();
     if (map['createdAt'] is Timestamp) {
-      map['createdAt'] = (map['createdAt'] as Timestamp).toDate().toIso8601String();
+      map['createdAt'] = (map['createdAt'] as Timestamp)
+          .toDate()
+          .toIso8601String();
     }
     if (map['updatedAt'] is Timestamp) {
-      map['updatedAt'] = (map['updatedAt'] as Timestamp).toDate().toIso8601String();
+      map['updatedAt'] = (map['updatedAt'] as Timestamp)
+          .toDate()
+          .toIso8601String();
     }
     return map;
   }
