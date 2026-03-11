@@ -16,7 +16,10 @@ class _DashboardIdentity {
   final dynamic user;
 }
 
-final _dashboardIdentityProvider = StreamProvider.autoDispose.family((ref, String currentUserId) {
+final _dashboardIdentityProvider = StreamProvider.autoDispose.family((
+  ref,
+  String currentUserId,
+) {
   return ref
       .read(doctorRepositoryProvider)
       .watchDoctorByUserId(currentUserId)
@@ -24,9 +27,9 @@ final _dashboardIdentityProvider = StreamProvider.autoDispose.family((ref, Strin
         if (doctor == null) {
           return const _DashboardIdentity(doctor: null, user: null);
         }
-        final user = await ref.read(userRepositoryProvider).getUserById(
-          doctor.userId,
-        );
+        final user = await ref
+            .read(userRepositoryProvider)
+            .getUserById(doctor.userId);
         return _DashboardIdentity(doctor: doctor, user: user);
       });
 });
@@ -41,8 +44,7 @@ class DoctorDashboardScreen extends ConsumerStatefulWidget {
   });
 
   final List<Appointment> appointments;
-  final void Function(Appointment, AppointmentStatus)?
-  onStatusChanged;
+  final void Function(Appointment, AppointmentStatus)? onStatusChanged;
   final VoidCallback? onViewAppointments;
   final void Function(int filterIndex)? onStatTap;
 
@@ -89,15 +91,46 @@ class _DoctorDashboardScreenState extends ConsumerState<DoctorDashboardScreen> {
       .where((a) => a.status == AppointmentStatus.cancelled)
       .length;
 
+  int _statusPriority(AppointmentStatus status) {
+    switch (status) {
+      case AppointmentStatus.pending:
+        return 0;
+      case AppointmentStatus.confirmed:
+        return 1;
+      case AppointmentStatus.completed:
+        return 2;
+      case AppointmentStatus.cancelled:
+        return 3;
+    }
+  }
+
+  List<Appointment> get _sortedAppointments {
+    final sorted = [...widget.appointments];
+    sorted.sort((a, b) {
+      final statusCompare = _statusPriority(
+        a.status,
+      ).compareTo(_statusPriority(b.status));
+      if (statusCompare != 0) {
+        return statusCompare;
+      }
+
+      final isUpcoming =
+          a.status == AppointmentStatus.pending ||
+          a.status == AppointmentStatus.confirmed;
+      return isUpcoming
+          ? a.scheduledAt.compareTo(b.scheduledAt)
+          : b.scheduledAt.compareTo(a.scheduledAt);
+    });
+    return sorted;
+  }
+
   @override
   Widget build(BuildContext context) {
     final userId = ref.watch(sessionUserIdProvider);
     if (userId == null) {
       return const SizedBox.shrink();
     }
-    final identityAsync = ref.watch(
-      _dashboardIdentityProvider(userId),
-    );
+    final identityAsync = ref.watch(_dashboardIdentityProvider(userId));
     if (identityAsync.isLoading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
@@ -138,10 +171,10 @@ class _DoctorDashboardScreenState extends ConsumerState<DoctorDashboardScreen> {
 
     final firstName = user?.firstName.trim() ?? '';
     final lastName = user?.lastName.trim() ?? '';
-    final fullName = [firstName, lastName]
-        .where((part) => part.isNotEmpty)
-        .join(' ')
-        .trim();
+    final fullName = [
+      firstName,
+      lastName,
+    ].where((part) => part.isNotEmpty).join(' ').trim();
     final fallbackName = (currentDoctor?.name.trim() ?? '').isNotEmpty
         ? (currentDoctor!.name.trim().startsWith('Dr.')
               ? currentDoctor.name.trim()
@@ -156,97 +189,101 @@ class _DoctorDashboardScreenState extends ConsumerState<DoctorDashboardScreen> {
 
     return Scaffold(
       body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(height: topSpacing),
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-              child: Row(
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Hi, $doctorName',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 24,
-                        ),
-                      ),
-                      Text(
-                        'Here is your schedule overview',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w400,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Spacer(),
-                  InkWell(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          settings: const RouteSettings(name: '/doctorProfile'),
-                          builder: (_) => DoctorProfileScreen(
-                            doctorId: currentDoctor?.id ?? '',
+        child: CustomScrollView(
+          slivers: [
+            SliverToBoxAdapter(child: SizedBox(height: topSpacing)),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                child: Row(
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Hi, $doctorName',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 24,
                           ),
                         ),
-                      );
-                    },
-                    child: CircleAvatar(
-                      radius: 28,
-                      backgroundColor: Color.fromARGB(255, 210, 219, 255),
-                      child: SvgPicture.asset(
-                        'assets/icons/Avatar.svg',
-                        width: 28,
-                        height: 28,
+                        Text(
+                          'Here is your schedule overview',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w400,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Spacer(),
+                    InkWell(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            settings: const RouteSettings(
+                              name: '/doctorProfile',
+                            ),
+                            builder: (_) => DoctorProfileScreen(
+                              doctorId: currentDoctor?.id ?? '',
+                            ),
+                          ),
+                        );
+                      },
+                      child: CircleAvatar(
+                        radius: 28,
+                        backgroundColor: Color.fromARGB(255, 210, 219, 255),
+                        child: SvgPicture.asset(
+                          'assets/icons/Avatar.svg',
+                          width: 28,
+                          height: 28,
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-            SizedBox(height: sectionGap),
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-              child: _TodayScheduleCard(
-                isCompact: isCompact,
-                totalAppointments: totalAppointments,
-                pendingCount: pendingCount,
-                confirmedCount: confirmedCount,
-                completedCount: completedCount,
-                cancelledCount: cancelledCount,
-                onViewAppointments: widget.onViewAppointments ?? () {},
-                onStatTap: widget.onStatTap,
+            SliverToBoxAdapter(child: SizedBox(height: sectionGap)),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                child: _TodayScheduleCard(
+                  isCompact: isCompact,
+                  totalAppointments: totalAppointments,
+                  pendingCount: pendingCount,
+                  confirmedCount: confirmedCount,
+                  completedCount: completedCount,
+                  cancelledCount: cancelledCount,
+                  onViewAppointments: widget.onViewAppointments ?? () {},
+                  onStatTap: widget.onStatTap,
+                ),
               ),
             ),
-            SizedBox(height: sectionGap),
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-              child: Text(
-                "Today's Appointments",
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+            SliverToBoxAdapter(child: SizedBox(height: sectionGap)),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                child: Text(
+                  "Today's Appointments",
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                ),
               ),
             ),
-            SizedBox(height: isCompact ? 4 : 2),
-            Expanded(
-              child: ListView.builder(
-                padding: EdgeInsets.only(bottom: isCompact ? 20 : 24),
-                itemCount: widget.appointments.length,
-                itemBuilder: (context, index) {
-                  return _DoctorAppointmentPreviewCard(
-                    item: widget.appointments[index],
-                    onStatusUpdated: (appointment, updatedStatus) {
-                      widget.onStatusChanged?.call(appointment, updatedStatus);
-                    },
-                  );
-                },
-              ),
+            SliverToBoxAdapter(child: SizedBox(height: isCompact ? 4 : 2)),
+            SliverList(
+              delegate: SliverChildBuilderDelegate((context, index) {
+                return _DoctorAppointmentPreviewCard(
+                  item: _sortedAppointments[index],
+                  onStatusUpdated: (appointment, updatedStatus) {
+                    widget.onStatusChanged?.call(appointment, updatedStatus);
+                  },
+                );
+              }, childCount: _sortedAppointments.length),
             ),
+            SliverToBoxAdapter(child: SizedBox(height: isCompact ? 20 : 24)),
           ],
         ),
       ),
@@ -427,7 +464,6 @@ class _TodayScheduleCard extends StatelessWidget {
                   ),
                 ),
                 SizedBox(height: 12),
-                
               ],
             ),
           ),
@@ -514,10 +550,7 @@ class _DoctorAppointmentPreviewCard extends StatelessWidget {
   });
 
   final Appointment item;
-  final void Function(
-    Appointment appointment,
-    AppointmentStatus updatedStatus,
-  )
+  final void Function(Appointment appointment, AppointmentStatus updatedStatus)
   onStatusUpdated;
 
   @override

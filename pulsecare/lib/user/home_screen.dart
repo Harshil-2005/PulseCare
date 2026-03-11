@@ -108,6 +108,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return ChoiceChip(
       label: Text(label),
       selected: isSelected,
+      checkmarkColor: chatButtonBlue,
       selectedColor: chatButtonBlue.withValues(alpha: 0.15),
       backgroundColor: Colors.grey.shade100,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
