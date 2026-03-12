@@ -97,6 +97,14 @@ class FirebaseAppointmentDataSource implements AppointmentDataSource {
   }
 
   @override
+  Future<void> updateStatusRaw(String appointmentId, String rawStatus) async {
+    await _appointments.doc(appointmentId).set({
+      'status': rawStatus,
+      'updatedAt': DateTime.now().toIso8601String(),
+    }, SetOptions(merge: true));
+  }
+
+  @override
   Future<void> remove(Appointment appointment) async {
     await _appointments.doc(appointment.id).delete();
   }

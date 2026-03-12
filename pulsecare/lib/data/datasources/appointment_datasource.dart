@@ -5,12 +5,16 @@ abstract class AppointmentDataSource {
   Future<List<Appointment>> getAll();
   Future<List<Appointment>> getForUser(String userId);
   Future<List<Appointment>> getForDoctor(String doctorId);
-  Future<List<Appointment>> getForDoctorAt(String doctorId, DateTime scheduledAt);
+  Future<List<Appointment>> getForDoctorAt(
+    String doctorId,
+    DateTime scheduledAt,
+  );
   Future<Appointment?> getById(String id);
   Stream<List<Appointment>> watchForUser(String userId);
   Stream<List<Appointment>> watchForDoctor(String doctorId);
   Future<void> add(Appointment appointment);
   Future<void> update(Appointment appointment);
+  Future<void> updateStatusRaw(String appointmentId, String rawStatus);
   Future<void> remove(Appointment appointment);
 }
 
@@ -175,6 +179,14 @@ class LocalAppointmentDataSource implements AppointmentDataSource {
     if (index != -1) {
       _appointments[index] = appointment;
     }
+  }
+
+  @override
+  Future<void> updateStatusRaw(String appointmentId, String rawStatus) async {
+    final index = _appointments.indexWhere((a) => a.id == appointmentId);
+    if (index == -1) return;
+    final status = Appointment.parseStatus(rawStatus);
+    _appointments[index] = _appointments[index].copyWith(status: status);
   }
 
   @override

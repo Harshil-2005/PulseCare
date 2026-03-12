@@ -54,4 +54,10 @@ class ApiAppointmentDataSource implements AppointmentDataSource {
   Future<void> update(Appointment appointment) async {
     throw UnimplementedError('API not implemented yet');
   }
+
+  @override
+  Future<void> updateStatusRaw(String appointmentId, String rawStatus) {
+    // TODO: implement updateStatusRaw
+    throw UnimplementedError();
+  }
 }

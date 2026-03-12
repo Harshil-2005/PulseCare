@@ -155,295 +155,299 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final aiCardHeight = isCompact ? 260.0 : 226.0;
 
     return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          const SliverToBoxAdapter(child: SizedBox(height: 40)),
-          SliverToBoxAdapter(
-            child: Row(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Hi, ${user?.fullName ?? ''}!',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 24,
+      body: SafeArea(
+        top: true,
+        bottom: false,
+        child: CustomScrollView(
+          slivers: [
+            SliverToBoxAdapter(
+              child: Row(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Hi, ${user?.fullName ?? ''}!',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 24,
+                          ),
                         ),
-                      ),
-                      Text(
-                        'How are you feeling today?',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w400,
-                          color: Colors.grey,
+                        Text(
+                          'How are you feeling today?',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w400,
+                            color: Colors.grey,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-                Spacer(),
-                Padding(
-                  padding: const EdgeInsets.only(right: 16.0),
-                  child: InkWell(
-                    onTap: () {
-                      AppShell.of(context)?.switchToTab(3);
-                    },
-                    child: CircleAvatar(
-                      radius: 28,
-                      backgroundColor: Color.fromARGB(255, 210, 219, 255),
-                      child: SvgPicture.asset(
-                        'assets/icons/Avatar.svg',
-                        width: 28,
-                        height: 28,
+                  Spacer(),
+                  Padding(
+                    padding: const EdgeInsets.only(right: 16.0),
+                    child: InkWell(
+                      onTap: () {
+                        AppShell.of(context)?.switchToTab(3);
+                      },
+                      child: CircleAvatar(
+                        radius: 28,
+                        backgroundColor: Color.fromARGB(255, 210, 219, 255),
+                        child: SvgPicture.asset(
+                          'assets/icons/Avatar.svg',
+                          width: 28,
+                          height: 28,
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.only(left: 16, right: 16),
-              child: Container(
-                height: aiCardHeight,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.all(Radius.circular(30)),
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Color.fromARGB(255, 174, 192, 255),
-                      Color(0xFF3F67FD),
-                    ],
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.only(left: 16, right: 16),
+                child: Container(
+                  height: aiCardHeight,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.all(Radius.circular(30)),
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Color.fromARGB(255, 174, 192, 255),
+                        Color(0xFF3F67FD),
+                      ],
+                    ),
                   ),
-                ),
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    Align(
-                      alignment: Alignment.topRight,
-                      child: Container(
-                        height: 220,
-                        width: 209,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(30),
-                          image: DecorationImage(
-                            fit: BoxFit.cover,
-                            image: AssetImage('assets/images/c_bg_lines.png'),
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Align(
+                        alignment: Alignment.topRight,
+                        child: Container(
+                          height: 220,
+                          width: 209,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(30),
+                            image: DecorationImage(
+                              fit: BoxFit.cover,
+                              image: AssetImage('assets/images/c_bg_lines.png'),
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.only(top: 16, left: 16),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.all(
-                                Radius.circular(10),
-                              ),
-                              color: Colors.white,
-                            ),
-                            width: 50,
-                            height: 50,
-                            child: Center(
-                              child: Image.asset(
-                                'assets/images/msg.png',
-                                color: Color(0xff3F67FD),
-                                width: 30,
-                                height: 30,
-                              ),
-                            ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16.0,
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'AI Health Assistant',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 20,
-                                    fontWeight: .w600,
-                                  ),
-                                ),
-                                Text(
-                                  'Support that\'s always available',
-                                  maxLines: 1,
-                                  softWrap: false,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontWeight: .w400,
-                                    fontSize: 12,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Positioned.fill(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 80, 16, 16),
-                        child: Column(
+                      Padding(
+                        padding: const EdgeInsets.only(top: 16, left: 16),
+                        child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              'Chat with AI Assistant',
-                              style: TextStyle(
-                                fontWeight: .w600,
-                                fontSize: 16,
+                            Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.all(
+                                  Radius.circular(10),
+                                ),
                                 color: Colors.white,
                               ),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              'Check your symptoms or book an appointment instantly using our advanced AI.',
-                              maxLines: isCompact ? 4 : 3,
-                              overflow: TextOverflow.ellipsis,
-                              softWrap: true,
-                              textAlign: TextAlign.start,
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: .w400,
+                              width: 50,
+                              height: 50,
+                              child: Center(
+                                child: Image.asset(
+                                  'assets/images/msg.png',
+                                  color: Color(0xff3F67FD),
+                                  width: 30,
+                                  height: 30,
+                                ),
                               ),
                             ),
-                            const Spacer(),
-                            Center(
-                              child: PrimaryIconButton(
-                                text: 'Start Chat with Ai',
-                                iconPath: 'assets/icons/s_msg.svg',
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => const AiChatScreen(
-                                        showDoctorRecommendations: true,
-                                      ),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16.0,
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment: MainAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'AI Health Assistant',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 20,
+                                      fontWeight: .w600,
                                     ),
-                                  );
-                                },
-                                width: isCompact ? 240 : 260,
-                                height: 50,
-                                backgroundColor: Colors.white,
-                                textColor: Color(0xff3F67FD),
-                                iconColor: Color(0xff3F67FD),
+                                  ),
+                                  Text(
+                                    'Support that\'s always available',
+                                    maxLines: 1,
+                                    softWrap: false,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontWeight: .w400,
+                                      fontSize: 12,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          const SliverToBoxAdapter(child: SizedBox(height: 16)),
-          SliverAppBar(
-            pinned: true,
-            primary: false,
-            automaticallyImplyLeading: false,
-            backgroundColor: Colors.white,
-            surfaceTintColor: Colors.white,
-            elevation: 0,
-            scrolledUnderElevation: 0,
-            toolbarHeight: 58,
-            titleSpacing: 0,
-            title: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-              child: TextField(
-                decoration: InputDecoration(
-                  hintText: 'Search doctors or specialization',
-                  prefixIcon: Icon(Icons.search),
-                  filled: true,
-                  fillColor: Colors.grey.shade100,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(30),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-                onChanged: (value) {
-                  setState(() {
-                    _searchQuery = value.toLowerCase();
-                  });
-                },
-              ),
-            ),
-            bottom: PreferredSize(
-              preferredSize: const Size.fromHeight(58),
-              child: Padding(
-                padding: const EdgeInsets.only(top: 8, bottom: 8),
-                child: SizedBox(
-                  height: 42,
-                  child: ListView(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    children: [
-                      for (final label in chipLabels)
-                        Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: _buildFilterChip(
-                            context: context,
-                            label: label,
-                            activeSpecialization: activeSpecialization,
+                      Positioned.fill(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 80, 16, 16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Chat with AI Assistant',
+                                style: TextStyle(
+                                  fontWeight: .w600,
+                                  fontSize: 16,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                'Check your symptoms or book an appointment instantly using our advanced AI.',
+                                maxLines: isCompact ? 4 : 3,
+                                overflow: TextOverflow.ellipsis,
+                                softWrap: true,
+                                textAlign: TextAlign.start,
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: .w400,
+                                ),
+                              ),
+                              const Spacer(),
+                              Center(
+                                child: PrimaryIconButton(
+                                  text: 'Start Chat with Ai',
+                                  iconPath: 'assets/icons/s_msg.svg',
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            const AiChatScreen(
+                                              showDoctorRecommendations: true,
+                                            ),
+                                      ),
+                                    );
+                                  },
+                                  width: isCompact ? 240 : 260,
+                                  height: 50,
+                                  backgroundColor: Colors.white,
+                                  textColor: Color(0xff3F67FD),
+                                  iconColor: Color(0xff3F67FD),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
+                      ),
                     ],
                   ),
                 ),
               ),
             ),
-          ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.only(left: 16, bottom: 8, top: 12),
-              child: Text(
-                'Recommended Doctors',
-                style: TextStyle(fontSize: 20, fontWeight: .w600),
+            const SliverToBoxAdapter(child: SizedBox(height: 16)),
+            SliverAppBar(
+              pinned: true,
+              primary: false,
+              automaticallyImplyLeading: false,
+              backgroundColor: Colors.white,
+              surfaceTintColor: Colors.white,
+              elevation: 0,
+              scrolledUnderElevation: 0,
+              toolbarHeight: 58,
+              titleSpacing: 0,
+              title: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+                child: TextField(
+                  decoration: InputDecoration(
+                    hintText: 'Search doctors or specialization',
+                    prefixIcon: Icon(Icons.search),
+                    filled: true,
+                    fillColor: Colors.grey.shade100,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(30),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                  onChanged: (value) {
+                    setState(() {
+                      _searchQuery = value.toLowerCase();
+                    });
+                  },
+                ),
+              ),
+              bottom: PreferredSize(
+                preferredSize: const Size.fromHeight(58),
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 8, bottom: 8),
+                  child: SizedBox(
+                    height: 42,
+                    child: ListView(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      children: [
+                        for (final label in chipLabels)
+                          Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: _buildFilterChip(
+                              context: context,
+                              label: label,
+                              activeSpecialization: activeSpecialization,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
             ),
-          ),
-          SliverList(
-            delegate: SliverChildBuilderDelegate((context, index) {
-              final doctor = filteredDoctors[index];
-              return Consumer(
-                builder: (context, ref, _) {
-                  final appointmentsAsync = ref.watch(
-                    _homeDoctorAppointmentsProvider(doctor.id),
-                  );
-                  final appointments =
-                      appointmentsAsync.valueOrNull ?? const <Appointment>[];
-                  final status = _resolveDoctorStatus(
-                    doctor: doctor,
-                    appointments: appointments,
-                  );
-                  return doctorCart(
-                    doctor,
-                    context,
-                    status,
-                    topPadding: index == 0 ? 0 : 16,
-                  );
-                },
-              );
-            }, childCount: filteredDoctors.length),
-          ),
-          const SliverToBoxAdapter(child: SizedBox(height: 32)),
-        ],
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.only(left: 16, bottom: 8, top: 12),
+                child: Text(
+                  'Recommended Doctors',
+                  style: TextStyle(fontSize: 20, fontWeight: .w600),
+                ),
+              ),
+            ),
+            SliverList(
+              delegate: SliverChildBuilderDelegate((context, index) {
+                final doctor = filteredDoctors[index];
+                return Consumer(
+                  builder: (context, ref, _) {
+                    final appointmentsAsync = ref.watch(
+                      _homeDoctorAppointmentsProvider(doctor.id),
+                    );
+                    final appointments =
+                        appointmentsAsync.valueOrNull ?? const <Appointment>[];
+                    final status = _resolveDoctorStatus(
+                      doctor: doctor,
+                      appointments: appointments,
+                    );
+                    return doctorCart(
+                      doctor,
+                      context,
+                      status,
+                      topPadding: index == 0 ? 0 : 16,
+                    );
+                  },
+                );
+              }, childCount: filteredDoctors.length),
+            ),
+            const SliverToBoxAdapter(child: SizedBox(height: 32)),
+          ],
+        ),
       ),
     );
   }

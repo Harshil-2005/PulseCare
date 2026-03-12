@@ -1,12 +1,10 @@
 import 'doctor_model.dart';
 import 'package:pulsecare/model/report_model.dart';
 
-enum AppointmentStatus {
-  pending,
-  confirmed,
-  cancelled,
-  completed,
-}
+enum AppointmentStatus { pending, confirmed, cancelled, completed }
+
+const String appointmentStatusCancelledByTimeout = 'cancelled_by_timeout';
+const String appointmentStatusCompletedAuto = 'completed_auto';
 
 class Appointment {
   // Embedded doctor snapshot for display purposes.
@@ -44,16 +42,16 @@ class Appointment {
     List<ReportModel>? reports,
     this.aiSummaryId,
     bool? reviewSubmitted,
-  })  : id = id ?? '',
-        userId = userId ?? '',
-        doctorId = doctorId ?? doctor.id,
-        symptoms = symptoms ?? '',
-        reports = List.unmodifiable(reports ?? const <ReportModel>[]),
-        reviewSubmitted = reviewSubmitted ?? false,
-        assert(
-          doctor.id == (doctorId ?? doctor.id),
-          'Appointment doctor.id must match doctorId',
-        );
+  }) : id = id ?? '',
+       userId = userId ?? '',
+       doctorId = doctorId ?? doctor.id,
+       symptoms = symptoms ?? '',
+       reports = List.unmodifiable(reports ?? const <ReportModel>[]),
+       reviewSubmitted = reviewSubmitted ?? false,
+       assert(
+         doctor.id == (doctorId ?? doctor.id),
+         'Appointment doctor.id must match doctorId',
+       );
 
   // Returns the embedded doctor snapshot.
   // UI code should access doctor information through this getter.
@@ -116,6 +114,22 @@ class Appointment {
     };
   }
 
+  static AppointmentStatus parseStatus(String? rawStatus) {
+    final normalized = (rawStatus ?? '').trim().toLowerCase();
+
+    if (normalized == appointmentStatusCancelledByTimeout) {
+      return AppointmentStatus.cancelled;
+    }
+    if (normalized == appointmentStatusCompletedAuto) {
+      return AppointmentStatus.completed;
+    }
+
+    return AppointmentStatus.values.firstWhere(
+      (value) => value.name == normalized,
+      orElse: () => AppointmentStatus.pending,
+    );
+  }
+
   factory Appointment.fromJson(Map<String, dynamic> json) {
     return Appointment(
       doctor: Doctor.fromJson(Map<String, dynamic>.from(json['doctor'] as Map)),
@@ -123,10 +137,7 @@ class Appointment {
       age: json['age'],
       gender: json['gender'],
       scheduledAt: DateTime.parse(json['scheduledAt'] as String),
-      status: AppointmentStatus.values.firstWhere(
-        (value) => value.name == (json['status'] as String? ?? ''),
-        orElse: () => AppointmentStatus.pending,
-      ),
+      status: parseStatus(json['status'] as String?),
       id: json['id'],
       createdAt: json['createdAt'] != null
           ? DateTime.tryParse(json['createdAt'].toString())
@@ -139,7 +150,9 @@ class Appointment {
       symptoms: json['symptoms'],
       reports: (json['reports'] as List<dynamic>? ?? const [])
           .whereType<Map>()
-          .map((report) => ReportModel.fromJson(Map<String, dynamic>.from(report)))
+          .map(
+            (report) => ReportModel.fromJson(Map<String, dynamic>.from(report)),
+          )
           .toList(),
       aiSummaryId: json['aiSummaryId'],
       reviewSubmitted: json['reviewSubmitted'] == true,

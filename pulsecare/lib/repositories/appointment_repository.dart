@@ -18,6 +18,46 @@ class AppointmentRepository extends ChangeNotifier {
   final AppointmentDataSource _dataSource;
   final DoctorRepository _doctorRepository;
   final UserRepository _userRepository;
+  static const int _fallbackSlotDurationMinutes = 30;
+
+  Future<Appointment> _applyAutomaticStatusUpdates(
+    Appointment appointment,
+  ) async {
+    if (appointment.id.isEmpty) {
+      return appointment;
+    }
+
+    final now = DateTime.now();
+
+    if (appointment.status == AppointmentStatus.pending &&
+        appointment.scheduledAt.isBefore(now)) {
+      await _dataSource.updateStatusRaw(
+        appointment.id,
+        appointmentStatusCancelledByTimeout,
+      );
+      return appointment.copyWith(status: AppointmentStatus.cancelled);
+    }
+
+    if (appointment.status == AppointmentStatus.confirmed) {
+      final slotDuration = appointment.resolvedDoctor.slotDuration > 0
+          ? appointment.resolvedDoctor.slotDuration
+          : _fallbackSlotDurationMinutes;
+      final endTime = appointment.scheduledAt.add(
+        Duration(minutes: slotDuration),
+      );
+
+      if (endTime.isBefore(now)) {
+        await _dataSource.updateStatusRaw(
+          appointment.id,
+          appointmentStatusCompletedAuto,
+        );
+        await _doctorRepository.incrementPatients(appointment.doctorId);
+        return appointment.copyWith(status: AppointmentStatus.completed);
+      }
+    }
+
+    return appointment;
+  }
 
   Future<List<Appointment>> getAppointments({
     String? userId,
@@ -41,11 +81,15 @@ class AppointmentRepository extends ChangeNotifier {
       final doctor = await _doctorRepository.getDoctorById(
         appointment.doctorId,
       );
-      if (doctor == null) {
-        hydrated.add(appointment);
-        continue;
-      }
-      hydrated.add(appointment.copyWith(doctor: doctor));
+      final hydratedAppointment = doctor == null
+          ? appointment
+          : appointment.copyWith(doctor: doctor);
+
+      final normalizedAppointment = await _applyAutomaticStatusUpdates(
+        hydratedAppointment,
+      );
+
+      hydrated.add(normalizedAppointment);
     }
     return hydrated.toList(growable: false);
   }
@@ -57,11 +101,13 @@ class AppointmentRepository extends ChangeNotifier {
         final doctor = await _doctorRepository.getDoctorById(
           appointment.doctorId,
         );
-        if (doctor == null) {
-          hydrated.add(appointment);
-          continue;
-        }
-        hydrated.add(appointment.copyWith(doctor: doctor));
+        final hydratedAppointment = doctor == null
+            ? appointment
+            : appointment.copyWith(doctor: doctor);
+        final normalizedAppointment = await _applyAutomaticStatusUpdates(
+          hydratedAppointment,
+        );
+        hydrated.add(normalizedAppointment);
       }
       return hydrated.toList(growable: false);
     });
@@ -74,11 +120,13 @@ class AppointmentRepository extends ChangeNotifier {
         final doctor = await _doctorRepository.getDoctorById(
           appointment.doctorId,
         );
-        if (doctor == null) {
-          hydrated.add(appointment);
-          continue;
-        }
-        hydrated.add(appointment.copyWith(doctor: doctor));
+        final hydratedAppointment = doctor == null
+            ? appointment
+            : appointment.copyWith(doctor: doctor);
+        final normalizedAppointment = await _applyAutomaticStatusUpdates(
+          hydratedAppointment,
+        );
+        hydrated.add(normalizedAppointment);
       }
       return hydrated.toList(growable: false);
     });
