@@ -10,6 +10,7 @@ class ReportModel {
   final String icon;
   final String? pdfPath;
   final String? storageUrl;
+  final String? storagePath;
 
   ReportModel({
     required this.id,
@@ -23,6 +24,7 @@ class ReportModel {
     required this.icon,
     this.pdfPath,
     this.storageUrl,
+    this.storagePath,
   });
 
   Map<String, dynamic> toJson() {
@@ -38,6 +40,7 @@ class ReportModel {
       'icon': icon,
       'pdfPath': pdfPath,
       'storageUrl': storageUrl,
+      'storagePath': storagePath,
     };
   }
 
@@ -60,6 +63,7 @@ class ReportModel {
       icon: (json['icon'] ?? '').toString(),
       pdfPath: json['pdfPath'] as String?,
       storageUrl: json['storageUrl'] as String?,
+      storagePath: json['storagePath'] as String?,
     );
   }
 }

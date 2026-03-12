@@ -15,7 +15,11 @@ class FirebaseDoctorDataSource implements DoctorDataSource {
   Future<List<Doctor>> getAll() async {
     final snapshot = await _doctors.get();
     return snapshot.docs
-        .map((doc) => Doctor.fromJson(_normalizeMap(doc.data())))
+        .map((doc) {
+          final data = doc.data();
+          data['id'] = doc.id;
+          return Doctor.fromJson(_normalizeMap(data));
+        })
         .toList(growable: false);
   }
 
@@ -23,7 +27,9 @@ class FirebaseDoctorDataSource implements DoctorDataSource {
   Future<Doctor?> getById(String id) async {
     final snapshot = await _doctors.doc(id).get();
     if (!snapshot.exists) return null;
-    return Doctor.fromJson(_normalizeMap(snapshot.data()!));
+    final data = snapshot.data()!;
+    data['id'] = snapshot.id;
+    return Doctor.fromJson(_normalizeMap(data));
   }
 
   @override
@@ -33,7 +39,10 @@ class FirebaseDoctorDataSource implements DoctorDataSource {
         .limit(1)
         .get();
     if (snapshot.docs.isEmpty) return null;
-    return Doctor.fromJson(_normalizeMap(snapshot.docs.first.data()));
+    final doc = snapshot.docs.first;
+    final data = doc.data();
+    data['id'] = doc.id;
+    return Doctor.fromJson(_normalizeMap(data));
   }
 
   @override
@@ -41,6 +50,7 @@ class FirebaseDoctorDataSource implements DoctorDataSource {
     return _firestore.collection('doctors').doc(id).snapshots().map((doc) {
       final data = doc.data();
       if (data == null) return null;
+      data['id'] = doc.id;
       return Doctor.fromJson(_normalizeMap(data));
     });
   }
@@ -53,7 +63,10 @@ class FirebaseDoctorDataSource implements DoctorDataSource {
         .snapshots()
         .map((snapshot) {
           if (snapshot.docs.isEmpty) return null;
-          return Doctor.fromJson(_normalizeMap(snapshot.docs.first.data()));
+          final doc = snapshot.docs.first;
+          final data = doc.data();
+          data['id'] = doc.id;
+          return Doctor.fromJson(_normalizeMap(data));
         });
   }
 

@@ -14,8 +14,9 @@ class DoctorReviewRepository extends ChangeNotifier {
 
   Future<void> createReview(DoctorReview review) async {
     _validateReview(review);
-    await _dataSource.add(review);
-    await _updateDoctorRatingStats(review);
+    final normalized = review.copyWith(id: review.appointmentId);
+    await _dataSource.add(normalized);
+    await _updateDoctorRatingStats(normalized);
     notifyListeners();
   }
 

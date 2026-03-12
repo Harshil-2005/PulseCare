@@ -57,6 +57,7 @@ class FirebaseReportDataSource implements ReportDataSource {
       icon: report.icon,
       pdfPath: report.pdfPath,
       storageUrl: report.storageUrl,
+      storagePath: report.storagePath,
     );
     final reportWithStorage = await _ensureStorageUpload(toStore);
     await docRef.set(_toFirestoreMap(reportWithStorage));
@@ -64,6 +65,20 @@ class FirebaseReportDataSource implements ReportDataSource {
 
   @override
   Future<void> remove(ReportModel report) async {
+    String? storagePath = report.storagePath;
+    String? storageUrl = report.storageUrl;
+
+    final snapshot = await _reports.doc(report.id).get();
+    final docData = snapshot.data();
+    if (docData != null) {
+      storagePath ??= docData['storagePath']?.toString();
+      storageUrl ??= docData['storageUrl']?.toString();
+    }
+
+    await _deleteStorageObject(
+      storagePath: storagePath,
+      storageUrl: storageUrl,
+    );
     await _reports.doc(report.id).delete();
   }
 
@@ -71,6 +86,13 @@ class FirebaseReportDataSource implements ReportDataSource {
   Future<void> deleteReportsForUser(String userId) async {
     final query = await _reports.where('userId', isEqualTo: userId).get();
     for (final doc in query.docs) {
+      final data = doc.data();
+      final storagePath = data['storagePath']?.toString();
+      final storageUrl = data['storageUrl']?.toString();
+      await _deleteStorageObject(
+        storagePath: storagePath,
+        storageUrl: storageUrl,
+      );
       await doc.reference.delete();
     }
   }
@@ -137,6 +159,7 @@ class FirebaseReportDataSource implements ReportDataSource {
       icon: local.icon,
       pdfPath: local.pdfPath,
       storageUrl: local.storageUrl,
+      storagePath: local.storagePath,
     );
   }
 
@@ -156,11 +179,8 @@ class FirebaseReportDataSource implements ReportDataSource {
     }
 
     try {
-      final ref = _storage
-          .ref()
-          .child('reports')
-          .child(report.userId)
-          .child('${report.id}.pdf');
+      final storagePath = 'reports/${report.userId}/${report.id}.pdf';
+      final ref = _storage.ref().child(storagePath);
       await ref.putFile(file);
       final downloadUrl = await ref.getDownloadURL();
       return ReportModel(
@@ -175,9 +195,38 @@ class FirebaseReportDataSource implements ReportDataSource {
         icon: report.icon,
         pdfPath: report.pdfPath,
         storageUrl: downloadUrl,
+        storagePath: storagePath,
       );
     } catch (_) {
       return report;
+    }
+  }
+
+  Future<void> _deleteStorageObject({
+    String? storagePath,
+    String? storageUrl,
+  }) async {
+    final normalizedPath = storagePath?.trim();
+    if (normalizedPath != null && normalizedPath.isNotEmpty) {
+      try {
+        await _storage.ref().child(normalizedPath).delete();
+      } on FirebaseException catch (e) {
+        if (e.code != 'object-not-found') {
+          rethrow;
+        }
+      }
+      return;
+    }
+
+    final normalizedUrl = storageUrl?.trim();
+    if (normalizedUrl != null && normalizedUrl.isNotEmpty) {
+      try {
+        await _storage.refFromURL(normalizedUrl).delete();
+      } on FirebaseException catch (e) {
+        if (e.code != 'object-not-found' && e.code != 'invalid-argument') {
+          rethrow;
+        }
+      }
     }
   }
 
@@ -191,6 +240,9 @@ class FirebaseReportDataSource implements ReportDataSource {
     }
     if (report.storageUrl == null || report.storageUrl!.trim().isEmpty) {
       data.remove('storageUrl');
+    }
+    if (report.storagePath == null || report.storagePath!.trim().isEmpty) {
+      data.remove('storagePath');
     }
     return data;
   }

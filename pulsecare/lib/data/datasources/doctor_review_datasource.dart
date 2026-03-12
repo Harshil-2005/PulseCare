@@ -12,6 +12,12 @@ class LocalDoctorReviewDataSource implements DoctorReviewDataSource {
 
   @override
   Future<void> add(DoctorReview review) async {
+    final exists = _reviews.any(
+      (existing) => existing.appointmentId == review.appointmentId,
+    );
+    if (exists) {
+      throw StateError('duplicate_review_for_appointment');
+    }
     _reviews.insert(0, review);
   }
 
@@ -21,5 +27,4 @@ class LocalDoctorReviewDataSource implements DoctorReviewDataSource {
         .where((review) => review.doctorId == doctorId)
         .toList(growable: false);
   }
-
 }
