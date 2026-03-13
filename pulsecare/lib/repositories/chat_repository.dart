@@ -23,6 +23,7 @@ class ChatRepository extends ChangeNotifier {
   final AISummaryRepository _aiSummaryRepository;
   final AIService _aiService;
   final Set<String> _savedConsultationHistory = <String>{};
+  final Map<String, String> _summaryIdByConversation = <String, String>{};
 
   String startNewConversation(String userId) {
     return _dataSource.startNewConversation(userId);
@@ -86,6 +87,23 @@ class ChatRepository extends ChangeNotifier {
     var responseToReturn = aiResponse;
 
     if (aiResponse.stage == IntakeStage.completed) {
+      final existingSummaryId = _summaryIdByConversation[conversationId];
+      if (existingSummaryId != null && existingSummaryId.isNotEmpty) {
+        responseToReturn = AIResponse(
+          rawText: aiResponse.rawText,
+          detectedSymptoms: aiResponse.detectedSymptoms,
+          recommendedSpecialty: aiResponse.recommendedSpecialty,
+          triageLevel: aiResponse.triageLevel,
+          confidence: aiResponse.confidence,
+          generatedAt: aiResponse.generatedAt,
+          stage: aiResponse.stage,
+          duration: aiResponse.duration,
+          medications: aiResponse.medications,
+          severity: aiResponse.severity,
+          temperature: aiResponse.temperature,
+          summaryId: existingSummaryId,
+        );
+      } else {
       final summary = AISummaryModel(
         id: '',
         userId: userId,
@@ -125,6 +143,7 @@ class ChatRepository extends ChangeNotifier {
         summaryId: storedSummary.id,
       );
 
+      _summaryIdByConversation[conversationId] = storedSummary.id;
       await saveChatToHistory(
         userId: userId,
         conversationId: conversationId,
@@ -132,6 +151,7 @@ class ChatRepository extends ChangeNotifier {
         intakeStage: aiResponse.stage,
       );
       responseToReturn = completedResponse;
+      }
     }
 
     final messages = await _dataSource.getMessages(conversationId);

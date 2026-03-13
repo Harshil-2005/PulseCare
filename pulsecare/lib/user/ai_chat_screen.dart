@@ -60,6 +60,8 @@ class _NewAiChatScreenState extends ConsumerState<AiChatScreen> {
   late final ChatRepository _chatRepository;
   String? _completedSummaryId;
   bool _latestIntakeCompleted = false;
+  bool _isSending = false;
+  String? _recommendedSpecialty;
   String _userId = '';
   String _conversationId = '';
   String? _pendingInitialMessage;
@@ -244,6 +246,10 @@ class _NewAiChatScreenState extends ConsumerState<AiChatScreen> {
     return chatsAsync.when(
       data: (chats) {
         final doctors = doctorsAsync.valueOrNull ?? const <Doctor>[];
+        final filteredDoctors = _filterDoctorsBySpecialty(
+          doctors,
+          _recommendedSpecialty,
+        );
         final extraItems =
             (shouldShowRecommendations ? 1 : 0) +
             (shouldShowContinueBooking ? 1 : 0);
@@ -271,9 +277,9 @@ class _NewAiChatScreenState extends ConsumerState<AiChatScreen> {
                   child: ListView.builder(
                     padding: const EdgeInsets.only(top: 4),
                     scrollDirection: Axis.horizontal,
-                    itemCount: doctors.length,
+                    itemCount: filteredDoctors.length,
                     itemBuilder: (context, doctorIndex) {
-                      final doctor = doctors[doctorIndex];
+                      final doctor = filteredDoctors[doctorIndex];
                       final doctorPhone = doctor.userId.isEmpty
                           ? ''
                           : ref
@@ -524,6 +530,7 @@ class _NewAiChatScreenState extends ConsumerState<AiChatScreen> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 20),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           Expanded(
             child: Padding(
@@ -531,6 +538,8 @@ class _NewAiChatScreenState extends ConsumerState<AiChatScreen> {
               child: TextField(
                 controller: _controller,
                 focusNode: _inputFocusNode,
+                minLines: 1,
+                maxLines: 6,
                 onTapOutside: (_) {
                   FocusScope.of(context).unfocus();
                   FocusManager.instance.primaryFocus?.unfocus();
@@ -583,7 +592,10 @@ class _NewAiChatScreenState extends ConsumerState<AiChatScreen> {
     FocusScope.of(context).unfocus();
 
     final message = (initialMessage ?? _controller.text).trim();
-    if (message.isEmpty) return;
+    if (message.isEmpty || _isSending) return;
+    setState(() {
+      _isSending = true;
+    });
     late String userMessageId;
     final createdMessage = await _chatRepository.addUserMessage(
       _conversationId,
@@ -607,10 +619,12 @@ class _NewAiChatScreenState extends ConsumerState<AiChatScreen> {
         aiResponse.stage == IntakeStage.completed ||
         aiResponse.summaryId != null;
     setState(() {
+      _recommendedSpecialty = aiResponse.recommendedSpecialty;
       if (aiResponse.summaryId != null) {
         _completedSummaryId = aiResponse.summaryId;
       }
       _latestIntakeCompleted = _latestIntakeCompleted || intakeCompleted;
+      _isSending = false;
     });
     if (!mounted) return;
     ref.invalidate(_chatMessagesProvider(_conversationId));
@@ -643,6 +657,20 @@ class _NewAiChatScreenState extends ConsumerState<AiChatScreen> {
     } else {
       _chatScrollController.jumpTo(target);
     }
+  }
+
+  List<Doctor> _filterDoctorsBySpecialty(
+    List<Doctor> doctors,
+    String? specialty,
+  ) {
+    final normalized = specialty?.trim();
+    if (normalized == null || normalized.isEmpty) {
+      return doctors;
+    }
+    final matches = doctors
+        .where((doctor) => doctor.speciality == normalized)
+        .toList(growable: false);
+    return matches.isEmpty ? doctors : matches;
   }
 }
 

@@ -34,12 +34,15 @@ class _NewAiChatScreenState extends ConsumerState<NewAiChatScreen> {
   final ScrollController _chatScrollController = ScrollController();
   final FocusNode _inputFocusNode = FocusNode();
   late final ChatRepository _chatRepository;
+  static const double _introBottomPadding = 220;
+  final Map<String, GlobalKey> _messageKeys = {};
   String _userId = '';
   String _conversationId = '';
   bool _hasStartedConsultation = false;
   bool _isSending = false;
   bool _latestIntakeCompleted = false;
   String? _completedSummaryId;
+  String? _recommendedSpecialty;
   List<ChatMessage> _messages = const <ChatMessage>[];
 
   @override
@@ -98,9 +101,16 @@ class _NewAiChatScreenState extends ConsumerState<NewAiChatScreen> {
       _hasStartedConsultation = true;
     });
 
-    await _chatRepository.addUserMessage(_conversationId, initialText);
+    final createdMessage = await _chatRepository.addUserMessage(
+      _conversationId,
+      initialText,
+    );
     _controller.clear();
     await _refreshMessages();
+    if (!mounted) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _pinMessageNearTop(createdMessage.id);
+    });
 
     final aiResponse = await _chatRepository.generateAndStoreAiResponse(
       _conversationId,
@@ -119,7 +129,11 @@ class _NewAiChatScreenState extends ConsumerState<NewAiChatScreen> {
       if (aiResponse.summaryId != null) {
         _completedSummaryId = aiResponse.summaryId;
       }
+      _recommendedSpecialty = aiResponse.recommendedSpecialty;
       _latestIntakeCompleted = _latestIntakeCompleted || intakeCompleted;
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToBottom();
     });
   }
 
@@ -229,7 +243,33 @@ class _NewAiChatScreenState extends ConsumerState<NewAiChatScreen> {
         child: Column(
           children: [
             Expanded(
-              child: _hasStartedConsultation ? chatContent() : introContent(),
+              child: _hasAnyUserMessage
+                  ? chatContent()
+                  : LayoutBuilder(
+                      builder: (context, constraints) {
+                        final keyboardOpen =
+                            MediaQuery.of(context).viewInsets.bottom > 0;
+                        final bottomPadding =
+                            16.0 + (keyboardOpen ? _introBottomPadding : 0.0);
+                        return SingleChildScrollView(
+                          physics: keyboardOpen
+                              ? const ClampingScrollPhysics()
+                              : const NeverScrollableScrollPhysics(),
+                          padding: EdgeInsets.fromLTRB(
+                            16,
+                            0,
+                            16,
+                            bottomPadding,
+                          ),
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(
+                              minHeight: constraints.maxHeight,
+                            ),
+                            child: introContent(),
+                          ),
+                        );
+                      },
+                    ),
             ),
             inputBar(),
             const SizedBox(height: 30),
@@ -244,18 +284,38 @@ class _NewAiChatScreenState extends ConsumerState<NewAiChatScreen> {
       return const Center(child: CircularProgressIndicator());
     }
 
+    final visibleMessages = _messages
+        .where((message) => !_isSeedGreeting(message))
+        .toList(growable: false);
+
     final shouldShowRecommendations = _latestIntakeCompleted;
 
     return ListView.builder(
       controller: _chatScrollController,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      itemCount: _messages.length + (shouldShowRecommendations ? 1 : 0),
+      itemCount: visibleMessages.length + (shouldShowRecommendations ? 1 : 0),
       itemBuilder: (context, index) {
-        if (shouldShowRecommendations && index == _messages.length) {
+        if (shouldShowRecommendations && index == visibleMessages.length) {
           return _buildDoctorRecommendations();
         }
-        return _chatBubble(_messages[index]);
+        final message = visibleMessages[index];
+        return KeyedSubtree(
+          key: _messageKeys.putIfAbsent(message.id, GlobalKey.new),
+          child: _chatBubble(message),
+        );
       },
+    );
+  }
+
+  void _pinMessageNearTop(String messageId, {bool animated = true}) {
+    final key = _messageKeys[messageId];
+    final ctx = key?.currentContext;
+    if (ctx == null) return;
+    Scrollable.ensureVisible(
+      ctx,
+      alignment: 0.08,
+      duration: animated ? const Duration(milliseconds: 260) : Duration.zero,
+      curve: Curves.easeOut,
     );
   }
 
@@ -264,16 +324,20 @@ class _NewAiChatScreenState extends ConsumerState<NewAiChatScreen> {
 
     return doctorsAsync.when(
       data: (doctors) {
-        if (doctors.isEmpty) return const SizedBox.shrink();
+        final filteredDoctors = _filterDoctorsBySpecialty(
+          doctors,
+          _recommendedSpecialty,
+        );
+        if (filteredDoctors.isEmpty) return const SizedBox.shrink();
         return Padding(
           padding: const EdgeInsets.only(top: 8),
           child: SizedBox(
             height: 140,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
-              itemCount: doctors.length,
+              itemCount: filteredDoctors.length,
               itemBuilder: (context, index) {
-                final doctor = doctors[index];
+                final doctor = filteredDoctors[index];
                 final doctorPhone = doctor.userId.isEmpty
                     ? ''
                     : ref
@@ -293,6 +357,20 @@ class _NewAiChatScreenState extends ConsumerState<NewAiChatScreen> {
       ),
       error: (_, __) => const SizedBox.shrink(),
     );
+  }
+
+  List<Doctor> _filterDoctorsBySpecialty(
+    List<Doctor> doctors,
+    String? specialty,
+  ) {
+    final normalized = specialty?.trim();
+    if (normalized == null || normalized.isEmpty) {
+      return doctors;
+    }
+    final matches = doctors
+        .where((doctor) => doctor.speciality == normalized)
+        .toList(growable: false);
+    return matches.isEmpty ? doctors : matches;
   }
 
   Widget introContent() {
@@ -324,17 +402,18 @@ class _NewAiChatScreenState extends ConsumerState<NewAiChatScreen> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           Expanded(
             child: TextField(
               controller: _controller,
               focusNode: _inputFocusNode,
+              minLines: 1,
+              maxLines: 6,
               onTapOutside: (_) {
                 FocusScope.of(context).unfocus();
                 FocusManager.instance.primaryFocus?.unfocus();
               },
-              textInputAction: TextInputAction.send,
-              onSubmitted: (_) => _handleSend(),
               decoration: InputDecoration(
                 hintText: 'Ask Dr. Elara Anything...',
                 hintStyle: const TextStyle(color: Colors.grey),
@@ -466,6 +545,12 @@ class _NewAiChatScreenState extends ConsumerState<NewAiChatScreen> {
         chat.message.trimLeft().toLowerCase().startsWith('summary:');
   }
 
+  bool _isSeedGreeting(ChatMessage chat) {
+    if (chat.isUser) return false;
+    final normalized = chat.message.trim().toLowerCase().replaceAll('’', "'");
+    return normalized.startsWith("hello! i'm dr. elara");
+  }
+
   Map<String, String> _parseSummaryFields(String message) {
     final cleaned = message.replaceFirst(
       RegExp(r'^\s*summary:\s*', caseSensitive: false),
@@ -521,7 +606,12 @@ class _NewAiChatScreenState extends ConsumerState<NewAiChatScreen> {
             borderRadius: const BorderRadius.all(Radius.circular(10)),
             boxShadow: [
               BoxShadow(
-                color: const Color.fromARGB(255, 0, 0, 0).withValues(alpha: 0.1),
+                color: const Color.fromARGB(
+                  255,
+                  0,
+                  0,
+                  0,
+                ).withValues(alpha: 0.1),
                 blurRadius: 10,
                 offset: const Offset(0, 6),
               ),
