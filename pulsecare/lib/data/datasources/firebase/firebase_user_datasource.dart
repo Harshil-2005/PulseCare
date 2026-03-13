@@ -15,7 +15,11 @@ class FirebaseUserDataSource implements UserDataSource {
   Future<List<User>> getAll() async {
     final snapshot = await _users.get();
     return snapshot.docs
-        .map((doc) => User.fromJson(_normalizeMap(doc.data())))
+        .map((doc) {
+          final data = doc.data();
+          data['id'] = doc.id;
+          return User.fromJson(_normalizeMap(data));
+        })
         .toList(growable: false);
   }
 
@@ -23,7 +27,9 @@ class FirebaseUserDataSource implements UserDataSource {
   Future<User?> getById(String id) async {
     final snapshot = await _users.doc(id).get();
     if (!snapshot.exists) return null;
-    return User.fromJson(_normalizeMap(snapshot.data()!));
+    final data = snapshot.data()!;
+    data['id'] = snapshot.id;
+    return User.fromJson(_normalizeMap(data));
   }
 
   @override
@@ -50,7 +56,11 @@ class FirebaseUserDataSource implements UserDataSource {
         .doc(userId)
         .snapshots()
         .where((doc) => doc.exists && doc.data() != null)
-        .map((doc) => User.fromJson(_normalizeMap(doc.data()!)));
+        .map((doc) {
+          final data = doc.data()!;
+          data['id'] = doc.id;
+          return User.fromJson(_normalizeMap(data));
+        });
   }
 
   Map<String, dynamic> _normalizeMap(Map<String, dynamic> raw) {

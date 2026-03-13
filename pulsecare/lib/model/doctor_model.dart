@@ -46,8 +46,8 @@ class Doctor {
     required this.isAvailableForBooking,
     required this.schedule,
     List<DateOverride>? overrides,
-  })  : userId = userId ?? '',
-        overrides = List.unmodifiable(overrides ?? []);
+  }) : userId = userId ?? '',
+       overrides = List.unmodifiable(overrides ?? []);
 
   Doctor copyWith({
     String? id,
@@ -105,8 +105,9 @@ class Doctor {
           ? DateTime.tryParse(json['updatedAt'].toString())
           : null,
       name: (json['name'] ?? '').toString(),
-      speciality: (json['speciality'] ?? '').toString(),
-      address: (json['address'] ?? '').toString(),
+      speciality: (json['specialization'] ?? json['speciality'] ?? '')
+          .toString(),
+      address: (json['hospital'] ?? json['address'] ?? '').toString(),
       experience: json['experience'] is int
           ? json['experience'] as int
           : int.tryParse((json['experience'] ?? '').toString()) ?? 0,
@@ -147,6 +148,8 @@ class Doctor {
       'createdAt': createdAt?.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
       'name': name,
+      'specialization': speciality,
+      'hospital': address,
       'speciality': speciality,
       'address': address,
       'experience': experience,

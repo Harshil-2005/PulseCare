@@ -24,7 +24,11 @@ class FirebaseAppointmentDataSource implements AppointmentDataSource {
         .where('userId', isEqualTo: userId)
         .get();
     return snapshot.docs
-        .map((doc) => Appointment.fromJson(_normalizeMap(doc.data())))
+        .map((doc) {
+          final data = doc.data();
+          data['id'] = doc.id;
+          return Appointment.fromJson(_normalizeMap(data));
+        })
         .toList(growable: false);
   }
 
@@ -34,7 +38,11 @@ class FirebaseAppointmentDataSource implements AppointmentDataSource {
         .where('doctorId', isEqualTo: doctorId)
         .get();
     return snapshot.docs
-        .map((doc) => Appointment.fromJson(_normalizeMap(doc.data())))
+        .map((doc) {
+          final data = doc.data();
+          data['id'] = doc.id;
+          return Appointment.fromJson(_normalizeMap(data));
+        })
         .toList(growable: false);
   }
 
@@ -48,7 +56,11 @@ class FirebaseAppointmentDataSource implements AppointmentDataSource {
         .where('scheduledAt', isEqualTo: scheduledAt.toIso8601String())
         .get();
     return snapshot.docs
-        .map((doc) => Appointment.fromJson(_normalizeMap(doc.data())))
+        .map((doc) {
+          final data = doc.data();
+          data['id'] = doc.id;
+          return Appointment.fromJson(_normalizeMap(data));
+        })
         .toList(growable: false);
   }
 
@@ -56,7 +68,9 @@ class FirebaseAppointmentDataSource implements AppointmentDataSource {
   Future<Appointment?> getById(String id) async {
     final snapshot = await _appointments.doc(id).get();
     if (!snapshot.exists) return null;
-    return Appointment.fromJson(_normalizeMap(snapshot.data()!));
+    final data = snapshot.data()!;
+    data['id'] = snapshot.id;
+    return Appointment.fromJson(_normalizeMap(data));
   }
 
   @override
@@ -116,9 +130,11 @@ class FirebaseAppointmentDataSource implements AppointmentDataSource {
         .where('userId', isEqualTo: userId)
         .snapshots()
         .map(
-          (snapshot) => snapshot.docs
-              .map((doc) => Appointment.fromJson(_normalizeMap(doc.data())))
-              .toList(),
+          (snapshot) => snapshot.docs.map((doc) {
+            final data = doc.data();
+            data['id'] = doc.id;
+            return Appointment.fromJson(_normalizeMap(data));
+          }).toList(),
         );
   }
 
@@ -129,9 +145,11 @@ class FirebaseAppointmentDataSource implements AppointmentDataSource {
         .where('doctorId', isEqualTo: doctorId)
         .snapshots()
         .map(
-          (snapshot) => snapshot.docs
-              .map((doc) => Appointment.fromJson(_normalizeMap(doc.data())))
-              .toList(),
+          (snapshot) => snapshot.docs.map((doc) {
+            final data = doc.data();
+            data['id'] = doc.id;
+            return Appointment.fromJson(_normalizeMap(data));
+          }).toList(),
         );
   }
 

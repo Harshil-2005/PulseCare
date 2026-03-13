@@ -23,7 +23,11 @@ class FirebaseReportDataSource implements ReportDataSource {
   Future<List<ReportModel>> getAll() async {
     final snapshot = await _reports.get();
     return snapshot.docs
-        .map((doc) => ReportModel.fromJson(_normalizeMap(doc.data())))
+        .map((doc) {
+          final data = doc.data();
+          data['id'] = doc.id;
+          return ReportModel.fromJson(_normalizeMap(data));
+        })
         .toList(growable: false);
   }
 

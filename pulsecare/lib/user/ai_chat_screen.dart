@@ -25,6 +25,11 @@ final _chatDoctorsProvider = FutureProvider<List<Doctor>>((ref) async {
   return ref.read(doctorRepositoryProvider).getAllDoctors();
 });
 
+final _chatDoctorByIdProvider = FutureProvider.autoDispose
+    .family<Doctor?, String>((ref, doctorId) async {
+      return ref.read(doctorRepositoryProvider).getDoctorById(doctorId);
+    });
+
 final _chatDoctorUserProvider = StreamProvider.autoDispose.family((
   ref,
   String userId,
@@ -34,8 +39,13 @@ final _chatDoctorUserProvider = StreamProvider.autoDispose.family((
 
 class AiChatScreen extends ConsumerStatefulWidget {
   final bool showDoctorRecommendations;
+  final String? doctorId;
 
-  const AiChatScreen({super.key, this.showDoctorRecommendations = true});
+  const AiChatScreen({
+    super.key,
+    this.showDoctorRecommendations = true,
+    this.doctorId,
+  });
 
   @override
   ConsumerState<AiChatScreen> createState() => _NewAiChatScreenState();
@@ -84,7 +94,19 @@ class _NewAiChatScreenState extends ConsumerState<AiChatScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final shouldShowRecommendations = _latestIntakeCompleted;
+    final selectedDoctorId = widget.doctorId?.trim();
+    final isDoctorSpecificMode =
+        selectedDoctorId != null && selectedDoctorId.isNotEmpty;
+    final shouldShowRecommendations =
+        _latestIntakeCompleted &&
+        widget.showDoctorRecommendations &&
+        !isDoctorSpecificMode;
+    final shouldShowContinueBooking =
+        _latestIntakeCompleted && isDoctorSpecificMode;
+    final selectedDoctorAsync = isDoctorSpecificMode
+        ? ref.watch(_chatDoctorByIdProvider(selectedDoctorId))
+        : null;
+    final selectedDoctor = selectedDoctorAsync?.valueOrNull;
 
     return Scaffold(
       appBar: AppBar(
@@ -176,7 +198,13 @@ class _NewAiChatScreenState extends ConsumerState<AiChatScreen> {
                 style: TextStyle(fontSize: 12, color: Colors.black54),
               ),
             ),
-            Expanded(child: chatList(shouldShowRecommendations)),
+            Expanded(
+              child: chatList(
+                shouldShowRecommendations: shouldShowRecommendations,
+                shouldShowContinueBooking: shouldShowContinueBooking,
+                selectedDoctor: selectedDoctor,
+              ),
+            ),
             inputBar(),
           ],
         ),
@@ -184,17 +212,24 @@ class _NewAiChatScreenState extends ConsumerState<AiChatScreen> {
     );
   }
 
-  Widget chatList(bool shouldShowRecommendations) {
+  Widget chatList({
+    required bool shouldShowRecommendations,
+    required bool shouldShowContinueBooking,
+    Doctor? selectedDoctor,
+  }) {
     final chatsAsync = ref.watch(_chatMessagesProvider(_conversationId));
     final doctorsAsync = ref.watch(_chatDoctorsProvider);
 
     return chatsAsync.when(
       data: (chats) {
         final doctors = doctorsAsync.valueOrNull ?? const <Doctor>[];
+        final extraItems =
+            (shouldShowRecommendations ? 1 : 0) +
+            (shouldShowContinueBooking ? 1 : 0);
         return ListView.builder(
           controller: _chatScrollController,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          itemCount: chats.length + (shouldShowRecommendations ? 1 : 0),
+          itemCount: chats.length + extraItems,
           itemBuilder: (context, index) {
             if (shouldShowRecommendations && index == chats.length) {
               return TweenAnimationBuilder<double>(
@@ -238,6 +273,24 @@ class _NewAiChatScreenState extends ConsumerState<AiChatScreen> {
                 ),
               );
             }
+            if (shouldShowContinueBooking &&
+                index == chats.length + (shouldShowRecommendations ? 1 : 0)) {
+              return TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0, end: 1),
+                duration: const Duration(milliseconds: 420),
+                curve: Curves.easeOutCubic,
+                builder: (context, value, child) {
+                  return Opacity(
+                    opacity: value,
+                    child: Transform.translate(
+                      offset: Offset((1 - value) * -24, 0),
+                      child: child,
+                    ),
+                  );
+                },
+                child: _buildContinueBookingCard(selectedDoctor),
+              );
+            }
             final chat = chats[index];
             final messageId = chat.id;
             return KeyedSubtree(
@@ -249,6 +302,66 @@ class _NewAiChatScreenState extends ConsumerState<AiChatScreen> {
       },
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stack) => Center(child: Text('Error: $error')),
+    );
+  }
+
+  Widget _buildContinueBookingCard(Doctor? doctor) {
+    if (doctor == null) {
+      return const SizedBox.shrink();
+    }
+
+    final selectedDoctorId = widget.doctorId?.trim();
+    final doctorName = doctor.name.trim().isEmpty ? 'this doctor' : doctor.name;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
+      child: InkWell(
+        onTap: () {
+          if (selectedDoctorId == null || selectedDoctorId.isEmpty) {
+            return;
+          }
+          FocusScope.of(context).unfocus();
+          FocusManager.instance.primaryFocus?.unfocus();
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => DoctorDetailScreen(
+                doctorId: selectedDoctorId,
+                aiSummaryId: _completedSummaryId,
+              ),
+            ),
+          );
+        },
+        borderRadius: BorderRadius.circular(30),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: const Color(0xff3F67FD),
+            borderRadius: BorderRadius.circular(30),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  'Book appointment with\nDr. $doctorName',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                    height: 1.3,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              const Icon(
+                Icons.arrow_forward_ios,
+                size: 16,
+                color: Colors.white,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -303,12 +416,7 @@ class _NewAiChatScreenState extends ConsumerState<AiChatScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text(
-                    chat.message,
-                    style: TextStyle(
-                      color: isUser ? Colors.white : Colors.black,
-                    ),
-                  ),
+                  _buildMessageBody(chat, isUser),
                   const SizedBox(height: 4),
                   Text(
                     TimeUtils.formatTime(chat.sentAt),
@@ -330,6 +438,65 @@ class _NewAiChatScreenState extends ConsumerState<AiChatScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildMessageBody(ChatMessage chat, bool isUser) {
+    if (!_isFormattedSummary(chat)) {
+      return Text(
+        chat.message,
+        style: TextStyle(color: isUser ? Colors.white : Colors.black),
+      );
+    }
+
+    final fields = _parseSummaryFields(chat.message);
+    const textStyle = TextStyle(color: Colors.black);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Appointment Summary',
+          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
+        ),
+        const SizedBox(height: 8),
+        Text('Symptoms: ${fields['symptoms']}', style: textStyle),
+        Text('Duration: ${fields['duration']}', style: textStyle),
+        Text('Severity: ${fields['severity']}', style: textStyle),
+        Text('Temperature: ${fields['temperature']}', style: textStyle),
+      ],
+    );
+  }
+
+  bool _isFormattedSummary(ChatMessage chat) {
+    return !chat.isUser &&
+        chat.message.trimLeft().toLowerCase().startsWith('summary:');
+  }
+
+  Map<String, String> _parseSummaryFields(String message) {
+    final cleaned = message.replaceFirst(
+      RegExp(r'^\s*summary:\s*', caseSensitive: false),
+      '',
+    );
+
+    String extract(String label, {String? until}) {
+      final lookahead = until == null
+          ? r'$'
+          : '(?=\\s*${until}\\s*:|' + r'$' + ')';
+      final pattern = RegExp(
+        '$label\\s*:\\s*(.*?)$lookahead',
+        caseSensitive: false,
+      );
+      final value =
+          pattern.firstMatch(cleaned)?.group(1)?.trim() ?? 'Not provided';
+      return value.replaceAll(RegExp(r'\.+$'), '').trim();
+    }
+
+    return {
+      'symptoms': extract('Symptoms', until: 'Duration'),
+      'duration': extract('Duration', until: 'Medications|Severity'),
+      'severity': extract('Severity', until: 'Temperature'),
+      'temperature': extract('Temperature'),
+    };
   }
 
   Widget inputBar() {
@@ -422,7 +589,7 @@ class _NewAiChatScreenState extends ConsumerState<AiChatScreen> {
       if (aiResponse.summaryId != null) {
         _completedSummaryId = aiResponse.summaryId;
       }
-      _latestIntakeCompleted = intakeCompleted;
+      _latestIntakeCompleted = _latestIntakeCompleted || intakeCompleted;
     });
     await _chatRepository.saveChatToHistory(
       userId: _userId,
@@ -432,7 +599,7 @@ class _NewAiChatScreenState extends ConsumerState<AiChatScreen> {
     if (!mounted) return;
     ref.invalidate(_chatMessagesProvider(_conversationId));
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _pinMessageNearTop(userMessageId, animated: false);
+      _scrollToBottom();
     });
   }
 

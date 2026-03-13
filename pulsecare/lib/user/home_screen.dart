@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
@@ -17,11 +15,9 @@ import 'package:pulsecare/user/app_shell.dart';
 import 'package:pulsecare/user/doctor_detail_screen.dart';
 
 final _homeDoctorsProvider = StreamProvider.autoDispose<List<Doctor>>((ref) {
-  final link = ref.keepAlive();
-
-  Timer(const Duration(minutes: 5), () {
-    link.close();
-  });
+  // Recreate this provider when account/session changes to avoid stale doctor
+  // list after logout/login without a full app restart.
+  ref.watch(sessionUserIdProvider);
 
   final doctorRepository = ref.watch(doctorRepositoryProvider);
   return doctorRepository.watchAllDoctors();
@@ -618,8 +614,9 @@ Widget doctorCart(
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const AiChatScreen(
+                            builder: (context) => AiChatScreen(
                               showDoctorRecommendations: false,
+                              doctorId: doctor.id,
                             ),
                           ),
                         );
