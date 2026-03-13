@@ -187,7 +187,7 @@ class _ChatHistoryScreenState extends ConsumerState<ChatHistoryScreen> {
             const SizedBox(width: 10),
             InkWell(
               onTap: () {
-                Navigator.push(
+                Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(builder: (_) => const NewAiChatScreen()),
                 );

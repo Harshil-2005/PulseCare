@@ -22,6 +22,7 @@ class ChatRepository extends ChangeNotifier {
   final ChatDataSource _dataSource;
   final AISummaryRepository _aiSummaryRepository;
   final AIService _aiService;
+  final Set<String> _savedConsultationHistory = <String>{};
 
   String startNewConversation(String userId) {
     return _dataSource.startNewConversation(userId);
@@ -123,6 +124,13 @@ class ChatRepository extends ChangeNotifier {
         temperature: aiResponse.temperature,
         summaryId: storedSummary.id,
       );
+
+      await saveChatToHistory(
+        userId: userId,
+        conversationId: conversationId,
+        summaryId: storedSummary.id,
+        intakeStage: aiResponse.stage,
+      );
       responseToReturn = completedResponse;
     }
 
@@ -162,10 +170,66 @@ class ChatRepository extends ChangeNotifier {
 
   Future<void> saveChatToHistory({
     required String userId,
-    required String userMessage,
-    required String aiReply,
+    required String conversationId,
+    required String summaryId,
+    required IntakeStage intakeStage,
   }) async {
-    await _dataSource.saveChatHistory(userId, userMessage, aiReply);
+    if (intakeStage != IntakeStage.completed) {
+      return;
+    }
+
+    if (_savedConsultationHistory.contains(conversationId)) {
+      return;
+    }
+
+    final summary =
+        _aiSummaryRepository.getById(summaryId) ??
+        await _aiSummaryRepository.getByIdAsync(summaryId);
+    if (summary == null) {
+      return;
+    }
+
+    final message = _buildFirstMessageFromSymptoms(summary.symptoms);
+    final summaryText = _buildHistorySummaryText(summary);
+
+    final existing = await _dataSource.getHistory(userId);
+    final alreadySaved = existing.any(
+      (entry) =>
+          entry.title.trim().toLowerCase() == message.toLowerCase() &&
+          entry.subtitle.trim().toLowerCase() ==
+              'ai: ${summaryText.toLowerCase()}',
+    );
+    if (alreadySaved) {
+      _savedConsultationHistory.add(conversationId);
+      return;
+    }
+
+    await _dataSource.saveChatHistory(userId, message, summaryText);
+    _savedConsultationHistory.add(conversationId);
+  }
+
+  String _buildFirstMessageFromSymptoms(List<String> symptoms) {
+    if (symptoms.isEmpty) return 'AI Symptom Check';
+    return symptoms.first;
+  }
+
+  String _buildHistorySummaryText(AISummaryModel summary) {
+    final symptoms =
+        summary.symptoms.isEmpty ? 'Not provided' : summary.symptoms.join(', ');
+    final duration = summary.duration?.trim().isNotEmpty == true
+        ? summary.duration!.trim()
+        : 'Not provided';
+    final severity = summary.severity?.trim().isNotEmpty == true
+        ? summary.severity!.trim()
+        : 'Not provided';
+    final medications = summary.medications?.trim().isNotEmpty == true
+        ? summary.medications!.trim()
+        : 'Not provided';
+    final temperature = summary.temperature?.trim().isNotEmpty == true
+        ? summary.temperature!.trim()
+        : 'Not provided';
+    return 'Summary: Symptoms $symptoms. Duration $duration. Severity $severity. '
+        'Medications $medications. Temperature $temperature.';
   }
 
   Future<List<ChatHistoryEntry>> getHistory(String userId) async {

@@ -40,11 +40,13 @@ final _chatDoctorUserProvider = StreamProvider.autoDispose.family((
 class AiChatScreen extends ConsumerStatefulWidget {
   final bool showDoctorRecommendations;
   final String? doctorId;
+  final String? initialMessage;
 
   const AiChatScreen({
     super.key,
     this.showDoctorRecommendations = true,
     this.doctorId,
+    this.initialMessage,
   });
 
   @override
@@ -60,12 +62,18 @@ class _NewAiChatScreenState extends ConsumerState<AiChatScreen> {
   bool _latestIntakeCompleted = false;
   String _userId = '';
   String _conversationId = '';
+  String? _pendingInitialMessage;
+  bool _didSendInitialMessage = false;
   final Map<String, GlobalKey> _messageKeys = {};
 
   @override
   void initState() {
     super.initState();
     _chatRepository = ref.read(chatRepositoryProvider);
+    final initial = widget.initialMessage?.trim();
+    _pendingInitialMessage = (initial == null || initial.isEmpty)
+        ? null
+        : initial;
     _initializeConversation();
   }
 
@@ -81,6 +89,19 @@ class _NewAiChatScreenState extends ConsumerState<AiChatScreen> {
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollToBottom(animated: false);
+    });
+    _triggerInitialMessageIfNeeded();
+  }
+
+  void _triggerInitialMessageIfNeeded() {
+    if (_didSendInitialMessage) return;
+    final initialMessage = _pendingInitialMessage;
+    if (initialMessage == null || initialMessage.isEmpty) return;
+
+    _didSendInitialMessage = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      sendMessage(initialMessage);
     });
   }
 
@@ -148,7 +169,7 @@ class _NewAiChatScreenState extends ConsumerState<AiChatScreen> {
             InkWell(
               onTap: () {
                 FocusScope.of(context).unfocus();
-                Navigator.push(
+                Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(
                     builder: (context) => const NewAiChatScreen(),
@@ -558,10 +579,10 @@ class _NewAiChatScreenState extends ConsumerState<AiChatScreen> {
     );
   }
 
-  Future<void> sendMessage() async {
+  Future<void> sendMessage([String? initialMessage]) async {
     FocusScope.of(context).unfocus();
 
-    final message = _controller.text.trim();
+    final message = (initialMessage ?? _controller.text).trim();
     if (message.isEmpty) return;
     late String userMessageId;
     final createdMessage = await _chatRepository.addUserMessage(
@@ -591,11 +612,6 @@ class _NewAiChatScreenState extends ConsumerState<AiChatScreen> {
       }
       _latestIntakeCompleted = _latestIntakeCompleted || intakeCompleted;
     });
-    await _chatRepository.saveChatToHistory(
-      userId: _userId,
-      userMessage: message,
-      aiReply: aiResponse.rawText,
-    );
     if (!mounted) return;
     ref.invalidate(_chatMessagesProvider(_conversationId));
     WidgetsBinding.instance.addPostFrameCallback((_) {
