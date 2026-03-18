@@ -1,4 +1,6 @@
-﻿import 'package:pulsecare/model/doctor_model.dart';
+﻿import 'dart:async';
+
+import 'package:pulsecare/model/doctor_model.dart';
 import 'package:pulsecare/model/day_schedule.dart';
 
 abstract class DoctorDataSource {
@@ -17,6 +19,8 @@ abstract class DoctorDataSource {
 class LocalDoctorDataSource implements DoctorDataSource {
   LocalDoctorDataSource();
 
+  final StreamController<List<Doctor>> _doctorStreamController =
+      StreamController<List<Doctor>>.broadcast();
   final List<Doctor> _doctors = [
     Doctor(
       id: '1',
@@ -299,12 +303,14 @@ class LocalDoctorDataSource implements DoctorDataSource {
 
   @override
   Stream<List<Doctor>> watchAll() async* {
-    yield await getAll();
+    _doctorStreamController.add(List.unmodifiable(_doctors));
+    yield* _doctorStreamController.stream;
   }
 
   @override
   Future<Doctor> createDoctor(Doctor doctor) async {
     _doctors.add(doctor);
+    _doctorStreamController.add(List.unmodifiable(_doctors));
     return doctor;
   }
 
@@ -313,6 +319,7 @@ class LocalDoctorDataSource implements DoctorDataSource {
     final index = _doctors.indexWhere((d) => d.id == doctor.id);
     if (index != -1) {
       _doctors[index] = doctor;
+      _doctorStreamController.add(List.unmodifiable(_doctors));
     }
   }
 
@@ -322,10 +329,12 @@ class LocalDoctorDataSource implements DoctorDataSource {
     if (index == -1) return;
     final current = _doctors[index];
     _doctors[index] = current.copyWith(patients: current.patients + 1);
+    _doctorStreamController.add(List.unmodifiable(_doctors));
   }
 
   @override
   Future<void> deleteDoctorProfileForUser(String userId) async {
     _doctors.removeWhere((doctor) => doctor.userId == userId);
+    _doctorStreamController.add(List.unmodifiable(_doctors));
   }
 }

@@ -94,58 +94,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   String _searchQuery = '';
   String _selectedSpecialization = 'All';
 
-  Widget _buildFilterChip({
-    required BuildContext context,
-    required String label,
-    required String activeSpecialization,
-  }) {
-    const chatButtonBlue = Color(0xFF3F67FD);
-    final isSelected = activeSpecialization == label;
-    return ChoiceChip(
-      label: Text(label),
-      selected: isSelected,
-      checkmarkColor: chatButtonBlue,
-      selectedColor: chatButtonBlue.withValues(alpha: 0.15),
-      backgroundColor: Colors.grey.shade100,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-      labelStyle: TextStyle(
-        color: isSelected ? chatButtonBlue : Colors.grey.shade700,
-      ),
-      onSelected: (_) {
-        setState(() {
-          _selectedSpecialization = label;
-        });
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final userId = ref.watch(sessionUserIdProvider);
     if (userId == null) {
       return const SizedBox.shrink();
     }
-    final doctorsAsync = ref.watch(_homeDoctorsProvider);
-    final userAsync = ref.watch(_homeUserProvider(userId));
-    final doctors = doctorsAsync.valueOrNull ?? const <Doctor>[];
-    final specializations =
-        doctors.map((doctor) => doctor.speciality).toSet().toList()..sort();
-    final chipLabels = ['All', ...specializations];
-    final activeSpecialization = chipLabels.contains(_selectedSpecialization)
-        ? _selectedSpecialization
-        : 'All';
-    final filteredDoctors = doctors.where((doctor) {
-      final matchesSearch =
-          doctor.name.toLowerCase().contains(_searchQuery) ||
-          doctor.speciality.toLowerCase().contains(_searchQuery);
 
-      final matchesFilter =
-          activeSpecialization == 'All' ||
-          doctor.speciality == activeSpecialization;
-
-      return matchesSearch && matchesFilter;
-    }).toList();
-    final user = userAsync.valueOrNull;
     final screenWidth = MediaQuery.sizeOf(context).width;
     final isCompact = screenWidth < 380;
     final aiCardHeight = isCompact ? 260.0 : 226.0;
@@ -157,51 +112,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         child: CustomScrollView(
           slivers: [
             SliverToBoxAdapter(
-              child: Row(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Hi, ${user?.fullName ?? ''}!',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 24,
-                          ),
-                        ),
-                        Text(
-                          'How are you feeling today?',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w400,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Spacer(),
-                  Padding(
-                    padding: const EdgeInsets.only(right: 16.0),
-                    child: InkWell(
-                      onTap: () {
-                        AppShell.of(context)?.switchToTab(3);
-                      },
-                      child: CircleAvatar(
-                        radius: 28,
-                        backgroundColor: Color.fromARGB(255, 210, 219, 255),
-                        child: SvgPicture.asset(
-                          'assets/icons/Avatar.svg',
-                          width: 28,
-                          height: 28,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+              child: HomeHeader(
+                userId: userId,
+                onAvatarTap: () {
+                  AppShell.of(context)?.switchToTab(3);
+                },
               ),
             ),
             SliverToBoxAdapter(
@@ -353,98 +268,243 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
             const SliverToBoxAdapter(child: SizedBox(height: 16)),
-            SliverAppBar(
-              pinned: true,
-              primary: false,
-              automaticallyImplyLeading: false,
-              backgroundColor: Colors.white,
-              surfaceTintColor: Colors.white,
-              elevation: 0,
-              scrolledUnderElevation: 0,
-              toolbarHeight: 58,
-              titleSpacing: 0,
-              title: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-                child: TextField(
-                  decoration: InputDecoration(
-                    hintText: 'Search doctors or specialization',
-                    prefixIcon: Icon(Icons.search),
-                    filled: true,
-                    fillColor: Colors.grey.shade100,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(30),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                  onChanged: (value) {
-                    setState(() {
-                      _searchQuery = value.toLowerCase();
-                    });
-                  },
-                ),
-              ),
-              bottom: PreferredSize(
-                preferredSize: const Size.fromHeight(58),
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 8, bottom: 8),
-                  child: SizedBox(
-                    height: 42,
-                    child: ListView(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      children: [
-                        for (final label in chipLabels)
-                          Padding(
-                            padding: const EdgeInsets.only(right: 8),
-                            child: _buildFilterChip(
-                              context: context,
-                              label: label,
-                              activeSpecialization: activeSpecialization,
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.only(left: 16, bottom: 8, top: 12),
-                child: Text(
-                  'Recommended Doctors',
-                  style: TextStyle(fontSize: 20, fontWeight: .w600),
-                ),
-              ),
-            ),
-            SliverList(
-              delegate: SliverChildBuilderDelegate((context, index) {
-                final doctor = filteredDoctors[index];
-                return Consumer(
-                  builder: (context, ref, _) {
-                    final appointmentsAsync = ref.watch(
-                      _homeDoctorAppointmentsProvider(doctor.id),
-                    );
-                    final appointments =
-                        appointmentsAsync.valueOrNull ?? const <Appointment>[];
-                    final status = _resolveDoctorStatus(
-                      doctor: doctor,
-                      appointments: appointments,
-                    );
-                    return doctorCart(
-                      doctor,
-                      context,
-                      status,
-                      topPadding: index == 0 ? 0 : 16,
-                    );
-                  },
-                );
-              }, childCount: filteredDoctors.length),
+            DoctorListSection(
+              searchQuery: _searchQuery,
+              selectedSpecialization: _selectedSpecialization,
+              onSearchChanged: (value) {
+                setState(() {
+                  _searchQuery = value.toLowerCase();
+                });
+              },
+              onSpecializationChanged: (value) {
+                setState(() {
+                  _selectedSpecialization = value;
+                });
+              },
             ),
             const SliverToBoxAdapter(child: SizedBox(height: 32)),
           ],
         ),
       ),
+    );
+  }
+}
+
+class HomeHeader extends ConsumerWidget {
+  const HomeHeader({
+    super.key,
+    required this.userId,
+    required this.onAvatarTap,
+  });
+
+  final String userId;
+  final VoidCallback onAvatarTap;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final userAsync = ref.watch(_homeUserProvider(userId));
+    final user = userAsync.valueOrNull;
+
+    return Row(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Hi, ${user?.fullName ?? ''}!',
+                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 24),
+              ),
+              Text(
+                'How are you feeling today?',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w400,
+                  color: Colors.grey,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Spacer(),
+        Padding(
+          padding: const EdgeInsets.only(right: 16.0),
+          child: InkWell(
+            onTap: onAvatarTap,
+            child: CircleAvatar(
+              radius: 28,
+              backgroundColor: Color.fromARGB(255, 210, 219, 255),
+              child: SvgPicture.asset(
+                'assets/icons/Avatar.svg',
+                width: 28,
+                height: 28,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class DoctorListSection extends ConsumerWidget {
+  const DoctorListSection({
+    super.key,
+    required this.searchQuery,
+    required this.selectedSpecialization,
+    required this.onSearchChanged,
+    required this.onSpecializationChanged,
+  });
+
+  final String searchQuery;
+  final String selectedSpecialization;
+  final ValueChanged<String> onSearchChanged;
+  final ValueChanged<String> onSpecializationChanged;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final doctorsAsync = ref.watch(_homeDoctorsProvider);
+    final doctors = doctorsAsync.valueOrNull ?? const <Doctor>[];
+
+    final specializations =
+        doctors.map((doctor) => doctor.speciality).toSet().toList()..sort();
+    final chipLabels = ['All', ...specializations];
+    final activeSpecialization = chipLabels.contains(selectedSpecialization)
+        ? selectedSpecialization
+        : 'All';
+
+    final filteredDoctors = doctors.where((doctor) {
+      final matchesSearch =
+          doctor.name.toLowerCase().contains(searchQuery) ||
+          doctor.speciality.toLowerCase().contains(searchQuery);
+
+      final matchesFilter =
+          activeSpecialization == 'All' ||
+          doctor.speciality == activeSpecialization;
+
+      return matchesSearch && matchesFilter;
+    }).toList();
+
+    return SliverMainAxisGroup(
+      slivers: [
+        SliverAppBar(
+          pinned: true,
+          primary: false,
+          automaticallyImplyLeading: false,
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.white,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          toolbarHeight: 58,
+          titleSpacing: 0,
+          title: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+            child: TextField(
+              decoration: InputDecoration(
+                hintText: 'Search doctors or specialization',
+                prefixIcon: Icon(Icons.search),
+                filled: true,
+                fillColor: Colors.grey.shade100,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(30),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+              onChanged: onSearchChanged,
+            ),
+          ),
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(58),
+            child: Padding(
+              padding: const EdgeInsets.only(top: 8, bottom: 8),
+              child: SizedBox(
+                height: 42,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  children: [
+                    for (final label in chipLabels)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: _HomeFilterChip(
+                          label: label,
+                          activeSpecialization: activeSpecialization,
+                          onSelected: onSpecializationChanged,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.only(left: 16, bottom: 8, top: 12),
+            child: Text(
+              'Recommended Doctors',
+              style: TextStyle(fontSize: 20, fontWeight: .w600),
+            ),
+          ),
+        ),
+        SliverList(
+          delegate: SliverChildBuilderDelegate((context, index) {
+            final doctor = filteredDoctors[index];
+            return Consumer(
+              builder: (context, ref, _) {
+                final appointmentsAsync = ref.watch(
+                  _homeDoctorAppointmentsProvider(doctor.id),
+                );
+                final appointments =
+                    appointmentsAsync.valueOrNull ?? const <Appointment>[];
+                final status = _resolveDoctorStatus(
+                  doctor: doctor,
+                  appointments: appointments,
+                );
+                return doctorCart(
+                  doctor,
+                  context,
+                  status,
+                  topPadding: index == 0 ? 0 : 16,
+                );
+              },
+            );
+          }, childCount: filteredDoctors.length),
+        ),
+      ],
+    );
+  }
+}
+
+class _HomeFilterChip extends StatelessWidget {
+  const _HomeFilterChip({
+    required this.label,
+    required this.activeSpecialization,
+    required this.onSelected,
+  });
+
+  final String label;
+  final String activeSpecialization;
+  final ValueChanged<String> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    const chatButtonBlue = Color(0xFF3F67FD);
+    final isSelected = activeSpecialization == label;
+
+    return ChoiceChip(
+      label: Text(label),
+      selected: isSelected,
+      checkmarkColor: chatButtonBlue,
+      selectedColor: chatButtonBlue.withValues(alpha: 0.15),
+      backgroundColor: Colors.grey.shade100,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+      labelStyle: TextStyle(
+        color: isSelected ? chatButtonBlue : Colors.grey.shade700,
+      ),
+      onSelected: (_) => onSelected(label),
     );
   }
 }

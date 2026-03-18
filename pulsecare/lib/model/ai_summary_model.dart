@@ -6,6 +6,9 @@ class AISummaryModel {
   final String? medications;
   final String? severity;
   final String? temperature;
+  final String? frequency;
+  final Map<String, String> followUpAnswers;
+  final String? clinicalSummary;
   final String recommendedSpecialty;
   final String triageLevel;
   final double confidence;
@@ -19,11 +22,15 @@ class AISummaryModel {
     this.medications,
     this.severity,
     this.temperature,
+    this.frequency,
+    Map<String, String>? followUpAnswers,
+    this.clinicalSummary,
     required this.recommendedSpecialty,
     required this.triageLevel,
     required this.confidence,
     required this.generatedAt,
-  }) : symptoms = List.unmodifiable(symptoms);
+  }) : symptoms = List.unmodifiable(symptoms),
+       followUpAnswers = Map.unmodifiable(followUpAnswers ?? const {});
 
   AISummaryModel copyWith({
     String? id,
@@ -33,6 +40,9 @@ class AISummaryModel {
     String? medications,
     String? severity,
     String? temperature,
+    String? frequency,
+    Map<String, String>? followUpAnswers,
+    String? clinicalSummary,
     String? recommendedSpecialty,
     String? triageLevel,
     double? confidence,
@@ -46,6 +56,9 @@ class AISummaryModel {
       medications: medications ?? this.medications,
       severity: severity ?? this.severity,
       temperature: temperature ?? this.temperature,
+      frequency: frequency ?? this.frequency,
+      followUpAnswers: followUpAnswers ?? this.followUpAnswers,
+      clinicalSummary: clinicalSummary ?? this.clinicalSummary,
       recommendedSpecialty:
           recommendedSpecialty ?? this.recommendedSpecialty,
       triageLevel: triageLevel ?? this.triageLevel,
@@ -62,6 +75,9 @@ class AISummaryModel {
         'medications': medications,
         'severity': severity,
         'temperature': temperature,
+        'frequency': frequency,
+        'followUpAnswers': followUpAnswers,
+        'clinicalSummary': clinicalSummary,
         'recommendedSpecialty': recommendedSpecialty,
         'triageLevel': triageLevel,
         'confidence': confidence,
@@ -77,6 +93,12 @@ class AISummaryModel {
         medications: json['medications'] as String?,
         severity: json['severity'] as String?,
         temperature: json['temperature'] as String?,
+        frequency: json['frequency'] as String?,
+        followUpAnswers: (json['followUpAnswers'] as Map?)?.map(
+              (key, value) => MapEntry(key.toString(), value.toString()),
+            ) ??
+            const {},
+        clinicalSummary: json['clinicalSummary'] as String?,
         recommendedSpecialty:
             json['recommendedSpecialty'] as String,
         triageLevel: json['triageLevel'] as String,

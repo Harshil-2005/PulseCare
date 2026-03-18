@@ -34,7 +34,10 @@ class ApiChatDataSource implements ChatDataSource {
   }
 
   @override
-  Future<void> saveChatHistory(String userId, String userMessage, String aiReply) {
+  Future<void> saveChatHistory(
+    String userId,
+    ChatHistoryEntry chatHistoryEntry,
+  ) {
     throw UnimplementedError('API not implemented yet');
   }
 

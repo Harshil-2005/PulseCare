@@ -12,7 +12,10 @@ abstract class ChatDataSource {
   void clearMessages(String conversationId);
   String startNewConversation(String userId);
   Future<List<ChatHistoryEntry>> getHistory(String userId);
-  Future<void> saveChatHistory(String userId, String userMessage, String aiReply);
+  Future<void> saveChatHistory(
+    String userId,
+    ChatHistoryEntry entry,
+  );
   Future<void> deleteHistoryEntry(String messageId);
 }
 
@@ -89,23 +92,43 @@ class LocalChatDataSource implements ChatDataSource {
   }
 
   @override
-  Future<void> saveChatHistory(
-    String userId,
-    String userMessage,
-    String aiReply,
-  ) async {
+  Future<void> saveChatHistory(String userId, ChatHistoryEntry entry) async {
     final now = DateTime.now();
     final historyUserId = userId.isEmpty ? '_guest' : userId;
-    final entry = ChatHistoryEntry(
-      id: '${historyUserId}_${now.microsecondsSinceEpoch}',
-      title: _buildChatTitle(userMessage),
-      subtitle: 'AI: $aiReply',
-      tags: _extractTags(userMessage),
-      createdAt: now,
-    );
     final items = await _loadAllHistory();
-    items.removeWhere((e) => e.id == entry.id);
-    items.insert(0, entry);
+    final index = items.indexWhere(
+      (existing) => existing.conversationId == entry.conversationId,
+    );
+    if (index >= 0) {
+      final existing = items[index];
+      final updated = ChatHistoryEntry(
+        id: existing.id,
+        conversationId: entry.conversationId,
+        title: entry.title,
+        subtitle: entry.subtitle,
+        tags: entry.tags,
+        createdAt: existing.createdAt,
+        updatedAt: now,
+        isCompleted: entry.isCompleted,
+      );
+      items
+        ..removeAt(index)
+        ..insert(0, updated);
+    } else {
+      final stored = ChatHistoryEntry(
+        id: entry.conversationId.isEmpty
+            ? '${historyUserId}_${now.microsecondsSinceEpoch}'
+            : entry.conversationId,
+        conversationId: entry.conversationId,
+        title: entry.title,
+        subtitle: entry.subtitle,
+        tags: entry.tags,
+        createdAt: entry.createdAt,
+        updatedAt: now,
+        isCompleted: entry.isCompleted,
+      );
+      items.insert(0, stored);
+    }
     await _saveAllHistory(items);
   }
 
@@ -141,8 +164,8 @@ class LocalChatDataSource implements ChatDataSource {
   }
 
   bool _belongsToUser(ChatHistoryEntry entry, String userId) {
-    final key = userId.isEmpty ? '_guest' : userId;
-    return entry.id.startsWith('${key}_');
+    if (userId.isEmpty) return true;
+    return entry.conversationId.startsWith('${userId}_');
   }
 
   String _buildChatTitle(String userMessage) {

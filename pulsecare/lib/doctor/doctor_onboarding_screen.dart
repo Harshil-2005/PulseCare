@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:pulsecare/constrains/next_action_button.dart';
+import 'package:pulsecare/data/medical/medical_specialties.dart';
 import 'package:pulsecare/doctor/doctor_app_shell.dart';
 import 'package:pulsecare/model/day_schedule.dart';
 import 'package:pulsecare/model/doctor_model.dart';
@@ -46,18 +47,7 @@ class _DoctorAccountSetupFlowScreenState
     'Sun',
   ];
   final Set<String> _selectedDays = <String>{};
-  final List<String> _specializations = const [
-    'Cardiologist',
-    'Dermatologist',
-    'Dentist',
-    'Neurologist',
-    'Orthopedic',
-    'Pediatrician',
-    'General Physician',
-    'Gynecologist',
-    'Psychiatrist',
-    'ENT Specialist',
-  ];
+  final List<String> _specializations = medicalSpecialties;
   List<String> _filteredSpecializations = [];
 
   static const List<String> _titles = [

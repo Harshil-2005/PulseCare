@@ -21,6 +21,19 @@ class DoctorRepository extends ChangeNotifier {
     return await _dataSource.getAll();
   }
 
+  Future<List<Doctor>> getDoctorsBySpecialty(String specialty) async {
+    final allDoctors = await getAllDoctors();
+    final normalizedSpecialty = specialty.trim();
+
+    if (normalizedSpecialty.isEmpty) {
+      return allDoctors;
+    }
+
+    return allDoctors
+        .where((doctor) => doctor.speciality == normalizedSpecialty)
+        .toList(growable: false);
+  }
+
   Stream<Doctor?> watchDoctorById(String id) {
     return _dataSource.watchById(id);
   }
@@ -190,7 +203,6 @@ class DoctorRepository extends ChangeNotifier {
   }
 
   int _timeToMinutes(TimeOfDay value) => value.hour * 60 + value.minute;
-
 
   String _formatTime(TimeOfDay value) {
     final hour = value.hourOfPeriod == 0 ? 12 : value.hourOfPeriod;

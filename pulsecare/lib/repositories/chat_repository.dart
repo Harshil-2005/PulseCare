@@ -22,7 +22,6 @@ class ChatRepository extends ChangeNotifier {
   final ChatDataSource _dataSource;
   final AISummaryRepository _aiSummaryRepository;
   final AIService _aiService;
-  final Set<String> _savedConsultationHistory = <String>{};
   final Map<String, String> _summaryIdByConversation = <String, String>{};
 
   String startNewConversation(String userId) {
@@ -101,61 +100,65 @@ class ChatRepository extends ChangeNotifier {
           medications: aiResponse.medications,
           severity: aiResponse.severity,
           temperature: aiResponse.temperature,
+          frequency: aiResponse.frequency,
+          followUpAnswers: aiResponse.followUpAnswers,
+          clinicalSummary: aiResponse.clinicalSummary,
           summaryId: existingSummaryId,
         );
       } else {
-      final summary = AISummaryModel(
-        id: '',
-        userId: userId,
-        symptoms: aiResponse.detectedSymptoms,
-        duration: aiResponse.duration,
-        medications: aiResponse.medications,
-        severity: aiResponse.severity,
-        temperature: aiResponse.temperature,
-        recommendedSpecialty: aiResponse.recommendedSpecialty,
-        triageLevel: aiResponse.triageLevel,
-        confidence: aiResponse.confidence,
-        generatedAt: DateTime.now(),
-      );
-      AISummaryModel storedSummary;
-      try {
-        storedSummary = await _aiSummaryRepository.addSummaryAsync(summary);
-      } catch (error, stackTrace) {
-        // Keep the intake flow alive if remote persistence fails.
-        debugPrint('AISummary remote save failed: $error');
-        debugPrintStack(stackTrace: stackTrace);
-        storedSummary = _aiSummaryRepository.addSummary(summary);
-        _scheduleSummaryRetry(storedSummary);
-      }
+        final summary = AISummaryModel(
+          id: '',
+          userId: userId,
+          symptoms: aiResponse.detectedSymptoms,
+          duration: aiResponse.duration,
+          medications: aiResponse.medications,
+          severity: aiResponse.severity,
+          temperature: aiResponse.temperature,
+          frequency: aiResponse.frequency,
+          followUpAnswers: aiResponse.followUpAnswers,
+          clinicalSummary: aiResponse.clinicalSummary ?? aiResponse.rawText,
+          recommendedSpecialty: aiResponse.recommendedSpecialty,
+          triageLevel: aiResponse.triageLevel,
+          confidence: aiResponse.confidence,
+          generatedAt: DateTime.now(),
+        );
+        AISummaryModel storedSummary;
+        try {
+          storedSummary = await _aiSummaryRepository.addSummaryAsync(summary);
+        } catch (error, stackTrace) {
+          // Keep the intake flow alive if remote persistence fails.
+          debugPrint('AISummary remote save failed: $error');
+          debugPrintStack(stackTrace: stackTrace);
+          storedSummary = _aiSummaryRepository.addSummary(summary);
+          _scheduleSummaryRetry(storedSummary);
+        }
 
-      final completedResponse = AIResponse(
-        rawText: aiResponse.rawText,
-        detectedSymptoms: aiResponse.detectedSymptoms,
-        recommendedSpecialty: aiResponse.recommendedSpecialty,
-        triageLevel: aiResponse.triageLevel,
-        confidence: aiResponse.confidence,
-        generatedAt: aiResponse.generatedAt,
-        stage: aiResponse.stage,
-        duration: aiResponse.duration,
-        medications: aiResponse.medications,
-        severity: aiResponse.severity,
-        temperature: aiResponse.temperature,
-        summaryId: storedSummary.id,
-      );
+        final completedResponse = AIResponse(
+          rawText: aiResponse.rawText,
+          detectedSymptoms: aiResponse.detectedSymptoms,
+          recommendedSpecialty: aiResponse.recommendedSpecialty,
+          triageLevel: aiResponse.triageLevel,
+          confidence: aiResponse.confidence,
+          generatedAt: aiResponse.generatedAt,
+          stage: aiResponse.stage,
+          duration: aiResponse.duration,
+          medications: aiResponse.medications,
+          severity: aiResponse.severity,
+          temperature: aiResponse.temperature,
+          frequency: aiResponse.frequency,
+          followUpAnswers: aiResponse.followUpAnswers,
+          clinicalSummary: aiResponse.clinicalSummary,
+          summaryId: storedSummary.id,
+        );
 
-      _summaryIdByConversation[conversationId] = storedSummary.id;
-      await saveChatToHistory(
-        userId: userId,
-        conversationId: conversationId,
-        summaryId: storedSummary.id,
-        intakeStage: aiResponse.stage,
-      );
-      responseToReturn = completedResponse;
+        _summaryIdByConversation[conversationId] = storedSummary.id;
+        responseToReturn = completedResponse;
       }
     }
 
     final messages = await _dataSource.getMessages(conversationId);
     final newId = messages.length.toString();
+    final isSummary = aiResponse.stage == IntakeStage.completed;
     _dataSource.addMessage(
       conversationId,
       ChatMessage(
@@ -163,8 +166,45 @@ class ChatRepository extends ChangeNotifier {
         message: aiResponse.rawText,
         isUser: false,
         sentAt: DateTime.now(),
+        summarySymptoms: isSummary ? aiResponse.detectedSymptoms : null,
+        summaryDuration: isSummary ? aiResponse.duration : null,
+        summaryMedications: isSummary ? aiResponse.medications : null,
+        summarySeverity: isSummary ? aiResponse.severity : null,
+        summaryTemperature:
+            isSummary && aiResponse.detectedSymptoms.contains('fever')
+                ? aiResponse.temperature
+                : null,
+        summaryFrequency: isSummary ? aiResponse.frequency : null,
+        summaryFollowUpAnswers: isSummary ? aiResponse.followUpAnswers : null,
+        summaryClinicalSummary: isSummary ? aiResponse.clinicalSummary : null,
       ),
     );
+
+    if (aiResponse.stage == IntakeStage.completed) {
+      final updatedMessages = await _dataSource.getMessages(conversationId);
+      final explanationId = updatedMessages.length.toString();
+      _dataSource.addMessage(
+        conversationId,
+        ChatMessage(
+          id: explanationId,
+          message: _buildRecommendationExplanation(
+            aiResponse.detectedSymptoms,
+            aiResponse.recommendedSpecialty,
+          ),
+          isUser: false,
+          sentAt: DateTime.now(),
+        ),
+      );
+    }
+
+    final updatedMessages = await _dataSource.getMessages(conversationId);
+    await saveChatToHistory(
+      userId: userId,
+      conversationId: conversationId,
+      messages: updatedMessages,
+      aiResponse: responseToReturn,
+    );
+
     notifyListeners();
 
     return responseToReturn;
@@ -191,51 +231,65 @@ class ChatRepository extends ChangeNotifier {
   Future<void> saveChatToHistory({
     required String userId,
     required String conversationId,
-    required String summaryId,
-    required IntakeStage intakeStage,
+    required List<ChatMessage> messages,
+    required AIResponse aiResponse,
   }) async {
-    if (intakeStage != IntakeStage.completed) {
-      return;
+    final isCompleted = aiResponse.stage == IntakeStage.completed;
+    final lastUser = messages
+        .where((message) => message.isUser)
+        .map((message) => message.message)
+        .cast<String?>()
+        .lastWhere((message) => message != null, orElse: () => '')!
+        .trim();
+
+    String title;
+    String subtitle;
+    List<String> tags;
+
+    if (isCompleted) {
+      final summaryId = aiResponse.summaryId;
+      final summary = summaryId == null
+          ? null
+          : _aiSummaryRepository.getById(summaryId) ??
+              await _aiSummaryRepository.getByIdAsync(summaryId);
+      if (summary != null) {
+        title = _buildFirstMessageFromSymptoms(summary.symptoms);
+        subtitle = _buildHistorySummaryText(summary);
+        tags = summary.symptoms.map(_formatSymptomLabel).toList();
+      } else {
+        title = lastUser.isEmpty ? 'AI Symptom Check' : lastUser;
+        subtitle = 'Summary generated';
+        tags = lastUser.isEmpty ? <String>['General'] : _extractTags(lastUser);
+      }
+    } else {
+      title = lastUser.isEmpty ? 'AI Symptom Check' : lastUser;
+      subtitle = 'In progress';
+      tags = lastUser.isEmpty ? <String>['General'] : _extractTags(lastUser);
     }
 
-    if (_savedConsultationHistory.contains(conversationId)) {
-      return;
-    }
-
-    final summary =
-        _aiSummaryRepository.getById(summaryId) ??
-        await _aiSummaryRepository.getByIdAsync(summaryId);
-    if (summary == null) {
-      return;
-    }
-
-    final message = _buildFirstMessageFromSymptoms(summary.symptoms);
-    final summaryText = _buildHistorySummaryText(summary);
-
-    final existing = await _dataSource.getHistory(userId);
-    final alreadySaved = existing.any(
-      (entry) =>
-          entry.title.trim().toLowerCase() == message.toLowerCase() &&
-          entry.subtitle.trim().toLowerCase() ==
-              'ai: ${summaryText.toLowerCase()}',
+    final entry = ChatHistoryEntry(
+      id: conversationId,
+      conversationId: conversationId,
+      title: title,
+      subtitle: isCompleted ? 'AI: $subtitle' : subtitle,
+      tags: tags,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+      isCompleted: isCompleted,
     );
-    if (alreadySaved) {
-      _savedConsultationHistory.add(conversationId);
-      return;
-    }
 
-    await _dataSource.saveChatHistory(userId, message, summaryText);
-    _savedConsultationHistory.add(conversationId);
+    await _dataSource.saveChatHistory(userId, entry);
   }
 
   String _buildFirstMessageFromSymptoms(List<String> symptoms) {
     if (symptoms.isEmpty) return 'AI Symptom Check';
-    return symptoms.first;
+    return _formatSymptomLabel(symptoms.first);
   }
 
   String _buildHistorySummaryText(AISummaryModel summary) {
-    final symptoms =
-        summary.symptoms.isEmpty ? 'Not provided' : summary.symptoms.join(', ');
+    final symptoms = summary.symptoms.isEmpty
+        ? 'Not provided'
+        : summary.symptoms.map(_formatSymptomLabel).join(', ');
     final duration = summary.duration?.trim().isNotEmpty == true
         ? summary.duration!.trim()
         : 'Not provided';
@@ -248,8 +302,88 @@ class ChatRepository extends ChangeNotifier {
     final temperature = summary.temperature?.trim().isNotEmpty == true
         ? summary.temperature!.trim()
         : 'Not provided';
-    return 'Summary: Symptoms $symptoms. Duration $duration. Severity $severity. '
+    final frequency = _shouldShowFrequency(summary.symptoms, summary.frequency)
+        ? summary.frequency!.trim()
+        : null;
+    return 'Summary: Symptoms $symptoms. Duration $duration. '
+        '${frequency == null ? '' : 'Frequency $frequency. '}'
+        'Severity $severity. '
         'Medications $medications. Temperature $temperature.';
+  }
+
+  List<String> _extractTags(String text) {
+    final lower = text.toLowerCase();
+    final tags = <String>{};
+    const tagMap = <String, String>{
+      'blood pressure': 'Blood Pressure',
+      'sleep': 'Sleep',
+      'headache': 'Headache',
+      'dizziness': 'Dizziness',
+      'allergy': 'Allergy',
+      'sugar': 'Blood Sugar',
+      'glucose': 'Blood Sugar',
+      'nutrition': 'Nutrition',
+      'diet': 'Diet',
+      'fever': 'Fever',
+      'cough': 'Cough',
+      'stress': 'Stress',
+      'anxiety': 'Anxiety',
+    };
+
+    tagMap.forEach((keyword, tag) {
+      if (lower.contains(keyword)) {
+        tags.add(tag);
+      }
+    });
+
+    if (tags.isEmpty) {
+      tags.add('General');
+    }
+    return tags.take(3).toList();
+  }
+
+  bool _shouldShowFrequency(List<String> symptoms, String? frequency) {
+    if (frequency == null || frequency.trim().isEmpty) return false;
+    const frequencySymptoms = <String>{
+      'headache',
+      'palpitations',
+      'dizziness',
+      'nausea',
+      'vomiting',
+      'diarrhea',
+      'constipation',
+      'sneezing',
+      'anxiety',
+      'muscle_pain',
+    };
+    return symptoms.any(frequencySymptoms.contains);
+  }
+
+  String _formatSymptomLabel(String symptom) {
+    final normalized = symptom.replaceAll('_', ' ').trim();
+    if (normalized.isEmpty) return normalized;
+    final words = normalized
+        .split(' ')
+        .where((word) => word.isNotEmpty)
+        .map((word) =>
+            '${word[0].toUpperCase()}${word.substring(1).toLowerCase()}')
+        .toList(growable: false);
+    return words.join(' ');
+  }
+
+  String _buildRecommendationExplanation(
+    List<String> symptoms,
+    String recommendedSpecialty,
+  ) {
+    final symptomsText = symptoms.isEmpty
+        ? 'your reported symptoms'
+        : symptoms.join(', ');
+    final specialty = recommendedSpecialty.trim().isEmpty
+        ? 'General Physician'
+        : recommendedSpecialty;
+
+    return 'Based on your symptoms ($symptomsText), '
+        'a $specialty may be the most suitable specialist for further evaluation.';
   }
 
   Future<List<ChatHistoryEntry>> getHistory(String userId) async {

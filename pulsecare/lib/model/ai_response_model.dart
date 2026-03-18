@@ -12,6 +12,9 @@ class AIResponse {
   final String? medications;
   final String? severity;
   final String? temperature;
+  final String? frequency;
+  final Map<String, String>? followUpAnswers;
+  final String? clinicalSummary;
   final String? summaryId;
 
   AIResponse({
@@ -26,6 +29,9 @@ class AIResponse {
     this.medications,
     this.severity,
     this.temperature,
+    this.frequency,
+    this.followUpAnswers,
+    this.clinicalSummary,
     this.summaryId,
   }) : detectedSymptoms = List.unmodifiable(detectedSymptoms);
 
@@ -41,6 +47,9 @@ class AIResponse {
     String? medications,
     String? severity,
     String? temperature,
+    String? frequency,
+    Map<String, String>? followUpAnswers,
+    String? clinicalSummary,
   }) {
     return AIResponse(
       rawText: rawText ?? this.rawText,
@@ -55,6 +64,9 @@ class AIResponse {
       medications: medications ?? this.medications,
       severity: severity ?? this.severity,
       temperature: temperature ?? this.temperature,
+      frequency: frequency ?? this.frequency,
+      followUpAnswers: followUpAnswers ?? this.followUpAnswers,
+      clinicalSummary: clinicalSummary ?? this.clinicalSummary,
     );
   }
 
@@ -71,6 +83,9 @@ class AIResponse {
       'medications': medications,
       'severity': severity,
       'temperature': temperature,
+      'frequency': frequency,
+      'followUpAnswers': followUpAnswers,
+      'clinicalSummary': clinicalSummary,
       'summaryId': summaryId,
     };
   }
@@ -93,6 +108,11 @@ class AIResponse {
       medications: json['medications'] as String?,
       severity: json['severity'] as String?,
       temperature: json['temperature'] as String?,
+      frequency: json['frequency'] as String?,
+      followUpAnswers: (json['followUpAnswers'] as Map?)?.map(
+        (key, value) => MapEntry(key.toString(), value.toString()),
+      ),
+      clinicalSummary: json['clinicalSummary'] as String?,
       summaryId: json['summaryId'] as String?,
     );
   }

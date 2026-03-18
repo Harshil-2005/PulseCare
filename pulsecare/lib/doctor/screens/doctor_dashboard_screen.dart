@@ -55,6 +55,10 @@ class DoctorDashboardScreen extends ConsumerStatefulWidget {
 
 class _DoctorDashboardScreenState extends ConsumerState<DoctorDashboardScreen> {
   late AppointmentRepository _appointmentRepository;
+  bool _identityLoading = true;
+  bool _hasDoctorProfile = false;
+  String _doctorProfileId = '';
+  String _doctorDisplayName = 'Doctor';
 
   @override
   void initState() {
@@ -124,63 +128,33 @@ class _DoctorDashboardScreenState extends ConsumerState<DoctorDashboardScreen> {
     return sorted;
   }
 
+  void _updateHeaderState({
+    required bool isLoading,
+    required bool hasDoctorProfile,
+    required String doctorProfileId,
+    required String doctorDisplayName,
+  }) {
+    if (_identityLoading == isLoading &&
+        _hasDoctorProfile == hasDoctorProfile &&
+        _doctorProfileId == doctorProfileId &&
+        _doctorDisplayName == doctorDisplayName) {
+      return;
+    }
+
+    setState(() {
+      _identityLoading = isLoading;
+      _hasDoctorProfile = hasDoctorProfile;
+      _doctorProfileId = doctorProfileId;
+      _doctorDisplayName = doctorDisplayName;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final userId = ref.watch(sessionUserIdProvider);
     if (userId == null) {
       return const SizedBox.shrink();
     }
-    final identityAsync = ref.watch(_dashboardIdentityProvider(userId));
-    if (identityAsync.isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
-
-    final currentDoctor = identityAsync.valueOrNull?.doctor;
-    final user = identityAsync.valueOrNull?.user;
-    if (currentDoctor == null) {
-      return Scaffold(
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  'Doctor onboarding is not completed yet.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-                ),
-                const SizedBox(height: 12),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const DoctorOnboardingScreen(),
-                      ),
-                    );
-                  },
-                  child: const Text('Complete Onboarding'),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-
-    final firstName = user?.firstName.trim() ?? '';
-    final lastName = user?.lastName.trim() ?? '';
-    final fullName = [
-      firstName,
-      lastName,
-    ].where((part) => part.isNotEmpty).join(' ').trim();
-    final fallbackName = (currentDoctor?.name.trim() ?? '').isNotEmpty
-        ? (currentDoctor!.name.trim().startsWith('Dr.')
-              ? currentDoctor.name.trim()
-              : 'Dr. ${currentDoctor.name.trim()}')
-        : 'Doctor';
-    final doctorName = fullName.isNotEmpty ? 'Dr. $fullName' : fallbackName;
     final screenWidth = MediaQuery.sizeOf(context).width;
     final isCompact = screenWidth < 380;
     final horizontalPadding = isCompact ? 14.0 : 16.0;
@@ -192,98 +166,215 @@ class _DoctorDashboardScreenState extends ConsumerState<DoctorDashboardScreen> {
         child: CustomScrollView(
           slivers: [
             SliverToBoxAdapter(child: SizedBox(height: topSpacing)),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-                child: Row(
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+            DashboardHeader(
+              userId: userId,
+              horizontalPadding: horizontalPadding,
+              onIdentityResolved: _updateHeaderState,
+              onProfileTap: (doctorId) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    settings: const RouteSettings(name: '/doctorProfile'),
+                    builder: (_) => DoctorProfileScreen(doctorId: doctorId),
+                  ),
+                );
+              },
+            ),
+            if (_identityLoading)
+              const SliverFillRemaining(
+                hasScrollBody: false,
+                child: Center(child: CircularProgressIndicator()),
+              )
+            else if (!_hasDoctorProfile)
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(
-                          'Hi, $doctorName',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 24,
-                          ),
-                        ),
-                        Text(
-                          'Here is your schedule overview',
+                        const Text(
+                          'Doctor onboarding is not completed yet.',
+                          textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 16,
-                            fontWeight: FontWeight.w400,
-                            color: Colors.grey,
+                            fontWeight: FontWeight.w500,
                           ),
+                        ),
+                        const SizedBox(height: 12),
+                        ElevatedButton(
+                          onPressed: () {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const DoctorOnboardingScreen(),
+                              ),
+                            );
+                          },
+                          child: const Text('Complete Onboarding'),
                         ),
                       ],
                     ),
-                    Spacer(),
-                    InkWell(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            settings: const RouteSettings(
-                              name: '/doctorProfile',
-                            ),
-                            builder: (_) => DoctorProfileScreen(
-                              doctorId: currentDoctor?.id ?? '',
-                            ),
-                          ),
-                        );
-                      },
-                      child: CircleAvatar(
-                        radius: 28,
-                        backgroundColor: Color.fromARGB(255, 210, 219, 255),
-                        child: SvgPicture.asset(
-                          'assets/icons/Avatar.svg',
-                          width: 28,
-                          height: 28,
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
+                ),
+              )
+            else ...[
+              SliverToBoxAdapter(child: SizedBox(height: sectionGap)),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                  child: _TodayScheduleCard(
+                    isCompact: isCompact,
+                    totalAppointments: totalAppointments,
+                    pendingCount: pendingCount,
+                    confirmedCount: confirmedCount,
+                    completedCount: completedCount,
+                    cancelledCount: cancelledCount,
+                    onViewAppointments: widget.onViewAppointments ?? () {},
+                    onStatTap: widget.onStatTap,
+                  ),
+                ),
+              ),
+              SliverToBoxAdapter(child: SizedBox(height: sectionGap)),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                  child: Text(
+                    "Today's Appointments",
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
+              SliverToBoxAdapter(child: SizedBox(height: isCompact ? 4 : 2)),
+              SliverList(
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  return _DoctorAppointmentPreviewCard(
+                    item: _sortedAppointments[index],
+                    onStatusUpdated: (appointment, updatedStatus) {
+                      widget.onStatusChanged?.call(appointment, updatedStatus);
+                    },
+                  );
+                }, childCount: _sortedAppointments.length),
+              ),
+              SliverToBoxAdapter(child: SizedBox(height: isCompact ? 20 : 24)),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class DashboardHeader extends ConsumerWidget {
+  const DashboardHeader({
+    super.key,
+    required this.userId,
+    required this.horizontalPadding,
+    required this.onIdentityResolved,
+    required this.onProfileTap,
+  });
+
+  final String userId;
+  final double horizontalPadding;
+  final void Function({
+    required bool isLoading,
+    required bool hasDoctorProfile,
+    required String doctorProfileId,
+    required String doctorDisplayName,
+  })
+  onIdentityResolved;
+  final ValueChanged<String> onProfileTap;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final identityAsync = ref.watch(_dashboardIdentityProvider(userId));
+
+    if (identityAsync.isLoading) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        onIdentityResolved(
+          isLoading: true,
+          hasDoctorProfile: false,
+          doctorProfileId: '',
+          doctorDisplayName: 'Doctor',
+        );
+      });
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
+
+    final currentDoctor = identityAsync.valueOrNull?.doctor;
+    final user = identityAsync.valueOrNull?.user;
+
+    if (currentDoctor == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        onIdentityResolved(
+          isLoading: false,
+          hasDoctorProfile: false,
+          doctorProfileId: '',
+          doctorDisplayName: 'Doctor',
+        );
+      });
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
+
+    final firstName = user?.firstName.trim() ?? '';
+    final lastName = user?.lastName.trim() ?? '';
+    final fullName = [
+      firstName,
+      lastName,
+    ].where((part) => part.isNotEmpty).join(' ').trim();
+
+    final fallbackName = (currentDoctor.name.trim()).isNotEmpty
+        ? (currentDoctor.name.trim().startsWith('Dr.')
+              ? currentDoctor.name.trim()
+              : 'Dr. ${currentDoctor.name.trim()}')
+        : 'Doctor';
+    final doctorName = fullName.isNotEmpty ? 'Dr. $fullName' : fallbackName;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      onIdentityResolved(
+        isLoading: false,
+        hasDoctorProfile: true,
+        doctorProfileId: currentDoctor.id,
+        doctorDisplayName: doctorName,
+      );
+    });
+
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+        child: Row(
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Hi, $doctorName',
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 24),
+                ),
+                Text(
+                  'Here is your schedule overview',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w400,
+                    color: Colors.grey,
+                  ),
+                ),
+              ],
+            ),
+            Spacer(),
+            InkWell(
+              onTap: () => onProfileTap(currentDoctor.id),
+              child: CircleAvatar(
+                radius: 28,
+                backgroundColor: Color.fromARGB(255, 210, 219, 255),
+                child: SvgPicture.asset(
+                  'assets/icons/Avatar.svg',
+                  width: 28,
+                  height: 28,
                 ),
               ),
             ),
-            SliverToBoxAdapter(child: SizedBox(height: sectionGap)),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-                child: _TodayScheduleCard(
-                  isCompact: isCompact,
-                  totalAppointments: totalAppointments,
-                  pendingCount: pendingCount,
-                  confirmedCount: confirmedCount,
-                  completedCount: completedCount,
-                  cancelledCount: cancelledCount,
-                  onViewAppointments: widget.onViewAppointments ?? () {},
-                  onStatTap: widget.onStatTap,
-                ),
-              ),
-            ),
-            SliverToBoxAdapter(child: SizedBox(height: sectionGap)),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-                child: Text(
-                  "Today's Appointments",
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-                ),
-              ),
-            ),
-            SliverToBoxAdapter(child: SizedBox(height: isCompact ? 4 : 2)),
-            SliverList(
-              delegate: SliverChildBuilderDelegate((context, index) {
-                return _DoctorAppointmentPreviewCard(
-                  item: _sortedAppointments[index],
-                  onStatusUpdated: (appointment, updatedStatus) {
-                    widget.onStatusChanged?.call(appointment, updatedStatus);
-                  },
-                );
-              }, childCount: _sortedAppointments.length),
-            ),
-            SliverToBoxAdapter(child: SizedBox(height: isCompact ? 20 : 24)),
           ],
         ),
       ),

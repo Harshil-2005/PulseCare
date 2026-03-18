@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:pulsecare/auth/auth_screen.dart';
+import 'package:pulsecare/user/app_shell.dart';
 import 'package:pulsecare/onboarding/onboarding_wrapper.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -9,17 +13,42 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
+  Future<void> _navigate() async {
+    final user = FirebaseAuth.instance.currentUser;
+
+    final prefs = await SharedPreferences.getInstance();
+    final isOnboardingDone = prefs.getBool('onboarding_done') ?? false;
+
+    if (!mounted) return;
+
+    if (user != null) {
+      // User already logged in
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const AppShell()),
+      );
+    } else {
+      if (isOnboardingDone) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const AuthScreen(startWithRegister: false),
+          ),
+        );
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const OnboardingWrapper()),
+        );
+      }
+    }
+  }
+
   @override
   void initState() {
     super.initState();
 
-    Future.delayed(const Duration(seconds: 5), () {
-      Navigator.pushReplacement(
-        // ignore: use_build_context_synchronously
-        context,
-        MaterialPageRoute(builder: (_) => const OnboardingWrapper()),
-      );
-    });
+    Future.delayed(const Duration(seconds: 5), _navigate);
   }
 
   @override

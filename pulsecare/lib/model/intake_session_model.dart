@@ -2,6 +2,7 @@ enum IntakeStage {
   symptoms,
   duration,
   medications,
+  frequency,
   severity,
   temperature,
   completed,
@@ -16,8 +17,10 @@ class IntakeSession {
   final String? medications;
   final String? severity;
   final String? temperature;
+  final String? frequency;
+  final Map<String, String> followUpAnswers;
 
-  const IntakeSession({
+  IntakeSession({
     required this.conversationId,
     required this.stage,
     required this.symptoms,
@@ -25,7 +28,9 @@ class IntakeSession {
     this.medications,
     this.severity,
     this.temperature,
-  });
+    this.frequency,
+    Map<String, String>? followUpAnswers,
+  }) : followUpAnswers = Map.unmodifiable(followUpAnswers ?? {});
 
   IntakeSession copyWith({
     IntakeStage? stage,
@@ -34,6 +39,8 @@ class IntakeSession {
     String? medications,
     String? severity,
     String? temperature,
+    String? frequency,
+    Map<String, String>? followUpAnswers,
   }) {
     return IntakeSession(
       conversationId: conversationId,
@@ -43,6 +50,8 @@ class IntakeSession {
       medications: medications ?? this.medications,
       severity: severity ?? this.severity,
       temperature: temperature ?? this.temperature,
+      frequency: frequency ?? this.frequency,
+      followUpAnswers: followUpAnswers ?? this.followUpAnswers,
     );
   }
 }

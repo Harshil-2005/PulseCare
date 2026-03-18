@@ -6,7 +6,9 @@ import 'package:pulsecare/constrains/schedule_date_picker_dialog.dart';
 import 'package:pulsecare/model/chat_history_entry.dart';
 import 'package:pulsecare/repositories/chat_repository.dart';
 import 'package:pulsecare/repositories/session_repository.dart';
+import 'package:pulsecare/user/app_shell.dart';
 import 'package:pulsecare/user/new_ai_chat_screen.dart';
+import 'package:pulsecare/user/widgets/consultation_chat_widget.dart';
 import '../providers/repository_providers.dart';
 
 const double kChatCardRadius = 20;
@@ -112,12 +114,32 @@ class _ChatHistoryScreenState extends ConsumerState<ChatHistoryScreen> {
           borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
         ),
         elevation: 0.3,
+        leading: IconButton(
+          onPressed: () => Navigator.pop(context),
+          icon: SvgPicture.asset(
+            'assets/icons/backarrow.svg',
+            width: 24,
+            height: 20,
+          ),
+        ),
         title: Row(
           children: [
-            const Spacer(),
-            const Text(
-              'Chat History',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+            const CircleAvatar(
+              backgroundImage: AssetImage('assets/images/drLara.png'),
+            ),
+            const SizedBox(width: 15),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Dr. Elara',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+                Text(
+                  'Your AI Medical Assistant',
+                  style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
+                ),
+              ],
             ),
             const Spacer(),
             InkWell(
@@ -184,7 +206,7 @@ class _ChatHistoryScreenState extends ConsumerState<ChatHistoryScreen> {
               },
               child: SvgPicture.asset('assets/icons/calender.svg', height: 18),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 13),
             InkWell(
               onTap: () {
                 Navigator.pushReplacement(
@@ -194,18 +216,8 @@ class _ChatHistoryScreenState extends ConsumerState<ChatHistoryScreen> {
               },
               child: SvgPicture.asset('assets/icons/new_chat.svg', height: 20),
             ),
-            const SizedBox(width: 13),
+            const SizedBox(width: 10),
           ],
-        ),
-        shadowColor: Colors.black,
-        automaticallyImplyLeading: true,
-        leading: IconButton(
-          onPressed: () => Navigator.pop(context),
-          icon: SvgPicture.asset(
-            'assets/icons/backarrow.svg',
-            width: 24,
-            height: 20,
-          ),
         ),
       ),
       body: _isLoading
@@ -297,6 +309,137 @@ class _ChatHistoryScreenState extends ConsumerState<ChatHistoryScreen> {
                                 child: ChatHistoryCard(
                                   entry: entry,
                                   onDelete: () => _deleteEntry(entry),
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => PopScope(
+                                          canPop: false,
+                                          onPopInvoked: (_) {
+                                            Navigator.pushAndRemoveUntil(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (_) => const AppShell(
+                                                  initialTab: 0,
+                                                ),
+                                              ),
+                                              (route) => false,
+                                            );
+                                          },
+                                          child: Scaffold(
+                                            appBar: AppBar(
+                                              leadingWidth: 40,
+                                              titleSpacing: 0,
+                                              toolbarHeight: 85,
+                                              shape:
+                                                  const RoundedRectangleBorder(
+                                                    borderRadius:
+                                                        BorderRadius.vertical(
+                                                          bottom:
+                                                              Radius.circular(
+                                                                20,
+                                                              ),
+                                                        ),
+                                                  ),
+                                              elevation: 0.3,
+                                              leading: IconButton(
+                                                onPressed: () {
+                                                  Navigator.pushAndRemoveUntil(
+                                                    context,
+                                                    MaterialPageRoute(
+                                                      builder: (_) =>
+                                                          const AppShell(
+                                                            initialTab: 0,
+                                                          ),
+                                                    ),
+                                                    (route) => false,
+                                                  );
+                                                },
+                                                icon: SvgPicture.asset(
+                                                  'assets/icons/backarrow.svg',
+                                                  width: 24,
+                                                  height: 20,
+                                                ),
+                                              ),
+                                              title: Row(
+                                                children: [
+                                                  const CircleAvatar(
+                                                    backgroundImage: AssetImage(
+                                                      'assets/images/drLara.png',
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 15),
+                                                  Column(
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .start,
+                                                    children: [
+                                                      const Text(
+                                                        'Dr. Elara',
+                                                        style: TextStyle(
+                                                          fontSize: 16,
+                                                          fontWeight:
+                                                              FontWeight.w600,
+                                                        ),
+                                                      ),
+                                                      Text(
+                                                        'Your AI Medical Assistant',
+                                                        style: TextStyle(
+                                                          color: Colors
+                                                              .grey
+                                                              .shade500,
+                                                          fontSize: 12,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  const Spacer(),
+                                                  InkWell(
+                                                    onTap: () {
+                                                      Navigator.pushReplacement(
+                                                        context,
+                                                        MaterialPageRoute(
+                                                          builder: (context) =>
+                                                              const NewAiChatScreen(),
+                                                        ),
+                                                      );
+                                                    },
+                                                    child: SvgPicture.asset(
+                                                      'assets/icons/new_chat.svg',
+                                                      height: 20,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 13),
+                                                  InkWell(
+                                                    onTap: () {
+                                                      Navigator.push(
+                                                        context,
+                                                        MaterialPageRoute(
+                                                          builder: (context) =>
+                                                              const ChatHistoryScreen(),
+                                                        ),
+                                                      );
+                                                    },
+                                                    child: SvgPicture.asset(
+                                                      'assets/icons/history.svg',
+                                                      height: 18,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 10),
+                                                ],
+                                              ),
+                                            ),
+                                            body: ConsultationChatWidget(
+                                              conversationId:
+                                                  entry.conversationId,
+                                              userId: _userId,
+                                              showDoctorRecommendations: true,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  },
                                 ),
                               ),
                             );
@@ -312,131 +455,137 @@ class _ChatHistoryScreenState extends ConsumerState<ChatHistoryScreen> {
 class ChatHistoryCard extends StatelessWidget {
   final ChatHistoryEntry entry;
   final VoidCallback onDelete;
+  final VoidCallback? onTap;
 
   const ChatHistoryCard({
     super.key,
     required this.entry,
     required this.onDelete,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        boxShadow: const [
-          BoxShadow(color: Color.fromARGB(255, 233, 233, 233), blurRadius: 3),
-        ],
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(kChatCardRadius),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(left: 8, top: 10, bottom: 8),
-            child: SizedBox(
-              height: 88,
-              width: 56,
-              child: Stack(
-                children: const [
-                  CircleAvatar(
-                    backgroundImage: AssetImage('assets/images/user.png'),
-                  ),
-                  Positioned(
-                    left: 18,
-                    top: 26,
-                    child: CircleAvatar(
-                      backgroundImage: AssetImage('assets/images/drLara.png'),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(kChatCardRadius),
+      child: Container(
+        decoration: BoxDecoration(
+          boxShadow: const [
+            BoxShadow(color: Color.fromARGB(255, 233, 233, 233), blurRadius: 3),
+          ],
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(kChatCardRadius),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(left: 8, top: 10, bottom: 8),
+              child: SizedBox(
+                height: 88,
+                width: 56,
+                child: Stack(
+                  children: const [
+                    CircleAvatar(
+                      backgroundImage: AssetImage('assets/images/user.png'),
                     ),
-                  ),
-                ],
+                    Positioned(
+                      left: 18,
+                      top: 26,
+                      child: CircleAvatar(
+                        backgroundImage: AssetImage('assets/images/drLara.png'),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(top: 12, bottom: 10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    entry.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w500,
+            const SizedBox(width: 10),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.only(top: 12, bottom: 10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      entry.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
-                  ),
-                  Text(
-                    entry.subtitle,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(color: Colors.grey),
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Expanded(
-                        child: Wrap(
-                          spacing: 6,
-                          runSpacing: 6,
-                          children: entry.tags.map((tag) {
-                            return Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.grey.shade100,
-                                borderRadius: BorderRadius.circular(15),
-                              ),
-                              child: Text(
-                                tag,
-                                style: const TextStyle(
-                                  color: Color(0xff3F67FD),
-                                  fontWeight: FontWeight.w500,
-                                  fontSize: 12,
+                    Text(
+                      entry.subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: Colors.grey),
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Expanded(
+                          child: Wrap(
+                            spacing: 6,
+                            runSpacing: 6,
+                            children: entry.tags.map((tag) {
+                              return Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 6,
                                 ),
-                              ),
-                            );
-                          }).toList(),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.shade100,
+                                  borderRadius: BorderRadius.circular(15),
+                                ),
+                                child: Text(
+                                  tag,
+                                  style: const TextStyle(
+                                    color: Color(0xff3F67FD),
+                                    fontWeight: FontWeight.w500,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        DateFormat('h:mm a').format(entry.createdAt),
-                        style: const TextStyle(
-                          color: Colors.grey,
-                          fontSize: 12,
+                        const SizedBox(width: 8),
+                        Text(
+                          DateFormat('h:mm a').format(entry.createdAt),
+                          style: const TextStyle(
+                            color: Colors.grey,
+                            fontSize: 12,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(10),
+              child: InkWell(
+                onTap: onDelete,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: const Color(0xffD9D9D9),
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                ],
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(10),
-            child: InkWell(
-              onTap: onDelete,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: const Color(0xffD9D9D9),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                height: 18,
-                width: 18,
-                child: Center(
-                  child: SvgPicture.asset('assets/icons/cross.svg'),
+                  height: 18,
+                  width: 18,
+                  child: Center(
+                    child: SvgPicture.asset('assets/icons/cross.svg'),
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -10,6 +10,7 @@ import 'package:pulsecare/providers/repository_providers.dart';
 import 'package:pulsecare/repositories/session_repository.dart';
 import 'package:pulsecare/user/date_time_screen.dart';
 import 'package:pulsecare/utils/time_utils.dart';
+import 'package:pulsecare/data/triage/triage_data.dart';
 
 class PatientDetailScreen extends ConsumerStatefulWidget {
   final Doctor doctor;
@@ -75,12 +76,34 @@ class _UserDetailScreenState extends ConsumerState<PatientDetailScreen> {
           .getByIdAsync(summaryId);
 
       if (summary != null) {
-        symptomsController.text =
-            'Symptoms: ${summary.symptoms.join(", ")}\n'
-            'Duration: ${summary.duration ?? "N/A"}\n'
-            'Medications: ${summary.medications ?? "N/A"}\n'
-            'Severity: ${summary.severity ?? "N/A"}\n'
-            'Temperature: ${summary.temperature ?? "N/A"}';
+        final buffer = StringBuffer();
+        final formattedSymptoms = summary.symptoms
+            .map(_formatSymptomLabel)
+            .where((value) => value.isNotEmpty)
+            .join(', ');
+        buffer.writeln('Symptoms: $formattedSymptoms');
+        buffer.writeln('Duration: ${summary.duration ?? "N/A"}');
+        if (_shouldShowFrequency(summary.symptoms, summary.frequency)) {
+          buffer.writeln('Frequency: ${summary.frequency!.trim()}');
+        }
+        buffer.writeln('Medications: ${summary.medications ?? "N/A"}');
+        buffer.writeln('Severity: ${summary.severity ?? "N/A"}');
+
+        final hasFever = summary.symptoms.any(
+          (symptom) => symptom.toLowerCase() == 'fever',
+        );
+        if (hasFever) {
+          buffer.writeln('Temperature: ${summary.temperature ?? "N/A"}');
+        }
+
+        if (summary.followUpAnswers.isNotEmpty) {
+          for (final entry in summary.followUpAnswers.entries) {
+            final label = _followUpLabelFromId(entry.key);
+            buffer.writeln('$label: ${entry.value}');
+          }
+        }
+
+        symptomsController.text = buffer.toString();
       }
     }
     if (!mounted) return;
@@ -94,6 +117,216 @@ class _UserDetailScreenState extends ConsumerState<PatientDetailScreen> {
     final availableWidth = screenWidth - 32 - 12;
     final width = availableWidth / 2;
     return width.clamp(130.0, 175.0);
+  }
+
+  String _capitalize(String value) {
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) return trimmed;
+    return '${trimmed[0].toUpperCase()}${trimmed.substring(1)}';
+  }
+
+  String _formatSymptomLabel(String symptom) {
+    final normalized = symptom.replaceAll('_', ' ').trim();
+    if (normalized.isEmpty) return normalized;
+    final words = normalized
+        .split(' ')
+        .where((word) => word.isNotEmpty)
+        .map((word) =>
+            '${word[0].toUpperCase()}${word.substring(1).toLowerCase()}')
+        .toList(growable: false);
+    return words.join(' ');
+  }
+
+  bool _shouldShowFrequency(List<String> symptoms, String? frequency) {
+    if (frequency == null || frequency.trim().isEmpty) return false;
+    const frequencySymptoms = <String>{
+      'headache',
+      'palpitations',
+      'dizziness',
+      'nausea',
+      'vomiting',
+      'diarrhea',
+      'constipation',
+      'sneezing',
+      'anxiety',
+      'muscle_pain',
+    };
+    return symptoms.any(frequencySymptoms.contains);
+  }
+
+  String _followUpLabelFromId(String id) {
+    final question = _followUpQuestionById(id);
+    if (question != null) {
+      return _labelOverride(id) ?? _capitalize(_labelFromQuestion(question));
+    }
+    var fallback = id.trim();
+    for (final symptom in triageSymptoms) {
+      final prefix = '${symptom.id}_';
+      if (fallback.startsWith(prefix)) {
+        fallback = fallback.substring(prefix.length);
+        break;
+      }
+    }
+    return _labelOverride(id) ?? _capitalize(fallback.replaceAll('_', ' '));
+  }
+
+  String? _followUpQuestionById(String id) {
+    for (final symptom in triageSymptoms) {
+      for (final followUp in symptom.followUps) {
+        if (followUp.id == id) {
+          return followUp.question;
+        }
+        for (final option in followUp.options) {
+          if (option.id == id) {
+            return option.label;
+          }
+        }
+      }
+    }
+    return null;
+  }
+
+  String _labelFromQuestion(String question) {
+    var label = question.trim();
+    label = label.replaceAll('?', '').trim();
+    final lower = label.toLowerCase();
+    final prefixes = [
+      'do you have ',
+      'do you ',
+      'are you ',
+      'have you ',
+      'did you ',
+      'is your ',
+      'is the ',
+      'is it ',
+      'is ',
+      'where is ',
+      'where on your body is ',
+      'where exactly is ',
+      'where exactly is the ',
+      'how long have you had ',
+      'how long have you been ',
+      'how long do ',
+      'how long ',
+      'how often are ',
+      'how often ',
+      'how many ',
+      'did this ',
+      'does it ',
+      'does the ',
+      'are there ',
+      'have you been ',
+      'how high has your ',
+      'how high has ',
+    ];
+    for (final prefix in prefixes) {
+      if (lower.startsWith(prefix)) {
+        label = label.substring(prefix.length);
+        break;
+      }
+    }
+    label = label.trimLeft();
+    for (final article in ['a ', 'an ', 'the ']) {
+      if (label.toLowerCase().startsWith(article)) {
+        label = label.substring(article.length);
+        break;
+      }
+    }
+    return label.trim();
+  }
+
+  String? _labelOverride(String id) {
+    const overrides = <String, String>{
+      'fever_chills': 'Chills',
+      'fever_body_aches': 'Body aches',
+      'fever_sore_throat': 'Sore throat',
+      'fever_taken_any_medicine_to_reduce_fever':
+          'Medication to reduce fever',
+      'cough_cough_dry': 'Dry cough',
+      'cough_wheezing': 'Wheezing',
+      'cold_a_runny_nose': 'Runny nose',
+      'cold_experiencing_a_sore_throat': 'Sore throat',
+      'cold_chills': 'Chills',
+      'headache_pain_located': 'Pain location',
+      'headache_nausea': 'Nausea',
+      'headache_where_is_the_pain_located': 'Pain location',
+      'headache_how_severe_is_the_pain': 'Pain severity',
+      'chest_pain_pain_sharp': 'Sharp pain',
+      'chest_pain_spread_to_arm': 'Pain radiates to arm',
+      'chest_pain_worsen_with_exertion': 'Worse with exertion',
+      'shortness_of_breath_start_suddenly': 'Sudden onset',
+      'shortness_of_breath_short_of_breath_at_rest': 'Shortness of breath at rest',
+      'shortness_of_breath_chest_pain': 'Chest pain',
+      'rash_rash': 'Rash location',
+      'rash_itchy': 'Itching',
+      'rash_recently_use_a_new_soap': 'New soap exposure',
+      'stomach_pain_pain_in_abdomen': 'Abdominal pain location',
+      'stomach_pain_related_to_meals': 'Related to meals',
+      'stomach_pain_pain_constant': 'Constant pain',
+      'stomach_pain_how_severe_is_the_pain': 'Pain severity',
+      'stomach_pain_is_it_constant_or_cramping': 'Pain pattern',
+      'back_pain_pain_in_lower_back': 'Lower back pain',
+      'back_pain_did_it_start_after_lifting': 'Started after lifting',
+      'back_pain_numbness_in_legs': 'Leg numbness',
+      'dizziness_feel_spinning': 'Spinning sensation',
+      'dizziness_nausea': 'Nausea',
+      'fatigue_fatigue_affecting_daily_activities': 'Affects daily activities',
+      'fatigue_weight_change': 'Weight change',
+      'sore_throat_swollen_glands': 'Swollen glands',
+      'sore_throat_swallowing_painful': 'Painful swallowing',
+      'runny_nose_discharge_clear': 'Clear discharge',
+      'runny_nose_sinus_pressure': 'Sinus pressure',
+      'vomiting_times_have_you_vomited_today': 'Vomiting count (today)',
+      'vomiting_able_to_keep_fluids_down': 'Able to keep fluids down',
+      'vomiting_abdominal_pain': 'Abdominal pain',
+      'diarrhea_there_blood_in_stool': 'Blood in stool',
+      'diarrhea_vomiting': 'Vomiting',
+      'constipation_abdominal_pain': 'Abdominal pain',
+      'constipation_tried_any_laxatives': 'Tried laxatives',
+      'joint_pain_affected': 'Affected joints',
+      'joint_pain_do_joints_feel_swollen': 'Joint swelling',
+      'joint_pain_pain_start_after_injury': 'Started after injury',
+      'ear_pain_which_ear_is_affected': 'Affected ear',
+      'ear_pain_do_you_have_hearing_loss': 'Hearing loss',
+      'ear_pain_do_you_have_discharge': 'Discharge',
+      'ear_pain_do_you_have_fever': 'Fever',
+      'ear_pain_did_this_start_after_a_cold_or_swimming':
+          'Started after cold or swimming',
+      'eye_redness_one_eye_affected': 'One eye affected',
+      'eye_redness_blurred_vision': 'Blurred vision',
+      'eye_redness_been_exposed_to_allergens': 'Allergen exposure',
+      'skin_swelling_swelling': 'Swelling location',
+      'skin_swelling_area_red': 'Redness',
+      'skin_swelling_have_an_injury': 'Injury',
+      'palpitations_do_they_occur_at_rest': 'Occurs at rest',
+      'palpitations_chest_pain': 'Chest pain',
+      'sneezing_sneezing_worse_in_morning': 'Worse in morning',
+      'sneezing_a_runny_nose': 'Runny nose',
+      'sneezing_recently_had_cold_exposure': 'Cold exposure',
+      'nasal_congestion_facial_pressure': 'Facial pressure',
+      'nasal_congestion_congestion_affecting_sleep': 'Affects sleep',
+      'nausea_vomiting': 'Vomiting',
+      'nausea_start_after_eating': 'Started after eating',
+      'acid_reflux_do_symptoms_worsen_after_meals': 'Worse after meals',
+      'acid_reflux_feel_a_burning_sensation_in_chest': 'Burning in chest',
+      'acid_reflux_tried_antacids': 'Tried antacids',
+      'itching_itching_most': 'Itching location',
+      'itching_a_rash_with_itching': 'Rash with itching',
+      'itching_recently_use_a_new_soap': 'New soap exposure',
+      'neck_pain_neck_pain_start_after_poor_posture': 'Started after poor posture',
+      'neck_pain_pain_spread_to_shoulder': 'Radiates to shoulder',
+      'neck_pain_feel_numbness_in_arms': 'Arm numbness',
+      'muscle_pain_painful': 'Painful muscles',
+      'muscle_pain_begin_after_exertion': 'Started after exertion',
+      'muscle_pain_also_have_weakness': 'Weakness',
+      'eye_pain_one_eye_painful': 'One eye painful',
+      'eye_pain_redness_in_eye': 'Eye redness',
+      'eye_pain_pain_start_after_screen_strain': 'Started after screen strain',
+      'anxiety_do_you_feel_anxious': 'Feeling anxious',
+      'anxiety_palpitations_during_episodes': 'Palpitations during episodes',
+      'anxiety_anxiety_affecting_sleep': 'Affects sleep',
+    };
+    return overrides[id];
   }
 
   @override

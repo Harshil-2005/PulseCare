@@ -1,0 +1,16 @@
+const List<String> medicalSpecialties = [
+  'General Physician',
+  'Cardiologist',
+  'Pulmonologist',
+  'Neurologist',
+  'Dermatologist',
+  'Orthopedic',
+  'Gastroenterologist',
+  'Gynecologist',
+  'Urologist',
+  'ENT Specialist',
+  'Endocrinologist',
+  'Psychiatrist',
+  'Pediatrician',
+  'Dentist',
+];

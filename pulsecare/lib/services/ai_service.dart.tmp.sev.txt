@@ -1,0 +1,13 @@
+String? _extractSeverity(String text) {
+    final normalized = text.toLowerCase().trim();
+    if (normalized.isEmpty) return null;
+
+    if (normalized.contains(
+      RegExp(r'\b(day|days|week|weeks|month|months)\b'),
+    )) {
+      return null;
+    }
+
+    final directNumber = RegExp(r'^(10|[1-9])
+
+  
