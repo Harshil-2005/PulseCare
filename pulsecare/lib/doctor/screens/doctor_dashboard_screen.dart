@@ -405,10 +405,7 @@ class _TodayScheduleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cardHeight = isCompact ? 265.0 : 246.0;
-
     return Container(
-      height: cardHeight,
       width: double.infinity,
       decoration: BoxDecoration(
         borderRadius: const BorderRadius.all(Radius.circular(30)),
@@ -419,10 +416,10 @@ class _TodayScheduleCard extends StatelessWidget {
         ),
       ),
       child: Stack(
-        fit: StackFit.expand,
         children: [
-          Align(
-            alignment: Alignment.topRight,
+          Positioned(
+            top: 0,
+            right: 0,
             child: Container(
               height: 220,
               width: 209,
@@ -436,7 +433,7 @@ class _TodayScheduleCard extends StatelessWidget {
             ),
           ),
           Padding(
-            padding: EdgeInsets.fromLTRB(16, 16, 16, 12),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -486,103 +483,94 @@ class _TodayScheduleCard extends StatelessWidget {
                 ),
 
                 SizedBox(height: 16),
-                SizedBox(
-                  width: 300,
-                  child: Column(
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Align(
-                              alignment: Alignment.centerLeft,
-                              child: GestureDetector(
-                                onTap: () => onStatTap?.call(0),
-                                child: _StatPill(
-                                  label: 'Pending',
-                                  value: pendingCount.toString(),
-                                  color: Color(0xffF59E0B),
-                                ),
+                Column(
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: GestureDetector(
+                              onTap: () => onStatTap?.call(0),
+                              child: _StatPill(
+                                label: 'Pending',
+                                value: pendingCount.toString(),
+                                color: Color(0xffF59E0B),
                               ),
                             ),
                           ),
-                          Expanded(
-                            child: Align(
-                              alignment: Alignment.centerRight,
-                              child: GestureDetector(
-                                onTap: () => onStatTap?.call(0),
-                                child: _StatPill(
-                                  label: 'Confirmed',
-                                  value: confirmedCount.toString(),
-                                  color: Color(0xFF3F67FD),
-                                ),
+                        ),
+                        Expanded(
+                          child: Align(
+                            alignment: Alignment.centerRight,
+                            child: GestureDetector(
+                              onTap: () => onStatTap?.call(0),
+                              child: _StatPill(
+                                label: 'Confirmed',
+                                value: confirmedCount.toString(),
+                                color: Color(0xFF3F67FD),
                               ),
                             ),
                           ),
-                        ],
-                      ),
-                      SizedBox(height: 10),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Align(
-                              alignment: Alignment.centerLeft,
-                              child: GestureDetector(
-                                onTap: () => onStatTap?.call(1),
-                                child: _StatPill(
-                                  label: 'Completed',
-                                  value: completedCount.toString(),
-                                  color: Color(0xff059669),
-                                ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: GestureDetector(
+                              onTap: () => onStatTap?.call(1),
+                              child: _StatPill(
+                                label: 'Completed',
+                                value: completedCount.toString(),
+                                color: Color(0xff059669),
                               ),
                             ),
                           ),
-                          Expanded(
-                            child: Align(
-                              alignment: Alignment.centerRight,
-                              child: GestureDetector(
-                                onTap: () => onStatTap?.call(2),
-                                child: _StatPill(
-                                  label: 'Cancelled',
-                                  value: cancelledCount.toString(),
-                                  color: Color(0xffE12D1D),
-                                ),
+                        ),
+                        Expanded(
+                          child: Align(
+                            alignment: Alignment.centerRight,
+                            child: GestureDetector(
+                              onTap: () => onStatTap?.call(2),
+                              child: _StatPill(
+                                label: 'Cancelled',
+                                value: cancelledCount.toString(),
+                                color: Color(0xffE12D1D),
                               ),
                             ),
                           ),
-                        ],
-                      ),
-                    ],
-                  ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-                SizedBox(height: 12),
-              ],
-            ),
-          ),
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: InkWell(
-                onTap: onViewAppointments,
-                borderRadius: BorderRadius.circular(30),
-                child: Container(
-                  height: 50,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-                  child: const Center(
-                    child: Text(
-                      'View Appointments',
-                      style: TextStyle(
-                        color: Color(0xFF3F67FD),
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
+                const SizedBox(height: 12),
+                InkWell(
+                  onTap: onViewAppointments,
+                  borderRadius: BorderRadius.circular(30),
+                  child: Container(
+                    height: 50,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    child: const Center(
+                      child: Text(
+                        'View Appointments',
+                        style: TextStyle(
+                          color: Color(0xFF3F67FD),
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
+              ],
             ),
           ),
         ],
@@ -605,7 +593,6 @@ class _StatPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 130,
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.16),
@@ -620,12 +607,16 @@ class _StatPill extends StatelessWidget {
             decoration: BoxDecoration(color: color, shape: BoxShape.circle),
           ),
           const SizedBox(width: 6),
-          Text(
-            '$value $label',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
+          Flexible(
+            child: Text(
+              '$value $label',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
         ],

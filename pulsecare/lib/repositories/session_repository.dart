@@ -12,9 +12,11 @@ class SessionRepository {
 
   String? _currentUserId;
   String? _currentDoctorId;
+  String? _currentRole;
 
   static const String _userIdKey = 'current_user_id';
   static const String _doctorIdKey = 'current_doctor_id';
+  static const String _roleKey = 'role';
 
   String getCurrentUserId() {
     if (_currentUserId == null) {
@@ -30,6 +32,10 @@ class SessionRepository {
     return _currentDoctorId!;
   }
 
+  String? getDoctorId() => _currentDoctorId;
+
+  String? getRole() => _currentRole;
+
   Future<void> setCurrentUser(String userId) async {
     _currentUserId = userId;
     await persistUserId(userId);
@@ -40,9 +46,15 @@ class SessionRepository {
     await persistDoctorId(doctorId);
   }
 
+  Future<void> setRole(String role) async {
+    _currentRole = role;
+    await persistRole(role);
+  }
+
   Future<void> clearSession() async {
     _currentUserId = null;
     _currentDoctorId = null;
+    _currentRole = null;
     await _clearPersistedSession();
   }
 
@@ -66,9 +78,20 @@ class SessionRepository {
     return prefs.getString(_doctorIdKey);
   }
 
+  Future<void> persistRole(String role) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_roleKey, role);
+  }
+
+  Future<String?> restoreRole() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_roleKey);
+  }
+
   Future<void> _clearPersistedSession() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_userIdKey);
     await prefs.remove(_doctorIdKey);
+    await prefs.remove(_roleKey);
   }
 }

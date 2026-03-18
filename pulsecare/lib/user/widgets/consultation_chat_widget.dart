@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pulsecare/utils/keyboard_utils.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -666,9 +667,8 @@ class _ConsultationChatWidgetState extends ConsumerState<ConsultationChatWidget>
   Widget _doctorSuggestionCard(Doctor doctor, String doctorPhone) {
     return InkWell(
       onTap: () {
-        FocusScope.of(context).unfocus();
-        FocusManager.instance.primaryFocus?.unfocus();
-        Navigator.push(
+        KeyboardUtils.hideKeyboardKeepFocus();
+Navigator.push(
           context,
           MaterialPageRoute(
             builder: (_) => DoctorDetailScreen(
@@ -810,10 +810,8 @@ class _ConsultationChatWidgetState extends ConsumerState<ConsultationChatWidget>
           if (selectedDoctorId == null || selectedDoctorId.isEmpty) {
             return;
           }
-          FocusScope.of(context).unfocus();
-          FocusManager.instance.primaryFocus?.unfocus();
-
-          final onContinueBooking = widget.onContinueBooking;
+          KeyboardUtils.hideKeyboardKeepFocus();
+final onContinueBooking = widget.onContinueBooking;
           if (onContinueBooking != null) {
             onContinueBooking(selectedDoctorId, _completedSummaryId);
             return;
@@ -1298,3 +1296,5 @@ class _ChatInputField extends StatelessWidget {
     );
   }
 }
+
+

@@ -48,7 +48,12 @@ class AppointmentCard extends StatelessWidget {
               children: [
                 Padding(
                   padding: const EdgeInsets.only(left: 10, top: 10),
-                  child: Image.asset(image, width: 92, height: 112, fit: BoxFit.cover),
+                  child: Image.asset(
+                    image,
+                    width: 92,
+                    height: 112,
+                    fit: BoxFit.cover,
+                  ),
                 ),
                 Expanded(
                   child: Padding(
@@ -77,24 +82,40 @@ class AppointmentCard extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 10),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 6,
-                          crossAxisAlignment: WrapCrossAlignment.center,
+                        Row(
                           children: [
                             SvgPicture.asset(
                               'assets/icons/date.svg',
                               width: 16,
                               height: 16,
                             ),
-                            Text(date),
-                            const Text('|', style: TextStyle(color: Colors.grey)),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                date,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            const Text(
+                              '|',
+                              style: TextStyle(color: Colors.grey),
+                            ),
+                            const SizedBox(width: 8),
                             SvgPicture.asset(
                               'assets/icons/round.svg',
                               width: 16,
                               height: 16,
                             ),
-                            Text(time),
+                            const SizedBox(width: 8),
+                            Flexible(
+                              child: Text(
+                                time,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
                           ],
                         ),
                       ],

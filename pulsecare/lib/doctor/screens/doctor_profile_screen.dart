@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:pulsecare/auth/auth_screen.dart';
 import 'package:pulsecare/constrains/logout_delete.dart';
+import 'package:pulsecare/doctor/doctor_app_shell.dart';
 import 'package:pulsecare/doctor/doctor_full_edit_flow_screen.dart';
 import 'package:pulsecare/doctor/screens/edit_about_screen.dart';
 import 'package:pulsecare/providers/session_provider.dart';
@@ -84,10 +85,10 @@ class _DoctorProfileScreenState extends ConsumerState<DoctorProfileScreen> {
           title,
           style: const TextStyle(fontWeight: FontWeight.w400, fontSize: 16),
         ),
-        const Spacer(),
+        const Spacer(flex: 1),
         if (value != null) ...[
-          SizedBox(
-            width: 120,
+          Expanded(
+            flex: 2,
             child: Text(
               value,
               maxLines: 1,
@@ -192,6 +193,8 @@ class _DoctorProfileScreenState extends ConsumerState<DoctorProfileScreen> {
                           children: [
                             Text(
                               displayName,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                               style: TextStyle(
                                 fontWeight: FontWeight.w600,
                                 fontSize: 22,
@@ -201,6 +204,8 @@ class _DoctorProfileScreenState extends ConsumerState<DoctorProfileScreen> {
                             const SizedBox(height: 4),
                             Text(
                               email,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                               style: TextStyle(
                                 fontWeight: FontWeight.w400,
                                 fontSize: 14,
@@ -520,12 +525,32 @@ class _DoctorProfileScreenState extends ConsumerState<DoctorProfileScreen> {
                                 message: 'Are you sure you want to log out?',
                                 iconPath: 'assets/icons/log_out.svg',
                                 confirmText: 'Yes, Logout',
-                                onConfirm: () {
+                                onConfirm: () async {
                                   final authRepository = ref.read(
                                     authRepositoryProvider,
                                   );
-                                  authRepository.logout().then((_) {
-                                    if (!context.mounted) return;
+                                  final sessionRepository = SessionRepository();
+
+                                  // 1) Cancel active Firestore listeners before sign-out.
+                                  final shell = DoctorAppShell.of(context);
+                                  if (shell != null) {
+                                    await shell.cancelStreams();
+                                  }
+
+                                  // 2) Clear app session state first so Firestore
+                                  // listeners using sessionUserIdProvider can dispose.
+                                  await sessionRepository.clearSession();
+
+                                  // 3) Reset provider state (triggers DoctorAppShell
+                                  // to navigate away and dispose active streams).
+                                  ref
+                                          .read(sessionUserIdProvider.notifier)
+                                          .state =
+                                      null;
+
+                                  // 4) Navigate to Auth UI (safety even if shell
+                                  // navigation doesn't run for any reason).
+                                  if (context.mounted) {
                                     Navigator.pushAndRemoveUntil(
                                       context,
                                       MaterialPageRoute(
@@ -533,14 +558,10 @@ class _DoctorProfileScreenState extends ConsumerState<DoctorProfileScreen> {
                                       ),
                                       (route) => false,
                                     );
-                                    SessionRepository().clearSession();
-                                    ref
-                                            .read(
-                                              sessionUserIdProvider.notifier,
-                                            )
-                                            .state =
-                                        null;
-                                  });
+                                  }
+
+                                  // 5) Finally sign out of FirebaseAuth.
+                                  await authRepository.logout();
                                 },
                               );
                             },

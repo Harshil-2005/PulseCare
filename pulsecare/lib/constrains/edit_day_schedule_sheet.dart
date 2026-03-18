@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pulsecare/utils/keyboard_utils.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:pulsecare/model/day_schedule.dart';
 
@@ -282,14 +283,14 @@ class _EditDayScheduleSheetState extends State<EditDayScheduleSheet> {
       onSubmitted: (_) {
         _onManualTimeEditingComplete(controller, isMorning: isMorning);
         if (nextFocusNode == null) {
-          FocusScope.of(context).unfocus();
+          KeyboardUtils.hideKeyboardKeepFocus();
           return;
         }
         FocusScope.of(context).requestFocus(nextFocusNode);
       },
       onTapOutside: (_) {
         _onManualTimeEditingComplete(controller, isMorning: isMorning);
-        FocusManager.instance.primaryFocus?.unfocus();
+        KeyboardUtils.hideKeyboardKeepFocus();
       },
       decoration: InputDecoration(
         isDense: true,
@@ -508,3 +509,5 @@ class _EditDayScheduleSheetState extends State<EditDayScheduleSheet> {
     );
   }
 }
+
+

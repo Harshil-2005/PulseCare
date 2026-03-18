@@ -168,31 +168,5 @@ class LocalChatDataSource implements ChatDataSource {
     return entry.conversationId.startsWith('${userId}_');
   }
 
-  String _buildChatTitle(String userMessage) {
-    final cleaned = userMessage.trim().replaceAll(RegExp(r'\s+'), ' ');
-    if (cleaned.isEmpty) return 'AI Symptom Check';
 
-    final words = cleaned.split(' ');
-    if (words.length <= 5) {
-      return cleaned[0].toUpperCase() + cleaned.substring(1);
-    }
-    final short = words.take(5).join(' ');
-    return '${short[0].toUpperCase()}${short.substring(1)}...';
-  }
-
-  List<String> _extractTags(String text) {
-    final lower = text.toLowerCase();
-    final tags = <String>{};
-
-    _tagKeywordMap.forEach((keyword, tag) {
-      if (lower.contains(keyword)) {
-        tags.add(tag);
-      }
-    });
-
-    if (tags.isEmpty) {
-      tags.add('General');
-    }
-    return tags.take(3).toList();
-  }
 }

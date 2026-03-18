@@ -51,7 +51,8 @@ class _UpcomingTabState extends ConsumerState<UpcomingTab> {
     final dataAsync = ref.watch(_upcomingTabDataProvider);
     return dataAsync.when(
       data: (data) {
-        final upcomingAppointments = data.items;
+        final upcomingAppointments = [...data.items]
+          ..sort((a, b) => a.scheduledAt.compareTo(b.scheduledAt));
         if (upcomingAppointments.isEmpty) {
           return const Center(child: NoAppointmentWidget());
         }

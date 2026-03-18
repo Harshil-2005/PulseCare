@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pulsecare/utils/keyboard_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:pulsecare/user/chat_history_screen.dart';
@@ -29,9 +30,8 @@ class _NewAiChatScreenState extends ConsumerState<NewAiChatScreen> {
         elevation: 0.3,
         leading: IconButton(
           onPressed: () {
-            FocusScope.of(context).unfocus();
-            FocusManager.instance.primaryFocus?.unfocus();
-            Navigator.pop(context);
+            KeyboardUtils.hideKeyboardKeepFocus();
+Navigator.pop(context);
           },
           icon: SvgPicture.asset(
             'assets/icons/backarrow.svg',
@@ -64,9 +64,8 @@ class _NewAiChatScreenState extends ConsumerState<NewAiChatScreen> {
                 if (!_hasAnyUserMessage) {
                   return;
                 }
-                FocusScope.of(context).unfocus();
-                FocusManager.instance.primaryFocus?.unfocus();
-                Navigator.pushReplacement(
+                KeyboardUtils.hideKeyboardKeepFocus();
+Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(
                     builder: (context) => const NewAiChatScreen(),
@@ -78,9 +77,8 @@ class _NewAiChatScreenState extends ConsumerState<NewAiChatScreen> {
             const SizedBox(width: 14),
             InkWell(
               onTap: () {
-                FocusScope.of(context).unfocus();
-                FocusManager.instance.primaryFocus?.unfocus();
-                Navigator.push(
+                KeyboardUtils.hideKeyboardKeepFocus();
+Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (context) => const ChatHistoryScreen(),
@@ -156,3 +154,5 @@ class _NewAiChatScreenState extends ConsumerState<NewAiChatScreen> {
     );
   }
 }
+
+

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pulsecare/utils/keyboard_utils.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:pulsecare/model/report_model.dart';
 import 'package:pulsecare/user/medical_report_preview_screen.dart';
@@ -35,7 +36,7 @@ class ReportCard extends StatelessWidget {
           const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 16),
       child: InkWell(
         onTap: () {
-          FocusScope.of(context).unfocus();
+          KeyboardUtils.hideKeyboardKeepFocus();
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -213,3 +214,5 @@ class ReportCard extends StatelessWidget {
     );
   }
 }
+
+

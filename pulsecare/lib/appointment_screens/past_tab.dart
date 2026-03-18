@@ -52,15 +52,17 @@ Widget build(BuildContext context) {
   final pastAsync = ref.watch(_pastAppointmentsProvider);
   return pastAsync.when(
     data: (pastAppointments) {
-      if (pastAppointments.isEmpty) {
+      final sortedAppointments = [...pastAppointments]
+        ..sort((a, b) => b.scheduledAt.compareTo(a.scheduledAt));
+      if (sortedAppointments.isEmpty) {
         return const Center(child: NoAppointmentWidget());
       }
 
       return ListView.builder(
         padding: const EdgeInsets.only(bottom: 20),
-        itemCount: pastAppointments.length,
+        itemCount: sortedAppointments.length,
         itemBuilder: (context, index) {
-          final appointment = pastAppointments[index];
+          final appointment = sortedAppointments[index];
 
           return GestureDetector(
             onTap: () {

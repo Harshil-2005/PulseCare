@@ -7,7 +7,10 @@ import 'package:pulsecare/model/doctor_model.dart';
 import 'package:pulsecare/user/patient_detail_screen.dart';
 import '../providers/repository_providers.dart';
 
-final _doctorDetailUserProvider = StreamProvider.autoDispose.family((ref, String userId) {
+final _doctorDetailUserProvider = StreamProvider.autoDispose.family((
+  ref,
+  String userId,
+) {
   return ref.read(userRepositoryProvider).watchUserById(userId);
 });
 
@@ -58,7 +61,9 @@ class _DoctorDetailScreenState extends ConsumerState<DoctorDetailScreen> {
   }
 
   Future<void> _initialize() async {
-    doctor = await ref.read(doctorRepositoryProvider).getDoctorById(widget.doctorId);
+    doctor = await ref
+        .read(doctorRepositoryProvider)
+        .getDoctorById(widget.doctorId);
     if (!mounted) return;
     setState(() {
       _ready = true;
@@ -133,7 +138,9 @@ class _DoctorDetailScreenState extends ConsumerState<DoctorDetailScreen> {
     }
     final doctorUser = currentDoctor.userId.isEmpty
         ? null
-        : ref.watch(_doctorDetailUserProvider(currentDoctor.userId)).valueOrNull;
+        : ref
+              .watch(_doctorDetailUserProvider(currentDoctor.userId))
+              .valueOrNull;
     final doctorPhone = doctorUser?.phone ?? '';
 
     return Scaffold(
@@ -305,160 +312,172 @@ class _DoctorDetailScreenState extends ConsumerState<DoctorDetailScreen> {
               padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
               child: Divider(height: 2),
             ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                Container(
-                  decoration: BoxDecoration(
-                    boxShadow: [
-                      BoxShadow(
-                        blurRadius: 10,
-                        color: const Color.fromARGB(255, 219, 219, 219),
-                      ),
-                    ],
-                    color: Colors.white,
-                    borderRadius: BorderRadius.all(Radius.circular(10)),
-                  ),
-                  height: 85,
-                  width: 85,
-                  child: Column(
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  const gap = 8.0;
+                  final itemWidth = ((constraints.maxWidth - gap * 3) / 4)
+                      .clamp(70.0, 85.0);
+                  return Row(
                     children: [
-                      Image.asset(
-                        'assets/images/persons.png',
-                        color: Color(0xff3F67FD),
-                        width: 40,
-                        height: 40,
-                      ),
-                      SizedBox(height: 5),
-                      Text(
-                        '${currentDoctor.patients}+',
-                        style: TextStyle(fontWeight: .w500),
-                      ),
-                      Text(
-                        'Patients',
-                        style: TextStyle(
-                          color: Color(0xff3F67FD),
-                          fontSize: 12,
-                          fontWeight: .w500,
+                      Container(
+                        decoration: BoxDecoration(
+                          boxShadow: [
+                            BoxShadow(
+                              blurRadius: 10,
+                              color: const Color.fromARGB(255, 219, 219, 219),
+                            ),
+                          ],
+                          color: Colors.white,
+                          borderRadius: BorderRadius.all(Radius.circular(10)),
+                        ),
+                        height: 85,
+                        width: itemWidth,
+                        child: Column(
+                          children: [
+                            Image.asset(
+                              'assets/images/persons.png',
+                              color: Color(0xff3F67FD),
+                              width: 40,
+                              height: 40,
+                            ),
+                            SizedBox(height: 5),
+                            Text(
+                              '${currentDoctor.patients}+',
+                              style: TextStyle(fontWeight: .w500),
+                            ),
+                            Text(
+                              'Patients',
+                              style: TextStyle(
+                                color: Color(0xff3F67FD),
+                                fontSize: 12,
+                                fontWeight: .w500,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
-                  ),
-                ),
 
-                Container(
-                  decoration: BoxDecoration(
-                    boxShadow: [
-                      BoxShadow(
-                        blurRadius: 10,
-                        color: const Color.fromARGB(255, 219, 219, 219),
-                      ),
-                    ],
-                    color: Colors.white,
-                    borderRadius: BorderRadius.all(Radius.circular(10)),
-                  ),
-                  height: 85,
-                  width: 85,
-                  child: Column(
-                    children: [
-                      Image.asset(
-                        'assets/images/expereance.png',
-                        color: Color(0xff3F67FD),
-                        width: 40,
-                        height: 40,
-                      ),
-                      SizedBox(height: 5),
-                      Text(
-                        '${currentDoctor.experience}+',
-                        style: TextStyle(fontWeight: .w500),
-                      ),
-                      Text(
-                        'Years Exp.',
-                        style: TextStyle(
-                          color: Color(0xff3F67FD),
-                          fontSize: 12,
-                          fontWeight: .w500,
+                      const SizedBox(width: gap),
+                      Container(
+                        decoration: BoxDecoration(
+                          boxShadow: [
+                            BoxShadow(
+                              blurRadius: 10,
+                              color: const Color.fromARGB(255, 219, 219, 219),
+                            ),
+                          ],
+                          color: Colors.white,
+                          borderRadius: BorderRadius.all(Radius.circular(10)),
+                        ),
+                        height: 85,
+                        width: itemWidth,
+                        child: Column(
+                          children: [
+                            Image.asset(
+                              'assets/images/expereance.png',
+                              color: Color(0xff3F67FD),
+                              width: 40,
+                              height: 40,
+                            ),
+                            SizedBox(height: 5),
+                            Text(
+                              '${currentDoctor.experience}+',
+                              style: TextStyle(fontWeight: .w500),
+                            ),
+                            Text(
+                              'Years Exp.',
+                              style: TextStyle(
+                                color: Color(0xff3F67FD),
+                                fontSize: 12,
+                                fontWeight: .w500,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
-                  ),
-                ),
 
-                Container(
-                  decoration: BoxDecoration(
-                    boxShadow: [
-                      BoxShadow(
-                        blurRadius: 10,
-                        color: const Color.fromARGB(255, 219, 219, 219),
+                      const SizedBox(width: gap),
+                      Container(
+                        decoration: BoxDecoration(
+                          boxShadow: [
+                            BoxShadow(
+                              blurRadius: 10,
+                              color: const Color.fromARGB(255, 219, 219, 219),
+                            ),
+                          ],
+                          color: Colors.white,
+                          borderRadius: BorderRadius.all(Radius.circular(10)),
+                        ),
+                        height: 85,
+                        width: itemWidth,
+                        child: Column(
+                          children: [
+                            Image.asset(
+                              'assets/images/rating.png',
+                              color: Color(0xff3F67FD),
+                              width: 40,
+                              height: 40,
+                            ),
+                            SizedBox(height: 5),
+                            Text(
+                              currentDoctor.rating.toStringAsFixed(1),
+                              style: TextStyle(fontWeight: .w500),
+                            ),
+                            Text(
+                              'Rating',
+                              style: TextStyle(
+                                color: Color(0xff3F67FD),
+                                fontSize: 12,
+                                fontWeight: .w500,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ],
-                    color: Colors.white,
-                    borderRadius: BorderRadius.all(Radius.circular(10)),
-                  ),
-                  height: 85,
-                  width: 85,
-                  child: Column(
-                    children: [
-                      Image.asset(
-                        'assets/images/rating.png',
-                        color: Color(0xff3F67FD),
-                        width: 40,
-                        height: 40,
-                      ),
-                      SizedBox(height: 5),
-                      Text(
-                        currentDoctor.rating.toStringAsFixed(1),
-                        style: TextStyle(fontWeight: .w500),
-                      ),
-                      Text(
-                        'Rating',
-                        style: TextStyle(
-                          color: Color(0xff3F67FD),
-                          fontSize: 12,
-                          fontWeight: .w500,
+                      const SizedBox(width: gap),
+                      Container(
+                        decoration: BoxDecoration(
+                          boxShadow: [
+                            BoxShadow(
+                              blurRadius: 10,
+                              color: const Color.fromARGB(255, 219, 219, 219),
+                            ),
+                          ],
+                          color: Colors.white,
+                          borderRadius: BorderRadius.all(Radius.circular(10)),
+                        ),
+                        height: 85,
+                        width: itemWidth,
+                        child: Column(
+                          children: [
+                            Image.asset(
+                              'assets/images/reviews.png',
+                              color: Color(0xff3F67FD),
+                              width: 40,
+                              height: 40,
+                            ),
+                            SizedBox(height: 5),
+                            Text(
+                              '${currentDoctor.reviews}',
+                              style: TextStyle(fontWeight: .w500),
+                            ),
+                            Text(
+                              'Reviews',
+                              style: TextStyle(
+                                color: Color(0xff3F67FD),
+                                fontSize: 12,
+                                fontWeight: .w500,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
-                  ),
-                ),
-                Container(
-                  decoration: BoxDecoration(
-                    boxShadow: [
-                      BoxShadow(
-                        blurRadius: 10,
-                        color: const Color.fromARGB(255, 219, 219, 219),
-                      ),
-                    ],
-                    color: Colors.white,
-                    borderRadius: BorderRadius.all(Radius.circular(10)),
-                  ),
-                  height: 85,
-                  width: 85,
-                  child: Column(
-                    children: [
-                      Image.asset(
-                        'assets/images/reviews.png',
-                        color: Color(0xff3F67FD),
-                        width: 40,
-                        height: 40,
-                      ),
-                      SizedBox(height: 5),
-                      Text(
-                        '${currentDoctor.reviews}',
-                        style: TextStyle(fontWeight: .w500),
-                      ),
-                      Text(
-                        'Reviews',
-                        style: TextStyle(
-                          color: Color(0xff3F67FD),
-                          fontSize: 12,
-                          fontWeight: .w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+                  );
+                },
+              ),
             ),
             Padding(
               padding: const EdgeInsets.only(top: 32, right: 16, left: 16),
@@ -553,7 +572,10 @@ class _DoctorDetailScreenState extends ConsumerState<DoctorDetailScreen> {
                                 alignment: Alignment.centerLeft,
                                 child: Text(
                                   _fullDayName(schedule.day),
-                                  style: TextStyle(fontSize: 16, color: Colors.grey),
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.grey,
+                                  ),
                                 ),
                               ),
                             ),
@@ -568,8 +590,10 @@ class _DoctorDetailScreenState extends ConsumerState<DoctorDetailScreen> {
                                   width: 160,
                                   child: hasTwoSlots
                                       ? Column(
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: List.generate(2, (index) {
                                             final text = lines[index];
                                             return SizedBox(
@@ -580,7 +604,8 @@ class _DoctorDetailScreenState extends ConsumerState<DoctorDetailScreen> {
                                                   text,
                                                   maxLines: 1,
                                                   softWrap: false,
-                                                  overflow: TextOverflow.visible,
+                                                  overflow:
+                                                      TextOverflow.visible,
                                                   textAlign: TextAlign.left,
                                                   style: const TextStyle(
                                                     fontSize: 16,
@@ -610,8 +635,7 @@ class _DoctorDetailScreenState extends ConsumerState<DoctorDetailScreen> {
                                 ),
                               ),
                             ),
-                            ),
-                    
+                          ),
                         ],
                       ),
                     ),

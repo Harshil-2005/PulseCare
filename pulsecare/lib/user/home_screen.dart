@@ -14,7 +14,7 @@ import 'package:pulsecare/user/ai_chat_screen.dart';
 import 'package:pulsecare/user/app_shell.dart';
 import 'package:pulsecare/user/doctor_detail_screen.dart';
 
-final _homeDoctorsProvider = StreamProvider.autoDispose<List<Doctor>>((ref) {
+final _homeDoctorsProvider = StreamProvider<List<Doctor>>((ref) {
   // Recreate this provider when account/session changes to avoid stale doctor
   // list after logout/login without a full app restart.
   ref.watch(sessionUserIdProvider);
@@ -50,28 +50,75 @@ _DoctorStatusUi _resolveDoctorStatus({
     );
   }
 
+  const weekdayNames = <String>[
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
+    'Sunday',
+  ];
+  const monthNames = <String>[
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+
   final now = DateTime.now();
   final today = DateTime(now.year, now.month, now.day);
-  final slots = _availabilityEngine.generateSlots(
-    doctor: doctor,
-    date: today,
-    appointments: appointments,
-  );
 
-  final hasAvailableToday = slots.any(
-    (slot) => slot['status'] == SlotStatus.available,
-  );
+  bool hasAvailableSlots(DateTime date) {
+    final slots = _availabilityEngine.generateSlots(
+      doctor: doctor,
+      date: date,
+      appointments: appointments,
+    );
+    return slots.any((slot) => slot['status'] == SlotStatus.available);
+  }
 
-  if (hasAvailableToday) {
+  DateTime? nextAvailableDate;
+  for (var offset = 0; offset <= 60; offset++) {
+    final date = today.add(Duration(days: offset));
+    if (hasAvailableSlots(date)) {
+      nextAvailableDate = date;
+      break;
+    }
+  }
+
+  if (nextAvailableDate == null) {
+    return const _DoctorStatusUi(
+      text: 'Not Available',
+      color: Color(0xffE12D1D),
+    );
+  }
+
+  final offsetDays = nextAvailableDate.difference(today).inDays;
+  if (offsetDays == 0) {
     return const _DoctorStatusUi(
       text: 'Available Today',
       color: Color(0xff059669),
     );
   }
 
-  return const _DoctorStatusUi(
-    text: 'Next Available Tomorrow',
-    color: Color(0xffF59E0B),
+  final nextLabel = offsetDays == 1
+      ? 'Tomorrow'
+      : (offsetDays <= 7
+            ? weekdayNames[nextAvailableDate.weekday - 1]
+            : '${nextAvailableDate.day} ${monthNames[nextAvailableDate.month - 1]}');
+
+  return _DoctorStatusUi(
+    text: 'Available $nextLabel',
+    color: const Color(0xffF59E0B),
   );
 }
 
@@ -95,6 +142,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   String _selectedSpecialization = 'All';
 
   @override
+  void initState() {
+    super.initState();
+    Future.microtask(() {
+      ref.invalidate(_homeDoctorsProvider);
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final userId = ref.watch(sessionUserIdProvider);
     if (userId == null) {
@@ -103,7 +158,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     final screenWidth = MediaQuery.sizeOf(context).width;
     final isCompact = screenWidth < 380;
-    final aiCardHeight = isCompact ? 260.0 : 226.0;
 
     return Scaffold(
       body: SafeArea(
@@ -123,7 +177,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               child: Padding(
                 padding: const EdgeInsets.only(left: 16, right: 16),
                 child: Container(
-                  height: aiCardHeight,
                   width: double.infinity,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.all(Radius.circular(30)),
@@ -137,10 +190,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                   ),
                   child: Stack(
-                    fit: StackFit.expand,
                     children: [
-                      Align(
-                        alignment: Alignment.topRight,
+                      Positioned(
+                        top: 0,
+                        right: 0,
                         child: Container(
                           height: 220,
                           width: 209,
@@ -209,57 +262,55 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           ],
                         ),
                       ),
-                      Positioned.fill(
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 80, 16, 16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Chat with AI Assistant',
-                                style: TextStyle(
-                                  fontWeight: .w600,
-                                  fontSize: 16,
-                                  color: Colors.white,
-                                ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 80, 16, 16),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Chat with AI Assistant',
+                              style: TextStyle(
+                                fontWeight: .w600,
+                                fontSize: 16,
+                                color: Colors.white,
                               ),
-                              const SizedBox(height: 6),
-                              Text(
-                                'Check your symptoms or book an appointment instantly using our advanced AI.',
-                                maxLines: isCompact ? 4 : 3,
-                                overflow: TextOverflow.ellipsis,
-                                softWrap: true,
-                                textAlign: TextAlign.start,
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: .w400,
-                                ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              'Check your symptoms or book an appointment instantly using our advanced AI.',
+                              maxLines: isCompact ? 4 : 3,
+                              overflow: TextOverflow.ellipsis,
+                              softWrap: true,
+                              textAlign: TextAlign.start,
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: .w400,
                               ),
-                              const Spacer(),
-                              Center(
-                                child: PrimaryIconButton(
-                                  text: 'Start Chat with Ai',
-                                  iconPath: 'assets/icons/s_msg.svg',
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) =>
-                                            const AiChatScreen(
-                                              showDoctorRecommendations: true,
-                                            ),
+                            ),
+                            const SizedBox(height: 16),
+                            Center(
+                              child: PrimaryIconButton(
+                                text: 'Start Chat with Ai',
+                                iconPath: 'assets/icons/s_msg.svg',
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const AiChatScreen(
+                                        showDoctorRecommendations: true,
                                       ),
-                                    );
-                                  },
-                                  width: isCompact ? 240 : 260,
-                                  height: 50,
-                                  backgroundColor: Colors.white,
-                                  textColor: Color(0xff3F67FD),
-                                  iconColor: Color(0xff3F67FD),
-                                ),
+                                    ),
+                                  );
+                                },
+                                width: isCompact ? 240 : 260,
+                                height: 50,
+                                backgroundColor: Colors.white,
+                                textColor: Color(0xff3F67FD),
+                                iconColor: Color(0xff3F67FD),
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
@@ -366,114 +417,128 @@ class DoctorListSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final doctorsAsync = ref.watch(_homeDoctorsProvider);
-    final doctors = doctorsAsync.valueOrNull ?? const <Doctor>[];
+    return doctorsAsync.when(
+      data: (doctors) {
+        final specializations =
+            doctors.map((doctor) => doctor.speciality).toSet().toList()..sort();
+        final chipLabels = ['All', ...specializations];
+        final activeSpecialization = chipLabels.contains(selectedSpecialization)
+            ? selectedSpecialization
+            : 'All';
 
-    final specializations =
-        doctors.map((doctor) => doctor.speciality).toSet().toList()..sort();
-    final chipLabels = ['All', ...specializations];
-    final activeSpecialization = chipLabels.contains(selectedSpecialization)
-        ? selectedSpecialization
-        : 'All';
+        final filteredDoctors = doctors.where((doctor) {
+          final matchesSearch =
+              doctor.name.toLowerCase().contains(searchQuery) ||
+              doctor.speciality.toLowerCase().contains(searchQuery);
 
-    final filteredDoctors = doctors.where((doctor) {
-      final matchesSearch =
-          doctor.name.toLowerCase().contains(searchQuery) ||
-          doctor.speciality.toLowerCase().contains(searchQuery);
+          final matchesFilter =
+              activeSpecialization == 'All' ||
+              doctor.speciality == activeSpecialization;
 
-      final matchesFilter =
-          activeSpecialization == 'All' ||
-          doctor.speciality == activeSpecialization;
+          return matchesSearch && matchesFilter;
+        }).toList();
 
-      return matchesSearch && matchesFilter;
-    }).toList();
-
-    return SliverMainAxisGroup(
-      slivers: [
-        SliverAppBar(
-          pinned: true,
-          primary: false,
-          automaticallyImplyLeading: false,
-          backgroundColor: Colors.white,
-          surfaceTintColor: Colors.white,
-          elevation: 0,
-          scrolledUnderElevation: 0,
-          toolbarHeight: 58,
-          titleSpacing: 0,
-          title: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: 'Search doctors or specialization',
-                prefixIcon: Icon(Icons.search),
-                filled: true,
-                fillColor: Colors.grey.shade100,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(30),
-                  borderSide: BorderSide.none,
+        return SliverMainAxisGroup(
+          slivers: [
+            SliverAppBar(
+              pinned: true,
+              primary: false,
+              automaticallyImplyLeading: false,
+              backgroundColor: Colors.white,
+              surfaceTintColor: Colors.white,
+              elevation: 0,
+              scrolledUnderElevation: 0,
+              toolbarHeight: 58,
+              titleSpacing: 0,
+              title: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+                child: TextField(
+                  decoration: InputDecoration(
+                    hintText: 'Search doctors or specialization',
+                    prefixIcon: Icon(Icons.search),
+                    filled: true,
+                    fillColor: Colors.grey.shade100,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(30),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                  onChanged: onSearchChanged,
                 ),
               ),
-              onChanged: onSearchChanged,
-            ),
-          ),
-          bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(58),
-            child: Padding(
-              padding: const EdgeInsets.only(top: 8, bottom: 8),
-              child: SizedBox(
-                height: 42,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  children: [
-                    for (final label in chipLabels)
-                      Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: _HomeFilterChip(
-                          label: label,
-                          activeSpecialization: activeSpecialization,
-                          onSelected: onSpecializationChanged,
-                        ),
-                      ),
-                  ],
+              bottom: PreferredSize(
+                preferredSize: const Size.fromHeight(58),
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 8, bottom: 8),
+                  child: SizedBox(
+                    height: 42,
+                    child: ListView(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      children: [
+                        for (final label in chipLabels)
+                          Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: _HomeFilterChip(
+                              label: label,
+                              activeSpecialization: activeSpecialization,
+                              onSelected: onSpecializationChanged,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ),
-          ),
-        ),
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.only(left: 16, bottom: 8, top: 12),
-            child: Text(
-              'Recommended Doctors',
-              style: TextStyle(fontSize: 20, fontWeight: .w600),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.only(left: 16, bottom: 8, top: 12),
+                child: Text(
+                  'Recommended Doctors',
+                  style: TextStyle(fontSize: 20, fontWeight: .w600),
+                ),
+              ),
             ),
-          ),
+            SliverList(
+              delegate: SliverChildBuilderDelegate((context, index) {
+                final doctor = filteredDoctors[index];
+                return Consumer(
+                  builder: (context, ref, _) {
+                    final appointmentsAsync = ref.watch(
+                      _homeDoctorAppointmentsProvider(doctor.id),
+                    );
+                    final appointments =
+                        appointmentsAsync.valueOrNull ?? const <Appointment>[];
+                    final status = _resolveDoctorStatus(
+                      doctor: doctor,
+                      appointments: appointments,
+                    );
+                    return doctorCart(
+                      doctor,
+                      context,
+                      status,
+                      topPadding: index == 0 ? 0 : 16,
+                    );
+                  },
+                );
+              }, childCount: filteredDoctors.length),
+            ),
+          ],
+        );
+      },
+      loading: () => const SliverToBoxAdapter(
+        child: Padding(
+          padding: EdgeInsets.only(top: 24),
+          child: Center(child: CircularProgressIndicator()),
         ),
-        SliverList(
-          delegate: SliverChildBuilderDelegate((context, index) {
-            final doctor = filteredDoctors[index];
-            return Consumer(
-              builder: (context, ref, _) {
-                final appointmentsAsync = ref.watch(
-                  _homeDoctorAppointmentsProvider(doctor.id),
-                );
-                final appointments =
-                    appointmentsAsync.valueOrNull ?? const <Appointment>[];
-                final status = _resolveDoctorStatus(
-                  doctor: doctor,
-                  appointments: appointments,
-                );
-                return doctorCart(
-                  doctor,
-                  context,
-                  status,
-                  topPadding: index == 0 ? 0 : 16,
-                );
-              },
-            );
-          }, childCount: filteredDoctors.length),
+      ),
+      error: (e, _) => SliverToBoxAdapter(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Center(child: Text(e.toString())),
         ),
-      ],
+      ),
     );
   }
 }

@@ -111,14 +111,16 @@ class Doctor {
       experience: json['experience'] is int
           ? json['experience'] as int
           : int.tryParse((json['experience'] ?? '').toString()) ?? 0,
-      rating: (json['rating'] as num).toDouble(),
-      reviews: json['reviews'],
-      patients: json['patients'],
+      rating: (json['rating'] is num)
+          ? (json['rating'] as num).toDouble()
+          : 0.0,
+      reviews: (json['reviews'] is int) ? json['reviews'] : 0,
+      patients: (json['patients'] is int) ? json['patients'] : 0,
       image: (json['image'] ?? '').toString(),
       email: (json['email'] ?? '').toString(),
       about: (json['about'] ?? '').toString(),
       consultationFee: (json['consultationFee'] as num?)?.toDouble() ?? 0,
-      slotDuration: json['slotDuration'],
+      slotDuration: (json['slotDuration'] is int) ? json['slotDuration'] : 15,
       isAvailableForBooking: json['isAvailableForBooking'] ?? true,
       schedule: (json['schedule'] as List<dynamic>? ?? [])
           .map(

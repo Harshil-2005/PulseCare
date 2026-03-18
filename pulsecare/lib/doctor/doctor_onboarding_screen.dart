@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pulsecare/utils/keyboard_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -129,7 +130,7 @@ class _DoctorAccountSetupFlowScreenState
   }
 
   Future<void> _onNext() async {
-    FocusScope.of(context).unfocus();
+    KeyboardUtils.hideKeyboardKeepFocus();
 
     if (_currentPage == 4) {
       final fee = double.tryParse(_consultationFeeController.text.trim());
@@ -182,7 +183,7 @@ class _DoctorAccountSetupFlowScreenState
       ),
     );
     if (!mounted) return;
-    SessionRepository().setCurrentDoctor(createdDoctor.id);
+    await SessionRepository().setCurrentDoctor(createdDoctor.id);
 
     Navigator.pushReplacement(
       context,
@@ -260,7 +261,7 @@ class _DoctorAccountSetupFlowScreenState
   }
 
   Future<void> _pickTime(TextEditingController controller) async {
-    FocusScope.of(context).unfocus();
+    KeyboardUtils.hideKeyboardKeepFocus();
 
     TimeOfDay initialTime = TimeOfDay.now();
     final currentText = controller.text.trim();
@@ -720,7 +721,7 @@ class _DoctorAccountSetupFlowScreenState
       onSubmitted: (_) {
         _onManualTimeEditingComplete(day, slotKey);
         if (nextSlotKey == null) {
-          FocusScope.of(context).unfocus();
+          KeyboardUtils.hideKeyboardKeepFocus();
           return;
         }
         FocusScope.of(context).requestFocus(_focusNodeFor(day, nextSlotKey));
@@ -761,7 +762,7 @@ class _DoctorAccountSetupFlowScreenState
     setState(() {
       _filteredSpecializations = [];
     });
-    FocusManager.instance.primaryFocus?.unfocus();
+    KeyboardUtils.hideKeyboardKeepFocus();
   }
 
   Widget _textFieldStep({
@@ -812,7 +813,7 @@ class _DoctorAccountSetupFlowScreenState
           onTap: onTap,
           onEditingComplete: onEditingComplete,
           onSubmitted: onSubmitted,
-          onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
+          onTapOutside: (_) => KeyboardUtils.hideKeyboardKeepFocus(),
           style: textStyle,
           decoration: InputDecoration(
             isDense: isDense,
@@ -1250,7 +1251,7 @@ class _DoctorAccountSetupFlowScreenState
       resizeToAvoidBottomInset: false,
       body: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: () => FocusScope.of(context).unfocus(),
+        onTap: () => KeyboardUtils.hideKeyboardKeepFocus(),
         child: Stack(
           children: [
             Align(
@@ -1346,3 +1347,6 @@ class _DoctorAccountSetupFlowScreenState
     );
   }
 }
+
+
+

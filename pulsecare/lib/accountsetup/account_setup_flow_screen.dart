@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pulsecare/utils/keyboard_utils.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -84,7 +85,7 @@ class _AccountSetupFlowScreenState
   ];
 
   Future<void> _onNext() async {
-    FocusScope.of(context).unfocus();
+    KeyboardUtils.hideKeyboardKeepFocus();
 
     if (_currentPage == 2) {
       final rawAge = _ageController.text.trim();
@@ -152,7 +153,8 @@ class _AccountSetupFlowScreenState
     );
     final createdUser = await userRepository.createUser(user);
     if (!mounted) return;
-    SessionRepository().setCurrentUser(createdUser.id);
+    await sessionRepository.setCurrentUser(createdUser.id);
+    await sessionRepository.setRole(user.role);
 
     if (_selectedRole == 'Doctor') {
       Navigator.pushReplacement(
@@ -263,7 +265,7 @@ class _AccountSetupFlowScreenState
           onTap: onTap,
           inputFormatters: inputFormatters,
           onChanged: onChanged,
-          onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
+          onTapOutside: (_) => KeyboardUtils.hideKeyboardKeepFocus(),
           decoration: InputDecoration(
             suffixIcon: suffixIconPath == null
                 ? null
@@ -474,7 +476,7 @@ class _AccountSetupFlowScreenState
       resizeToAvoidBottomInset: false,
       body: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: () => FocusScope.of(context).unfocus(),
+        onTap: () => KeyboardUtils.hideKeyboardKeepFocus(),
         child: Stack(
           children: [
             Align(
@@ -563,3 +565,6 @@ class _AccountSetupFlowScreenState
     );
   }
 }
+
+
+

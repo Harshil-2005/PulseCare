@@ -60,24 +60,37 @@ class _ReviewBottomSheetState extends ConsumerState<ReviewBottomSheet> {
       final updatedAppointment = widget.appointment.copyWith(
         reviewSubmitted: true,
       );
-      await ref
-          .read(appointmentRepositoryProvider)
-          .updateAppointment(updatedAppointment);
+      try {
+        await ref
+            .read(appointmentRepositoryProvider)
+            .updateAppointment(updatedAppointment);
+      } catch (_) {
+        // ignore appointment update failure
+      }
 
       if (!mounted) return;
       setState(() {
         _isSubmitting = false;
       });
       Navigator.pop(context, true);
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
       setState(() {
         _isSubmitting = false;
       });
+
+      // HANDLE DUPLICATE CASE
+      if (e.toString().contains('duplicate_review_for_appointment')) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Review already submitted')),
+        );
+        Navigator.pop(context);
+        return;
+      }
+
+      // SHOW REAL ERROR
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Unable to submit review. Please try again.'),
-        ),
+        SnackBar(content: Text('Error: ${e.toString()}')),
       );
     }
   }

@@ -34,15 +34,18 @@ class DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen> {
             a.status == AppointmentStatus.pending ||
             a.status == AppointmentStatus.confirmed,
       )
-      .toList();
+      .toList()
+    ..sort((a, b) => a.scheduledAt.compareTo(b.scheduledAt));
 
   List<Appointment> get pastAppointments => widget.appointments
       .where((a) => a.status == AppointmentStatus.completed)
-      .toList();
+      .toList()
+    ..sort((a, b) => b.scheduledAt.compareTo(a.scheduledAt));
 
   List<Appointment> get cancelledAppointments => widget.appointments
       .where((a) => a.status == AppointmentStatus.cancelled)
-      .toList();
+      .toList()
+    ..sort((a, b) => b.scheduledAt.compareTo(a.scheduledAt));
 
   @override
   Widget build(BuildContext context) {

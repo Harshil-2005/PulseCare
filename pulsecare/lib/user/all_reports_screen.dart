@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pulsecare/utils/keyboard_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:pulsecare/constrains/report_card.dart';
@@ -44,7 +45,7 @@ class _AllReportsScreenState extends ConsumerState<AllReportsScreen> {
       canPop: !_searchFocusNode.hasFocus,
       onPopInvokedWithResult: (didPop, result) {
         if (!didPop && _searchFocusNode.hasFocus) {
-          _searchFocusNode.unfocus();
+          KeyboardUtils.hideKeyboardKeepFocus();
         }
       },
       child: Scaffold(
@@ -85,7 +86,7 @@ class _AllReportsScreenState extends ConsumerState<AllReportsScreen> {
               padding: const EdgeInsets.only(top: 24, left: 16, right: 16),
               child: TextField(
                 focusNode: _searchFocusNode,
-                onTapOutside: (_) => _searchFocusNode.unfocus(),
+                onTapOutside: (_) => KeyboardUtils.hideKeyboardKeepFocus(),
                 onEditingComplete: _searchFocusNode.unfocus,
                 controller: alltextcontroller,
                 onChanged: (value) {
@@ -201,3 +202,6 @@ class _AllReportsScreenState extends ConsumerState<AllReportsScreen> {
     );
   }
 }
+
+
+

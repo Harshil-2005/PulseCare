@@ -47,6 +47,14 @@ class DoctorAppShellState extends ConsumerState<DoctorAppShell> {
   final GlobalKey<DoctorAppointmentsScreenState> doctorAppointmentsKey =
       GlobalKey<DoctorAppointmentsScreenState>();
 
+  Future<void> cancelStreams() async {
+    final subscription = _appointmentsSubscription;
+    _appointmentsSubscription = null;
+    if (subscription != null) {
+      await subscription.cancel();
+    }
+  }
+
   void switchToTab(int index) {
     setState(() {
       selectedIndex = index;

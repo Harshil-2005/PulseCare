@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pulsecare/utils/keyboard_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pulsecare/accountsetup/account_setup_flow_screen.dart';
 import 'package:pulsecare/constrains/app_text_field.dart';
@@ -110,7 +111,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
       );
 
       final sessionRepository = SessionRepository();
-      sessionRepository.setCurrentUser(uid);
+      await sessionRepository.setCurrentUser(uid);
 
       if (!mounted) return;
       goToLogin();
@@ -140,7 +141,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
       );
 
       final sessionRepository = SessionRepository();
-      sessionRepository.setCurrentUser(uid);
+      await sessionRepository.setCurrentUser(uid);
       ref.read(sessionUserIdProvider.notifier).state = uid;
 
       await _navigateAfterLogin(uid);
@@ -176,6 +177,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
           await sessionRepository.clearSession();
           await sessionRepository.setCurrentUser(uid);
           await sessionRepository.setCurrentDoctor(doctor.id);
+          await sessionRepository.setRole('doctor');
           ref.read(sessionUserIdProvider.notifier).state = uid;
           if (!mounted) return;
           Navigator.pushAndRemoveUntil(
@@ -191,8 +193,10 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
           return;
         }
       } else {
-        await SessionRepository().clearSession();
-        await SessionRepository().setCurrentUser(uid);
+        final sessionRepository = SessionRepository();
+        await sessionRepository.clearSession();
+        await sessionRepository.setCurrentUser(uid);
+        await sessionRepository.setRole('patient');
         ref.read(sessionUserIdProvider.notifier).state = uid;
         if (!mounted) return;
         Navigator.pushAndRemoveUntil(
@@ -415,18 +419,25 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
   @override
   Widget build(BuildContext context) {
     bool isRegister = currentPage == 1;
+    final media = MediaQuery.of(context);
 
     return Scaffold(
       backgroundColor: const Color(0xFFEFEFEF),
-      resizeToAvoidBottomInset: false,
+      resizeToAvoidBottomInset: true,
 
       body: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: () {
-          FocusScope.of(context).unfocus();
+          KeyboardUtils.hideKeyboardKeepFocus();
         },
-        child: Stack(
-          children: [
+        child: SingleChildScrollView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          child: Padding(
+            padding: EdgeInsets.only(bottom: media.viewInsets.bottom),
+            child: SizedBox(
+              height: media.size.height,
+              child: Stack(
+                children: [
             /// 🔵 GRADIENT BACKGROUND (Full Screen)
             Container(
               height: 250,
@@ -560,7 +571,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
 
                                         final sessionRepository =
                                             SessionRepository();
-                                        sessionRepository.setCurrentUser(uid);
+                                        await sessionRepository
+                                            .setCurrentUser(uid);
                                         ref
                                                 .read(
                                                   sessionUserIdProvider
@@ -619,7 +631,10 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                 ),
               ),
             ),
-          ],
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -884,6 +899,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
       //   ],
       // ),   
 // import 'package:flutter/material.dart';
+// import 'package:pulsecare/utils/keyboard_utils.dart';
 // import 'package:pulsecare/auth/loginpage.dart';
 // import 'package:pulsecare/auth/registerpage.dart';
 // class AuthScreen extends StatefulWidget {
@@ -945,4 +961,6 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
 //     );
 //   }
 // }
+
+
 

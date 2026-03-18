@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:pulsecare/utils/keyboard_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:intl/intl.dart';
@@ -422,9 +423,8 @@ class _DateTimeScreenState extends ConsumerState<DateTimeScreen> {
                 controller: _dateController,
                 keyboardType: TextInputType.datetime,
                 onTapOutside: (_) {
-                  FocusScope.of(context).unfocus();
-                  FocusManager.instance.primaryFocus?.unfocus();
-                },
+                  KeyboardUtils.hideKeyboardKeepFocus();
+},
                 onChanged: (value) {
                   _handleDateInputChanged(value);
                 },
@@ -865,3 +865,5 @@ Widget timeSlotItem(TimeSlot slot) {
     ),
   );
 }
+
+

@@ -1,5 +1,6 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:pulsecare/utils/keyboard_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -446,7 +447,7 @@ class _EditDoctorProfileContentState extends State<EditDoctorProfileContent> {
               FocusScope.of(context).requestFocus(_lastNameFocusNode),
           onChanged: (value) =>
               _autoCapitalizeFirstLetter(widget.firstNameController, value),
-          onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
+          onTapOutside: (_) => KeyboardUtils.hideKeyboardKeepFocus(),
           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
           decoration: InputDecoration(
             focusedBorder: OutlineInputBorder(
@@ -475,7 +476,7 @@ class _EditDoctorProfileContentState extends State<EditDoctorProfileContent> {
           textInputAction: TextInputAction.done,
           onChanged: (value) =>
               _autoCapitalizeFirstLetter(widget.lastNameController, value),
-          onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
+          onTapOutside: (_) => KeyboardUtils.hideKeyboardKeepFocus(),
           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
           decoration: InputDecoration(
             focusedBorder: OutlineInputBorder(
@@ -553,7 +554,7 @@ class EditPhoneContent extends StatelessWidget {
           controller: phoneController,
           keyboardType: TextInputType.phone,
           textInputAction: TextInputAction.done,
-          onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
+          onTapOutside: (_) => KeyboardUtils.hideKeyboardKeepFocus(),
           decoration: InputDecoration(
             hintText: 'Enter phone',
             hintStyle: TextStyle(color: Colors.grey.shade400),
@@ -664,7 +665,7 @@ class _EditAgeContentState extends State<EditAgeContent> {
           textInputAction: TextInputAction.done,
           inputFormatters: [AgeOrDobInputFormatter()],
           onChanged: _onAgeChanged,
-          onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
+          onTapOutside: (_) => KeyboardUtils.hideKeyboardKeepFocus(),
           decoration: InputDecoration(
             hintText: 'Enter age or DOB',
             suffixIcon: InkWell(
@@ -898,7 +899,7 @@ class _EditExperienceContentState extends State<EditExperienceContent> {
           keyboardType: TextInputType.number,
           textInputAction: TextInputAction.done,
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-          onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
+          onTapOutside: (_) => KeyboardUtils.hideKeyboardKeepFocus(),
           decoration: InputDecoration(
             hintText: 'Enter years',
             hintStyle: TextStyle(color: Colors.grey.shade400),
@@ -973,7 +974,7 @@ class _EditSpecializationContentState extends State<EditSpecializationContent> {
       offset: value.length,
     );
     setState(() => _filteredSpecializations = <String>[]);
-    FocusScope.of(context).unfocus();
+    KeyboardUtils.hideKeyboardKeepFocus();
   }
 
   @override
@@ -986,7 +987,7 @@ class _EditSpecializationContentState extends State<EditSpecializationContent> {
   Widget build(BuildContext context) {
     return GestureDetector(
       behavior: HitTestBehavior.translucent,
-      onTap: () => FocusScope.of(context).unfocus(),
+      onTap: () => KeyboardUtils.hideKeyboardKeepFocus(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1031,7 +1032,7 @@ class _EditSpecializationContentState extends State<EditSpecializationContent> {
             focusNode: _specializationFocusNode,
             textInputAction: TextInputAction.done,
             onChanged: _onSpecializationChanged,
-            onTapOutside: (_) => FocusScope.of(context).unfocus(),
+            onTapOutside: (_) => KeyboardUtils.hideKeyboardKeepFocus(),
             decoration: InputDecoration(
               hintText: 'Enter specialization',
               hintStyle: TextStyle(color: Colors.grey.shade400),
@@ -1144,7 +1145,7 @@ class _EditHospitalContentState extends State<EditHospitalContent> {
         TextField(
           controller: widget.hospitalController,
           textInputAction: TextInputAction.done,
-          onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
+          onTapOutside: (_) => KeyboardUtils.hideKeyboardKeepFocus(),
           decoration: InputDecoration(
             hintText: 'Enter hospital or clinic name',
             hintStyle: TextStyle(color: Colors.grey.shade400),
@@ -1231,7 +1232,7 @@ class _EditConsultationFeeContentState
           keyboardType: TextInputType.number,
           textInputAction: TextInputAction.done,
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-          onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
+          onTapOutside: (_) => KeyboardUtils.hideKeyboardKeepFocus(),
           decoration: InputDecoration(
             prefixText: '\u20B9 ',
             hintText: 'Enter fee',
@@ -1393,3 +1394,6 @@ class _EditSlotDurationContentState extends State<EditSlotDurationContent> {
     );
   }
 }
+
+
+

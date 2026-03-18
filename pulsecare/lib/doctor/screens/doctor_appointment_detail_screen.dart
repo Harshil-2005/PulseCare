@@ -113,36 +113,54 @@ class _ContentSection extends ConsumerWidget {
                         color: statusUi.color,
                         backgroundColor: statusUi.backgroundColor,
                       ),
-                      const Spacer(),
-                      SvgPicture.asset(
-                        'assets/icons/date.svg',
-                        width: 16,
-                        height: 16,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        TimeUtils.formatDate(appointment.scheduledAt),
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.grey.shade700,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      const Text('|', style: TextStyle(color: Colors.grey)),
-                      const SizedBox(width: 8),
-                      SvgPicture.asset(
-                        'assets/icons/round.svg',
-                        width: 16,
-                        height: 16,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        TimeUtils.formatTime(appointment.scheduledAt),
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.grey.shade700,
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            SvgPicture.asset(
+                              'assets/icons/date.svg',
+                              width: 16,
+                              height: 16,
+                            ),
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: Text(
+                                TimeUtils.formatDate(appointment.scheduledAt),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.grey.shade700,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            const Text(
+                              '|',
+                              style: TextStyle(color: Colors.grey),
+                            ),
+                            const SizedBox(width: 8),
+                            SvgPicture.asset(
+                              'assets/icons/round.svg',
+                              width: 16,
+                              height: 16,
+                            ),
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: Text(
+                                TimeUtils.formatTime(appointment.scheduledAt),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.grey.shade700,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],

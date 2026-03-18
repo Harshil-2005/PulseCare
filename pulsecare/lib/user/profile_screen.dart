@@ -54,68 +54,74 @@ class ProfileScreen extends ConsumerWidget {
                   bottom: 30,
                   right: 16,
                 ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    CircleAvatar(
-                      radius: 50,
-                      backgroundImage: AssetImage('assets/images/user.jpg'),
-                    ),
-                    SizedBox(width: 12),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          user.fullName,
-                          style: TextStyle(fontWeight: .w600, fontSize: 22),
-                        ),
-                        SizedBox(height: 7),
-                        Text(
-                          user.email,
-                          style: TextStyle(
-                            fontWeight: .w400,
-                            fontSize: 14,
-                            color: Colors.grey.shade400,
-                          ),
-                        ),
-                        SizedBox(height: 7),
-                        InkWell(
-                          onTap: () async {
-                            await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const EditProfile(
-                                  initialStep: 0,
-                                  singleStepMode: false,
-                                ),
-                              ),
-                            );
-                            ref.invalidate(_profileUserProvider(userId));
-                          },
-                          child: Container(
-                            height: 30,
-                            width: 90,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(15),
-                              color: Color(0xff3F67FD),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      CircleAvatar(
+                        radius: 50,
+                        backgroundImage: AssetImage('assets/images/user.jpg'),
+                      ),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              user.fullName,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(fontWeight: .w600, fontSize: 22),
                             ),
-                            child: Center(
-                              child: Text(
-                                'Edit Profile',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: .w500,
-                                  fontSize: 12,
-                                ),
+                            SizedBox(height: 7),
+                            Text(
+                              user.email,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontWeight: .w400,
+                                fontSize: 14,
+                                color: Colors.grey.shade400,
                               ),
                             ),
-                          ),
+                            SizedBox(height: 7),
+                            InkWell(
+                              onTap: () async {
+                                await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const EditProfile(
+                                      initialStep: 0,
+                                      singleStepMode: false,
+                                    ),
+                                  ),
+                                );
+                                ref.invalidate(_profileUserProvider(userId));
+                              },
+                              child: Container(
+                                height: 30,
+                                width: 90,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(15),
+                                  color: Color(0xff3F67FD),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    'Edit Profile',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: .w500,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                  ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
               Padding(
                 padding: const EdgeInsets.only(left: 16, right: 16, bottom: 24),
                 child: Container(

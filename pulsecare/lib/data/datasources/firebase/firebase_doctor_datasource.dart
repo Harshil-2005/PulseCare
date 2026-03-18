@@ -78,15 +78,18 @@ class FirebaseDoctorDataSource implements DoctorDataSource {
         .orderBy('patients', descending: true)
         .orderBy('experience', descending: true)
         .snapshots()
-        .map(
-          (snapshot) => snapshot.docs
+        .map((snapshot) {
+          // ignore: avoid_print
+          print("STREAM EMITTED: ${snapshot.docs.length}");
+          final doctors = snapshot.docs
               .map((doc) {
                 final data = doc.data();
                 data['id'] = doc.id;
                 return Doctor.fromJson(_normalizeMap(data));
               })
-              .toList(growable: false),
-        );
+              .toList(growable: false);
+          return List<Doctor>.from(doctors);
+        });
   }
 
   @override
@@ -127,6 +130,7 @@ class FirebaseDoctorDataSource implements DoctorDataSource {
       'rating': rating,
       'reviews': reviews,
       'ratingTotal': ratingTotal,
+      'updatedAt': DateTime.now().toIso8601String(),
     }, SetOptions(merge: true));
   }
 

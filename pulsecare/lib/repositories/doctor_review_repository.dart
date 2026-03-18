@@ -35,13 +35,29 @@ class DoctorReviewRepository extends ChangeNotifier {
     final current = await _doctorDataSource.getRatingStats(review.doctorId);
     final newRatingTotal = current.ratingTotal + review.rating;
     final newReviews = current.reviews + 1;
-    final newAverage = newReviews == 0 ? 0.0 : newRatingTotal / newReviews;
-    await _doctorDataSource.updateRating(
-      doctorId: review.doctorId,
-      rating: newAverage,
-      reviews: newReviews,
-      ratingTotal: newRatingTotal,
-    );
+
+    double newAverage = 0.0;
+    if (newReviews > 0) {
+      newAverage = newRatingTotal / newReviews;
+    }
+    newAverage = double.parse(newAverage.toStringAsFixed(2));
+
+    // Debug: verify value change before write
+    // (kept as print per request to trace real values)
+    // ignore: avoid_print
+    print("OLD → rating: ${current.rating}, reviews: ${current.reviews}");
+    // ignore: avoid_print
+    print("NEW → rating: $newAverage, reviews: $newReviews");
+    try {
+      await _doctorDataSource.updateRating(
+        doctorId: review.doctorId,
+        rating: newAverage,
+        reviews: newReviews,
+        ratingTotal: newRatingTotal,
+      );
+    } catch (_) {
+      // ignore rating failure (non-blocking)
+    }
   }
 
   void _validateReview(DoctorReview review) {

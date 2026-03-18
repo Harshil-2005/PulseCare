@@ -1,5 +1,6 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:pulsecare/utils/keyboard_utils.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -401,7 +402,7 @@ class _EditProfileState extends ConsumerState<EditProfile> {
           keyboardType: TextInputType.datetime,
           inputFormatters: [AgeOrDobInputFormatter()],
           onChanged: _onAgeChanged,
-          onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
+          onTapOutside: (_) => KeyboardUtils.hideKeyboardKeepFocus(),
           decoration: InputDecoration(
             hintText: 'Enter age or DOB',
             suffixIcon: InkWell(
@@ -504,7 +505,7 @@ class _EditProfileState extends ConsumerState<EditProfile> {
         TextField(
           controller: phoneController,
           keyboardType: TextInputType.phone,
-          onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
+          onTapOutside: (_) => KeyboardUtils.hideKeyboardKeepFocus(),
           decoration: InputDecoration(
             hintStyle: TextStyle(color: Colors.grey.shade400),
             focusedBorder: OutlineInputBorder(
@@ -725,3 +726,5 @@ class _EditProfileState extends ConsumerState<EditProfile> {
     );
   }
 }
+
+

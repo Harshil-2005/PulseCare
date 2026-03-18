@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:pulsecare/utils/keyboard_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:pulsecare/constrains/upload_report_bottom_sheet.dart';
@@ -546,9 +547,8 @@ class _UserDetailScreenState extends ConsumerState<PatientDetailScreen> {
       body: GestureDetector(
         behavior: HitTestBehavior.translucent,
         onTap: () {
-          FocusScope.of(context).unfocus();
-          FocusManager.instance.primaryFocus?.unfocus();
-        },
+          KeyboardUtils.hideKeyboardKeepFocus();
+},
         child: SingleChildScrollView(
           child: Column(
             children: [
@@ -660,9 +660,8 @@ class _UserDetailScreenState extends ConsumerState<PatientDetailScreen> {
                               keyboardType: TextInputType.number,
                               controller: ageController,
                               onTapOutside: (_) {
-                                FocusScope.of(context).unfocus();
-                                FocusManager.instance.primaryFocus?.unfocus();
-                              },
+                                KeyboardUtils.hideKeyboardKeepFocus();
+},
                               decoration: InputDecoration(
                                 hintText: user?.age.toString() ?? '',
                                 hintStyle: TextStyle(
@@ -796,9 +795,8 @@ class _UserDetailScreenState extends ConsumerState<PatientDetailScreen> {
                             controller: symptomsController,
                             maxLines: null,
                             onTapOutside: (_) {
-                              FocusScope.of(context).unfocus();
-                              FocusManager.instance.primaryFocus?.unfocus();
-                            },
+                              KeyboardUtils.hideKeyboardKeepFocus();
+},
 
                             decoration: InputDecoration(
                               border: InputBorder.none,
@@ -1107,3 +1105,5 @@ class _UserDetailScreenState extends ConsumerState<PatientDetailScreen> {
     );
   }
 }
+
+

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pulsecare/utils/keyboard_utils.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:pulsecare/user/chat_history_screen.dart';
 import 'package:pulsecare/user/doctor_detail_screen.dart';
@@ -58,7 +59,7 @@ class AiChatScreen extends StatelessWidget {
             const Spacer(),
             InkWell(
               onTap: () {
-                FocusScope.of(context).unfocus();
+                KeyboardUtils.hideKeyboardKeepFocus();
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(
@@ -71,7 +72,7 @@ class AiChatScreen extends StatelessWidget {
             const SizedBox(width: 13),
             InkWell(
               onTap: () {
-                FocusScope.of(context).unfocus();
+                KeyboardUtils.hideKeyboardKeepFocus();
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const ChatHistoryScreen()),
@@ -104,3 +105,5 @@ class AiChatScreen extends StatelessWidget {
     );
   }
 }
+
+
