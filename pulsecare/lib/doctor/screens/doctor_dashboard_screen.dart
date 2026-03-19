@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:pulsecare/constrains/app_avatar.dart';
 import 'package:pulsecare/doctor/doctor_onboarding_screen.dart';
 import 'package:pulsecare/doctor/screens/doctor_profile_screen.dart';
 import 'package:pulsecare/model/appointment_model.dart';
@@ -365,14 +366,10 @@ class DashboardHeader extends ConsumerWidget {
             Spacer(),
             InkWell(
               onTap: () => onProfileTap(currentDoctor.id),
-              child: CircleAvatar(
+              child: AppAvatar(
                 radius: 28,
-                backgroundColor: Color.fromARGB(255, 210, 219, 255),
-                child: SvgPicture.asset(
-                  'assets/icons/Avatar.svg',
-                  width: 28,
-                  height: 28,
-                ),
+                name: doctorName,
+                imagePath: currentDoctor.image,
               ),
             ),
           ],

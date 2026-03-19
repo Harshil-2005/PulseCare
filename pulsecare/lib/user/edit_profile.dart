@@ -1,10 +1,12 @@
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:pulsecare/utils/keyboard_utils.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:pulsecare/constrains/app_avatar.dart';
 import 'package:pulsecare/constrains/primary_icon_button.dart';
+import 'package:pulsecare/model/user_model.dart';
 import 'package:pulsecare/constrains/schedule_date_picker_dialog.dart';
 import 'package:pulsecare/providers/repository_providers.dart';
 import 'package:pulsecare/repositories/session_repository.dart';
@@ -25,6 +27,7 @@ class EditProfile extends ConsumerStatefulWidget {
 }
 
 class _EditProfileState extends ConsumerState<EditProfile> {
+  static final ImagePicker _imagePicker = ImagePicker();
   bool _ready = false;
   late final PageController _pageController;
   late final TextEditingController firstNameController;
@@ -35,6 +38,8 @@ class _EditProfileState extends ConsumerState<EditProfile> {
   int _currentStep = 0;
   DateTime? _lastDobFromInput;
   String _selectedGender = 'Female';
+  User? user;
+  String? _selectedAvatarPath;
 
   static const List<String> _titles = [
     'Edit Profile',
@@ -53,7 +58,7 @@ class _EditProfileState extends ConsumerState<EditProfile> {
     _pageController = PageController(
       initialPage: widget.singleStepMode ? 0 : widget.initialStep,
     );
-    final user = await ref
+    user = await ref
         .read(userRepositoryProvider)
         .getUserById(SessionRepository().getCurrentUserId());
     final nameParts = user?.fullName.split(' ') ?? [''];
@@ -65,6 +70,7 @@ class _EditProfileState extends ConsumerState<EditProfile> {
     ageController = TextEditingController(text: user?.age.toString() ?? '');
     _lastDobFromInput = user?.dateOfBirth;
     _selectedGender = user?.gender ?? 'Female';
+    _selectedAvatarPath = user?.avatarPath;
     _currentStep = widget.initialStep;
     if (!mounted) return;
     setState(() {
@@ -114,12 +120,26 @@ class _EditProfileState extends ConsumerState<EditProfile> {
     if (_currentStep == 0) {
       final fullName = '${firstNameController.text} ${lastNameController.text}'
           .trim();
+      var avatarPath = _selectedAvatarPath ?? user.avatarPath;
+      if (_selectedAvatarPath != null &&
+          _selectedAvatarPath!.trim().isNotEmpty &&
+          _selectedAvatarPath != user.avatarPath) {
+        avatarPath = await ref
+            .read(profileImageRepositoryProvider)
+            .saveUserProfileImage(
+              userId: userId,
+              sourcePath: _selectedAvatarPath!,
+            );
+        _selectedAvatarPath = avatarPath;
+      }
       final updatedUser = user.copyWith(
         fullName: fullName,
         firstName: firstNameController.text.trim(),
         lastName: lastNameController.text.trim(),
+        avatarPath: avatarPath,
       );
       await ref.read(userRepositoryProvider).updateUser(userId, updatedUser);
+      this.user = updatedUser;
       return;
     }
 
@@ -239,28 +259,18 @@ class _EditProfileState extends ConsumerState<EditProfile> {
             width: 150,
             child: Stack(
               children: [
-                const CircleAvatar(
+                AppAvatar(
                   radius: 70,
-                  backgroundImage: AssetImage('assets/images/user.jpg'),
+                  name: '${firstNameController.text} ${lastNameController.text}'
+                      .trim(),
+                  imagePath: _selectedAvatarPath,
                 ),
                 Positioned(
                   bottom: 0,
                   right: 0,
                   child: InkWell(
                     onTap: () async {
-                      final result = await FilePicker.platform.pickFiles(
-                        type: FileType.custom,
-                        allowedExtensions: ['pdf', 'jpg', 'png'],
-                      );
-                      if (!mounted) return;
-
-                      if (result != null) {
-                        final file = result.files.single;
-                        debugPrint('Picked file: ${file.name}');
-                        debugPrint('Path: ${file.path}');
-                      }
-
-                      Navigator.pop(context);
+                      await _showAvatarActions();
                     },
                     child: Container(
                       height: 45,
@@ -344,6 +354,148 @@ class _EditProfileState extends ConsumerState<EditProfile> {
           ),
         ),
       ],
+    );
+  }
+
+  Future<void> _showAvatarActions() async {
+    final hasImage = _hasCustomImage(_selectedAvatarPath);
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: false,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 18),
+              Container(
+                width: 45,
+                height: 7,
+                decoration: BoxDecoration(
+                  color: Colors.grey,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              const SizedBox(height: 26),
+              const Text(
+                'Profile Photo',
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 12),
+              InkWell(
+                onTap: () async {
+                  Navigator.pop(sheetContext);
+                  await _pickAvatarImage(ImageSource.gallery);
+                },
+                child: _photoOption(
+                  icon: const Icon(
+                    Icons.photo_library_outlined,
+                    size: 24,
+                    color: Color(0xff3F67FD),
+                  ),
+                  title: 'Upload from Gallery',
+                ),
+              ),
+              InkWell(
+                onTap: () async {
+                  Navigator.pop(sheetContext);
+                  await _pickAvatarImage(ImageSource.camera);
+                },
+                child: _photoOption(
+                  icon: const Icon(
+                    Icons.photo_camera_outlined,
+                    size: 24,
+                    color: Color(0xff3F67FD),
+                  ),
+                  title: 'Take with Camera',
+                ),
+              ),
+              if (hasImage)
+                InkWell(
+                  child: _photoOption(
+                    icon: SvgPicture.asset(
+                      'assets/icons/delete.svg',
+                      width: 24,
+                      height: 24,
+                      colorFilter: const ColorFilter.mode(
+                        Color(0xff3F67FD),
+                        BlendMode.srcIn,
+                      ),
+                    ),
+                    title: 'Remove photo',
+                  ),
+                  onTap: () {
+                    Navigator.pop(sheetContext);
+                    if (!mounted) return;
+                    setState(() {
+                      _selectedAvatarPath = '';
+                    });
+                  },
+                ),
+              const SizedBox(height: 12),
+              TextButton(
+                onPressed: () => Navigator.pop(sheetContext),
+                child: const Text(
+                  'Cancel',
+                  style: TextStyle(
+                    color: Color(0xff3F67FD),
+                    fontSize: 18,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _pickAvatarImage(ImageSource source) async {
+    final picked = await _imagePicker.pickImage(source: source, imageQuality: 85);
+    if (!mounted) return;
+    final path = picked?.path;
+    if (path == null || path.isEmpty) return;
+    setState(() {
+      _selectedAvatarPath = path;
+    });
+  }
+
+  bool _hasCustomImage(String? path) {
+    final value = path?.trim() ?? '';
+    if (value.isEmpty) return false;
+    if (value.startsWith('http://') || value.startsWith('https://')) return true;
+    if (RegExp(r'^[a-zA-Z]:[\\/]').hasMatch(value) || value.startsWith('/')) {
+      return true;
+    }
+    return false;
+  }
+
+  Widget _photoOption({required Widget icon, required String title}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+      child: Container(
+        height: 60,
+        decoration: BoxDecoration(
+          color: const Color.fromARGB(255, 201, 212, 253),
+          borderRadius: BorderRadius.circular(35),
+        ),
+        child: Row(
+          children: [
+            const SizedBox(width: 30),
+            icon,
+            const SizedBox(width: 16),
+            Text(
+              title,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w400),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -726,5 +878,3 @@ class _EditProfileState extends ConsumerState<EditProfile> {
     );
   }
 }
-
-

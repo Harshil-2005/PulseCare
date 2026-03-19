@@ -21,18 +21,21 @@ void showConfirmationDialog(
     context: context,
     builder: (context) {
       final screenWidth = MediaQuery.of(context).size.width;
-      final isCompact = screenWidth < 360;
-      final buttonFontSize = 16.0;
-      final buttonHorizontalPadding = isCompact ? 8.0 : 20.0;
-      final actionsSidePadding = isCompact ? 8.0 : 20.0;
-      final buttonHeight = isCompact ? 54.0 : 50.0;
-      final cancelFlex = isCompact ? 4 : 1;
-      final confirmFlex = isCompact ? 7 : 1;
+      final isCompact = screenWidth < 390;
+      final buttonFontSize = isCompact ? 14.0 : 16.0;
+      final buttonHorizontalPadding = isCompact ? 4.0 : 20.0;
+      final actionsSidePadding = isCompact ? 4.0 : 20.0;
+      final buttonHeight = isCompact ? 56.0 : 50.0;
 
       return AlertDialog(
         backgroundColor: Colors.white,
-        insetPadding: const EdgeInsets.symmetric(horizontal: 24),
-        actionsPadding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+        insetPadding: EdgeInsets.symmetric(horizontal: isCompact ? 12 : 24),
+        actionsPadding: EdgeInsets.fromLTRB(
+          isCompact ? 10 : 20,
+          0,
+          isCompact ? 10 : 20,
+          20,
+        ),
         icon: CircleAvatar(
           radius: 30,
           backgroundColor: const Color.fromARGB(255, 222, 229, 255),
@@ -58,7 +61,6 @@ void showConfirmationDialog(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Expanded(
-                  flex: cancelFlex,
                   child: GestureDetector(
                     onTap: () => Navigator.pop(context),
                     child: Container(
@@ -71,13 +73,16 @@ void showConfirmationDialog(
                         borderRadius: BorderRadius.circular(30),
                       ),
                       child: Center(
-                        child: Text(
-                          'Cancel',
-                          maxLines: 1,
-                          softWrap: false,
-                          style: TextStyle(
-                            fontSize: buttonFontSize,
-                            fontWeight: FontWeight.w500,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            'Cancel',
+                            maxLines: 1,
+                            softWrap: false,
+                            style: TextStyle(
+                              fontSize: buttonFontSize,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ),
                       ),
@@ -86,7 +91,6 @@ void showConfirmationDialog(
                 ),
                 SizedBox(width: isCompact ? 10 : 12),
                 Expanded(
-                  flex: confirmFlex,
                   child: GestureDetector(
                     onTap: () {
                       Navigator.pop(context);
@@ -102,14 +106,17 @@ void showConfirmationDialog(
                         borderRadius: BorderRadius.circular(30),
                       ),
                       child: Center(
-                        child: Text(
-                          confirmText,
-                          maxLines: 1,
-                          softWrap: false,
-                          style: TextStyle(
-                            fontSize: buttonFontSize,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.white,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            confirmText,
+                            maxLines: 1,
+                            softWrap: false,
+                            style: TextStyle(
+                              fontSize: buttonFontSize,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
                       ),

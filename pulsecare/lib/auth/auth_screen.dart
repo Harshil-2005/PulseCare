@@ -438,199 +438,207 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
               height: media.size.height,
               child: Stack(
                 children: [
-            /// 🔵 GRADIENT BACKGROUND (Full Screen)
-            Container(
-              height: 250,
-              width: double.infinity,
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xFF7DA2FF), Color(0xFF3F67FD)],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                ),
-              ),
-            ),
-
-            /// 🔤 HEADER TEXT
-            SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.only(left: 20, top: 40),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      isRegister
-                          ? "You're almost there!\nLet’s set up your account."
-                          : "Go ahead and\nLog in your account",
-                      style: const TextStyle(
-                        fontFamily: 'Kodchasan',
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.w700,
+                  /// 🔵 GRADIENT BACKGROUND (Full Screen)
+                  Container(
+                    height: 250,
+                    width: double.infinity,
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Color(0xFF7DA2FF), Color(0xFF3F67FD)],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
                       ),
                     ),
-                  ],
-                ),
-              ),
-            ),
-
-            /// 🧾 WHITE CARD
-            Positioned(
-              top: 210,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: Container(
-                width: double.infinity,
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(40),
-                    topRight: Radius.circular(40),
                   ),
-                ),
-                child: Stack(
-                  children: [
-                    /// Background image bottom-right
-                    Positioned(
-                      bottom: 0,
-                      right: 0,
-                      child: Image.asset(
-                        'assets/images/lines_bg.png',
-                        height: 200,
+
+                  /// 🔤 HEADER TEXT
+                  SafeArea(
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 20, top: 40),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            isRegister
+                                ? "You're almost there!\nLet’s set up your account."
+                                : "Go ahead and\nLog in your account",
+                            style: const TextStyle(
+                              fontFamily: 'Kodchasan',
+                              color: Colors.white,
+                              fontSize: 24,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
+                  ),
 
-                    LayoutBuilder(
-                      builder: (context, constraints) {
-                        final media = MediaQuery.of(context);
-                        final isKeyboardOpen = media.viewInsets.bottom > 0;
-                        final isShortCard = constraints.maxHeight < 640;
-                        final shouldScrollCard = isKeyboardOpen || isShortCard;
-                        return SingleChildScrollView(
-                          physics: shouldScrollCard
-                              ? const BouncingScrollPhysics()
-                              : const NeverScrollableScrollPhysics(),
-                          padding: EdgeInsets.only(
-                            left: 20,
-                            right: 20,
-                            top: 40,
-                            bottom: media.viewInsets.bottom + 20,
-                          ),
-                          child: ConstrainedBox(
-                            constraints: BoxConstraints(
-                              minHeight: constraints.maxHeight - 40,
-                            ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                RegisterLoginToggleButton(
-                                  isRegisterSelected: isRegister,
-                                  onRegisterTap: goToRegister,
-                                  onLoginTap: goToLogin,
-                                ),
-                                const SizedBox(height: 24),
-                                SizedBox(
-                                  height: 360,
-                                  child: PageView(
-                                    controller: _pageController,
-                                    physics:
-                                        const NeverScrollableScrollPhysics(),
-                                    onPageChanged: (index) {
-                                      setState(() {
-                                        currentPage = index;
-                                      });
-                                    },
-                                    children: [_loginForm(), _registerForm()],
-                                  ),
-                                ),
-                                const SizedBox(height: 20),
-                                NextActionButton(
-                                  text: isRegister ? "Sign Up" : "Login",
-                                  onTap: () {
-                                    if (isRegister) {
-                                      _handleRegisterSubmit();
-                                    } else {
-                                      _handleLoginSubmit();
-                                    }
-                                  },
-                                ),
-                                if (!isKeyboardOpen) ...[
-                                  const SizedBox(height: 20),
-                                  const Text("OR"),
-                                  const SizedBox(height: 20),
-                                  GestureDetector(
-                                    onTap: () async {
-                                      try {
-                                        final authRepository = ref.read(
-                                          authRepositoryProvider,
-                                        );
-
-                                        final uid = await authRepository
-                                            .signInWithGoogle();
-
-                                        final sessionRepository =
-                                            SessionRepository();
-                                        await sessionRepository
-                                            .setCurrentUser(uid);
-                                        ref
-                                                .read(
-                                                  sessionUserIdProvider
-                                                      .notifier,
-                                                )
-                                                .state =
-                                            uid;
-
-                                        await _navigateAfterLogin(uid);
-                                      } catch (e) {
-                                        if (!context.mounted) return;
-                                        ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
-                                          SnackBar(
-                                            content: Text(
-                                              'Google login failed: $e',
-                                            ),
-                                          ),
-                                        );
-                                      }
-                                    },
-                                    child: Container(
-                                      height: 55,
-                                      width: double.infinity,
-                                      alignment: Alignment.center,
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        border: Border.all(width: 1.5),
-                                        borderRadius: BorderRadius.circular(30),
-                                      ),
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          SizedBox(
-                                            height: 30,
-                                            child: Image.asset(
-                                              'assets/images/google.png',
-                                            ),
-                                          ),
-                                          const SizedBox(width: 10),
-                                          const Text("Continue With Google"),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ],
+                  /// 🧾 WHITE CARD
+                  Positioned(
+                    top: 210,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    child: Container(
+                      width: double.infinity,
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(40),
+                          topRight: Radius.circular(40),
+                        ),
+                      ),
+                      child: Stack(
+                        children: [
+                          /// Background image bottom-right
+                          Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: Image.asset(
+                              'assets/images/lines_bg.png',
+                              height: 200,
                             ),
                           ),
-                        );
-                      },
+
+                          LayoutBuilder(
+                            builder: (context, constraints) {
+                              final media = MediaQuery.of(context);
+                              final isKeyboardOpen =
+                                  media.viewInsets.bottom > 0;
+                              final isShortCard = constraints.maxHeight < 640;
+                              final shouldScrollCard =
+                                  isKeyboardOpen || isShortCard;
+                              return SingleChildScrollView(
+                                physics: shouldScrollCard
+                                    ? const BouncingScrollPhysics()
+                                    : const NeverScrollableScrollPhysics(),
+                                padding: EdgeInsets.only(
+                                  left: 20,
+                                  right: 20,
+                                  top: 40,
+                                  bottom: media.viewInsets.bottom + 20,
+                                ),
+                                child: ConstrainedBox(
+                                  constraints: BoxConstraints(
+                                    minHeight: constraints.maxHeight - 40,
+                                  ),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      RegisterLoginToggleButton(
+                                        isRegisterSelected: isRegister,
+                                        onRegisterTap: goToRegister,
+                                        onLoginTap: goToLogin,
+                                      ),
+                                      const SizedBox(height: 24),
+                                      SizedBox(
+                                        height: 360,
+                                        child: PageView(
+                                          controller: _pageController,
+                                          physics:
+                                              const NeverScrollableScrollPhysics(),
+                                          onPageChanged: (index) {
+                                            setState(() {
+                                              currentPage = index;
+                                            });
+                                          },
+                                          children: [
+                                            _loginForm(),
+                                            _registerForm(),
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(height: 20),
+                                      NextActionButton(
+                                        text: isRegister ? "Sign Up" : "Login",
+                                        onTap: () {
+                                          if (isRegister) {
+                                            _handleRegisterSubmit();
+                                          } else {
+                                            _handleLoginSubmit();
+                                          }
+                                        },
+                                      ),
+                                      if (!isKeyboardOpen) ...[
+                                        const SizedBox(height: 20),
+                                        const Text("OR"),
+                                        const SizedBox(height: 20),
+                                        GestureDetector(
+                                          onTap: () async {
+                                            try {
+                                              final authRepository = ref.read(
+                                                authRepositoryProvider,
+                                              );
+
+                                              final uid = await authRepository
+                                                  .signInWithGoogle();
+
+                                              final sessionRepository =
+                                                  SessionRepository();
+                                              await sessionRepository
+                                                  .setCurrentUser(uid);
+                                              ref
+                                                      .read(
+                                                        sessionUserIdProvider
+                                                            .notifier,
+                                                      )
+                                                      .state =
+                                                  uid;
+
+                                              await _navigateAfterLogin(uid);
+                                            } catch (e) {
+                                              if (!context.mounted) return;
+                                              ScaffoldMessenger.of(
+                                                context,
+                                              ).showSnackBar(
+                                                SnackBar(
+                                                  content: Text(
+                                                    'Google login failed: $e',
+                                                  ),
+                                                ),
+                                              );
+                                            }
+                                          },
+                                          child: Container(
+                                            height: 55,
+                                            width: double.infinity,
+                                            alignment: Alignment.center,
+                                            decoration: BoxDecoration(
+                                              color: Colors.white,
+                                              border: Border.all(width: 1.5),
+                                              borderRadius:
+                                                  BorderRadius.circular(30),
+                                            ),
+                                            child: Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
+                                              children: [
+                                                SizedBox(
+                                                  height: 30,
+                                                  child: Image.asset(
+                                                    'assets/images/google.png',
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 10),
+                                                const Text(
+                                                  "Continue With Google",
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
                     ),
-                  ],
-                ),
-              ),
-            ),
+                  ),
                 ],
               ),
             ),

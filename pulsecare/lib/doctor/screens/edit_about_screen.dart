@@ -4,6 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:pulsecare/constrains/primary_icon_button.dart';
 import 'package:pulsecare/providers/repository_providers.dart';
 import 'package:pulsecare/repositories/session_repository.dart';
+import 'package:pulsecare/utils/keyboard_utils.dart';
 
 class EditAboutScreen extends ConsumerStatefulWidget {
   const EditAboutScreen({super.key});
@@ -123,7 +124,7 @@ class _EditAboutScreenState extends ConsumerState<EditAboutScreen> {
                       keyboardType: TextInputType.multiline,
                       textInputAction: TextInputAction.newline,
                       onTapOutside: (_) =>
-                          FocusManager.instance.primaryFocus?.unfocus(),
+                          KeyboardUtils.hideKeyboardKeepFocus(),
                       decoration: InputDecoration(
                         hintText:
                             'Tell patients about your experience, specialization, and approach to treatment.',

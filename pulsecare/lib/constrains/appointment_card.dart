@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:pulsecare/constrains/app_avatar.dart';
 
 enum AppointmentCardStatus { confirmed, pending, cancelled, completed }
 
@@ -48,12 +51,7 @@ class AppointmentCard extends StatelessWidget {
               children: [
                 Padding(
                   padding: const EdgeInsets.only(left: 10, top: 10),
-                  child: Image.asset(
-                    image,
-                    width: 92,
-                    height: 112,
-                    fit: BoxFit.cover,
-                  ),
+                  child: _doctorImage(image, doctorName),
                 ),
                 Expanded(
                   child: Padding(
@@ -82,41 +80,40 @@ class AppointmentCard extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 10),
-                        Row(
-                          children: [
-                            SvgPicture.asset(
-                              'assets/icons/date.svg',
-                              width: 16,
-                              height: 16,
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                date,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                        LayoutBuilder(
+                          builder: (context, constraints) {
+                            return SizedBox(
+                              width: constraints.maxWidth,
+                              child: FittedBox(
+                                alignment: Alignment.centerLeft,
+                                fit: BoxFit.scaleDown,
+                                child: Row(
+                                  children: [
+                                    SvgPicture.asset(
+                                      'assets/icons/date.svg',
+                                      width: 16,
+                                      height: 16,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(date, maxLines: 1),
+                                    const SizedBox(width: 8),
+                                    const Text(
+                                      '|',
+                                      style: TextStyle(color: Colors.grey),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    SvgPicture.asset(
+                                      'assets/icons/round.svg',
+                                      width: 16,
+                                      height: 16,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(time, maxLines: 1),
+                                  ],
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: 8),
-                            const Text(
-                              '|',
-                              style: TextStyle(color: Colors.grey),
-                            ),
-                            const SizedBox(width: 8),
-                            SvgPicture.asset(
-                              'assets/icons/round.svg',
-                              width: 16,
-                              height: 16,
-                            ),
-                            const SizedBox(width: 8),
-                            Flexible(
-                              child: Text(
-                                time,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
+                            );
+                          },
                         ),
                       ],
                     ),
@@ -198,6 +195,44 @@ class AppointmentCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _doctorImage(String value, String doctorName) {
+    final imagePath = value.trim();
+    final hasNetwork =
+        imagePath.startsWith('http://') || imagePath.startsWith('https://');
+    final isAbsolutePath =
+        imagePath.startsWith('/') ||
+        RegExp(r'^[a-zA-Z]:[\\/]').hasMatch(imagePath);
+
+    if (hasNetwork) {
+      return Image.network(
+        imagePath,
+        width: 92,
+        height: 112,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _doctorImageFallback(doctorName),
+      );
+    }
+
+    if (isAbsolutePath) {
+      final file = File(imagePath);
+      if (file.existsSync()) {
+        return Image.file(file, width: 92, height: 112, fit: BoxFit.cover);
+      }
+      return _doctorImageFallback(doctorName);
+    }
+    return _doctorImageFallback(doctorName);
+  }
+
+  Widget _doctorImageFallback(String doctorName) {
+    return Container(
+      width: 92,
+      height: 112,
+      color: const Color(0xFFF2F4F7),
+      alignment: Alignment.center,
+      child: AppAvatar(radius: 34, name: doctorName),
     );
   }
 }

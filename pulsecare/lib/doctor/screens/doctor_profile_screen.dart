@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:pulsecare/auth/auth_screen.dart';
+import 'package:pulsecare/constrains/app_avatar.dart';
 import 'package:pulsecare/constrains/logout_delete.dart';
 import 'package:pulsecare/doctor/doctor_app_shell.dart';
 import 'package:pulsecare/doctor/doctor_full_edit_flow_screen.dart';
@@ -182,9 +183,10 @@ class _DoctorProfileScreenState extends ConsumerState<DoctorProfileScreen> {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      CircleAvatar(
+                      AppAvatar(
                         radius: 50,
-                        backgroundImage: AssetImage(doctor.image),
+                        name: displayName,
+                        imagePath: doctor.image,
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -524,7 +526,7 @@ class _DoctorProfileScreenState extends ConsumerState<DoctorProfileScreen> {
                                 title: 'Log Out',
                                 message: 'Are you sure you want to log out?',
                                 iconPath: 'assets/icons/log_out.svg',
-                                confirmText: 'Yes, Logout',
+                                confirmText: 'Yes, Log out',
                                 onConfirm: () async {
                                   final authRepository = ref.read(
                                     authRepositoryProvider,

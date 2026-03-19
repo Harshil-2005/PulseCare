@@ -17,6 +17,7 @@ class Doctor {
 
   final String image;
   final String email;
+  final String? phone;
   final String about;
 
   final double consultationFee;
@@ -40,6 +41,7 @@ class Doctor {
     required this.patients,
     required this.image,
     required this.email,
+    this.phone,
     required this.about,
     required this.consultationFee,
     required this.slotDuration,
@@ -63,6 +65,7 @@ class Doctor {
     int? patients,
     String? image,
     String? email,
+    String? phone,
     String? about,
     double? consultationFee,
     int? slotDuration,
@@ -84,6 +87,7 @@ class Doctor {
       patients: patients ?? this.patients,
       image: image ?? this.image,
       email: email ?? this.email,
+      phone: phone ?? this.phone,
       about: about ?? this.about,
       consultationFee: consultationFee ?? this.consultationFee,
       slotDuration: slotDuration ?? this.slotDuration,
@@ -118,6 +122,7 @@ class Doctor {
       patients: (json['patients'] is int) ? json['patients'] : 0,
       image: (json['image'] ?? '').toString(),
       email: (json['email'] ?? '').toString(),
+      phone: json['phone']?.toString(),
       about: (json['about'] ?? '').toString(),
       consultationFee: (json['consultationFee'] as num?)?.toDouble() ?? 0,
       slotDuration: (json['slotDuration'] is int) ? json['slotDuration'] : 15,
@@ -160,6 +165,7 @@ class Doctor {
       'patients': patients,
       'image': image,
       'email': email,
+      'phone': phone,
       'about': about,
       'consultationFee': consultationFee,
       'slotDuration': slotDuration,

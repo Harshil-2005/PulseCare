@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:pulsecare/constrains/app_avatar.dart';
 import 'package:pulsecare/constrains/primary_icon_button.dart';
 import 'package:pulsecare/domain/availability_engine.dart';
 import 'package:pulsecare/model/appointment_model.dart';
@@ -384,14 +385,10 @@ class HomeHeader extends ConsumerWidget {
           padding: const EdgeInsets.only(right: 16.0),
           child: InkWell(
             onTap: onAvatarTap,
-            child: CircleAvatar(
+            child: AppAvatar(
               radius: 28,
-              backgroundColor: Color.fromARGB(255, 210, 219, 255),
-              child: SvgPicture.asset(
-                'assets/icons/Avatar.svg',
-                width: 28,
-                height: 28,
-              ),
+              name: user?.fullName,
+              imagePath: user?.avatarPath,
             ),
           ),
         ),
@@ -444,8 +441,8 @@ class DoctorListSection extends ConsumerWidget {
               pinned: true,
               primary: false,
               automaticallyImplyLeading: false,
-              backgroundColor: Colors.white,
-              surfaceTintColor: Colors.white,
+              backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+              surfaceTintColor: Theme.of(context).scaffoldBackgroundColor,
               elevation: 0,
               scrolledUnderElevation: 0,
               toolbarHeight: 58,
@@ -457,7 +454,7 @@ class DoctorListSection extends ConsumerWidget {
                     hintText: 'Search doctors or specialization',
                     prefixIcon: Icon(Icons.search),
                     filled: true,
-                    fillColor: Colors.grey.shade100,
+                    fillColor: Colors.grey.shade300,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(30),
                       borderSide: BorderSide.none,
@@ -564,7 +561,7 @@ class _HomeFilterChip extends StatelessWidget {
       selected: isSelected,
       checkmarkColor: chatButtonBlue,
       selectedColor: chatButtonBlue.withValues(alpha: 0.15),
-      backgroundColor: Colors.grey.shade100,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
       labelStyle: TextStyle(
         color: isSelected ? chatButtonBlue : Colors.grey.shade700,
@@ -629,7 +626,16 @@ Widget doctorCart(
                     child: SizedBox(
                       width: 92,
                       height: 126,
-                      child: Image.asset(doctor.image, fit: BoxFit.cover),
+                      child: ColoredBox(
+                        color: const Color(0xFFF2F4F7),
+                        child: Center(
+                          child: AppAvatar(
+                            radius: 34,
+                            name: doctor.name,
+                            imagePath: doctor.image,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),

@@ -22,6 +22,7 @@ import '../repositories/doctor_repository.dart';
 import '../repositories/doctor_review_repository.dart';
 import '../repositories/appointment_repository.dart';
 import '../repositories/chat_repository.dart';
+import '../repositories/profile_image_repository.dart';
 import '../repositories/user_repository.dart';
 import '../repositories/report_repository.dart';
 import '../repositories/availability_repository.dart';
@@ -95,6 +96,10 @@ final chatRepositoryProvider = Provider<ChatRepository>(
 
 final userRepositoryProvider = ChangeNotifierProvider<UserRepository>(
   (ref) => UserRepository(ref.read(userDatasourceProvider)),
+);
+
+final profileImageRepositoryProvider = Provider<ProfileImageRepository>(
+  (ref) => ProfileImageRepository(),
 );
 
 final reportRepositoryProvider = Provider<ReportRepository>(

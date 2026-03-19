@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:pulsecare/auth/auth_screen.dart';
+import 'package:pulsecare/constrains/app_avatar.dart';
 import 'package:pulsecare/constrains/logout_delete.dart';
 import 'package:pulsecare/providers/repository_providers.dart';
 import 'package:pulsecare/providers/session_provider.dart';
@@ -57,9 +58,10 @@ class ProfileScreen extends ConsumerWidget {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      CircleAvatar(
+                      AppAvatar(
                         radius: 50,
-                        backgroundImage: AssetImage('assets/images/user.jpg'),
+                        name: user.fullName,
+                        imagePath: user.avatarPath,
                       ),
                       SizedBox(width: 12),
                       Expanded(
@@ -416,7 +418,7 @@ class ProfileScreen extends ConsumerWidget {
                                 title: 'Log Out',
                                 message: 'Are you sure you want to log out?',
                                 iconPath: 'assets/icons/log_out.svg',
-                                confirmText: 'Yes, Logout',
+                                confirmText: 'Yes, Log out',
                                 onConfirm: () {
                                   final authRepository = ref.read(
                                     authRepositoryProvider,

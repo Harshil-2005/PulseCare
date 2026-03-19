@@ -1,18 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:pulsecare/constrains/app_avatar.dart';
 import 'package:pulsecare/constrains/primary_icon_button.dart';
 import 'package:pulsecare/model/day_schedule.dart';
 import 'package:pulsecare/model/doctor_model.dart';
 import 'package:pulsecare/user/patient_detail_screen.dart';
 import '../providers/repository_providers.dart';
-
-final _doctorDetailUserProvider = StreamProvider.autoDispose.family((
-  ref,
-  String userId,
-) {
-  return ref.read(userRepositoryProvider).watchUserById(userId);
-});
 
 class DoctorDetailScreen extends ConsumerStatefulWidget {
   final String doctorId;
@@ -136,12 +130,8 @@ class _DoctorDetailScreenState extends ConsumerState<DoctorDetailScreen> {
         body: const SizedBox.shrink(),
       );
     }
-    final doctorUser = currentDoctor.userId.isEmpty
-        ? null
-        : ref
-              .watch(_doctorDetailUserProvider(currentDoctor.userId))
-              .valueOrNull;
-    final doctorPhone = doctorUser?.phone ?? '';
+    final phone = currentDoctor.phone?.trim() ?? '';
+    final doctorPhone = phone.isNotEmpty ? phone : 'Not Available';
 
     return Scaffold(
       appBar: AppBar(
@@ -190,13 +180,17 @@ class _DoctorDetailScreenState extends ConsumerState<DoctorDetailScreen> {
                     Container(
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(30),
-                        image: DecorationImage(
-                          image: AssetImage(currentDoctor.image),
-                          fit: BoxFit.cover,
-                        ),
+                        color: const Color(0xFFF2F4F7),
                       ),
                       height: 140,
                       width: 120,
+                      child: Center(
+                        child: AppAvatar(
+                          radius: 42,
+                          name: currentDoctor.name,
+                          imagePath: currentDoctor.image,
+                        ),
+                      ),
                     ),
                     Expanded(
                       child: Padding(

@@ -565,6 +565,3 @@ class _AccountSetupFlowScreenState
     );
   }
 }
-
-
-

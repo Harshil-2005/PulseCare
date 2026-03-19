@@ -175,6 +175,7 @@ class _DoctorAccountSetupFlowScreenState
         patients: 0,
         image: 'assets/images/Dr1.png',
         email: currentUser.email,
+        phone: currentUser.phone,
         about: _aboutController.text.trim(),
         consultationFee: double.parse(_consultationFeeController.text.trim()),
         slotDuration: _slotDuration,
@@ -1248,7 +1249,7 @@ class _DoctorAccountSetupFlowScreenState
 
     return Scaffold(
       backgroundColor: Colors.white,
-      resizeToAvoidBottomInset: false,
+      resizeToAvoidBottomInset: true,
       body: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: () => KeyboardUtils.hideKeyboardKeepFocus(),
@@ -1328,7 +1329,14 @@ class _DoctorAccountSetupFlowScreenState
                             });
                           },
                           itemBuilder: (context, index) =>
-                              SingleChildScrollView(child: _stepContent(index)),
+                              SingleChildScrollView(
+                                padding: EdgeInsets.only(
+                                  bottom: MediaQuery.of(
+                                    context,
+                                  ).viewInsets.bottom,
+                                ),
+                                child: _stepContent(index),
+                              ),
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -1347,6 +1355,3 @@ class _DoctorAccountSetupFlowScreenState
     );
   }
 }
-
-
-

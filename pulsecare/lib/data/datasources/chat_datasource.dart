@@ -59,21 +59,6 @@ class LocalChatDataSource implements ChatDataSource {
     _messagesByConversation[key] = <ChatMessage>[];
   }
 
-  static const Map<String, String> _tagKeywordMap = {
-    'blood pressure': 'Blood Pressure',
-    'sleep': 'Sleep',
-    'headache': 'Headache',
-    'dizziness': 'Dizziness',
-    'allergy': 'Allergy',
-    'sugar': 'Blood Sugar',
-    'glucose': 'Blood Sugar',
-    'nutrition': 'Nutrition',
-    'diet': 'Diet',
-    'fever': 'Fever',
-    'cough': 'Cough',
-    'stress': 'Stress',
-    'anxiety': 'Anxiety',
-  };
 
   @override
   String startNewConversation(String userId) {

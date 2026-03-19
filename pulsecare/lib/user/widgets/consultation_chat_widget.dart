@@ -23,13 +23,6 @@ final _consultationDoctorByIdProvider = FutureProvider.autoDispose
       return ref.read(doctorRepositoryProvider).getDoctorById(doctorId);
     });
 
-final _consultationDoctorUserProvider = StreamProvider.autoDispose.family((
-  ref,
-  String userId,
-) {
-  return ref.read(userRepositoryProvider).watchUserById(userId);
-});
-
 class ConsultationChatWidget extends ConsumerStatefulWidget {
   final String conversationId;
   final String userId;
@@ -330,7 +323,7 @@ class _ConsultationChatWidgetState extends ConsumerState<ConsultationChatWidget>
 
     return Column(
       children: [
-        if (widget.showDisclaimer)
+        if (widget.showDisclaimer && !_hasStartedConsultation)
           Container(
             margin: const EdgeInsets.all(16),
             padding: const EdgeInsets.all(12),
@@ -780,7 +773,9 @@ Navigator.push(
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          doctorPhone,
+                          doctorPhone.isNotEmpty
+                              ? doctorPhone
+                              : 'Not Available',
                           style: const TextStyle(fontWeight: FontWeight.w400),
                         ),
                       ],
@@ -1192,15 +1187,7 @@ class _DoctorRecommendations extends ConsumerWidget {
           final doctor = recommended[doctorIndex];
           return Consumer(
             builder: (context, ref, _) {
-              final doctorPhone = doctor.userId.isEmpty
-                  ? ''
-                  : ref
-                            .watch(
-                              _consultationDoctorUserProvider(doctor.userId),
-                            )
-                            .valueOrNull
-                            ?.phone ??
-                        '';
+              final doctorPhone = doctor.phone?.trim() ?? '';
               return doctorCardBuilder(doctor, doctorPhone);
             },
           );

@@ -49,6 +49,7 @@ class DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final tabIndicatorWidth = (MediaQuery.of(context).size.width - 32) / 3;
     return Scaffold(
       appBar: AppBar(
         toolbarHeight: 85,
@@ -102,7 +103,7 @@ class DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen> {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Container(
-                    width: MediaQuery.of(context).size.width / 3,
+                    width: tabIndicatorWidth,
                     height: 5,
                     decoration: BoxDecoration(
                       color: const Color(0xff3F67FD),

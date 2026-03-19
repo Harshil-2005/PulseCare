@@ -1,9 +1,10 @@
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:pulsecare/utils/keyboard_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:pulsecare/constrains/app_avatar.dart';
 import 'package:pulsecare/constrains/primary_icon_button.dart';
 import 'package:pulsecare/constrains/schedule_date_picker_dialog.dart';
 import 'package:pulsecare/model/doctor_model.dart';
@@ -47,6 +48,7 @@ class _DoctorFullEditFlowScreenState
   late final TextEditingController _feeController;
   DateTime? _lastDobFromInput;
   String _selectedGender = 'Male';
+  String? _selectedDoctorImagePath;
   late int _selectedDuration;
   int _currentStep = 0;
 
@@ -98,6 +100,7 @@ class _DoctorFullEditFlowScreenState
     _feeController = TextEditingController(
       text: _doctor.consultationFee.toString(),
     );
+    _selectedDoctorImagePath = _doctor.image;
     _selectedDuration = _doctor.slotDuration;
     _selectedGender = _user.gender;
     _pageController = PageController(
@@ -154,8 +157,22 @@ class _DoctorFullEditFlowScreenState
     final fullName =
         '${_firstNameController.text.trim()} ${_lastNameController.text.trim()}'
             .trim();
+    var resolvedDoctorImage = _selectedDoctorImagePath ?? _doctor.image;
+    if (_selectedDoctorImagePath != null &&
+        _selectedDoctorImagePath!.trim().isNotEmpty &&
+        _selectedDoctorImagePath != _doctor.image) {
+      resolvedDoctorImage = await ref
+          .read(profileImageRepositoryProvider)
+          .saveDoctorProfileImage(
+            doctorId: _doctor.id,
+            sourcePath: _selectedDoctorImagePath!,
+          );
+      _selectedDoctorImagePath = resolvedDoctorImage;
+    }
     final updatedDoctor = _doctor.copyWith(
       name: fullName,
+      phone: _phoneController.text.trim(),
+      image: resolvedDoctorImage,
       experience:
           int.tryParse(_experienceController.text) ?? _doctor.experience,
       speciality: _specializationController.text,
@@ -169,6 +186,7 @@ class _DoctorFullEditFlowScreenState
       firstName: _firstNameController.text.trim(),
       lastName: _lastNameController.text.trim(),
       phone: _phoneController.text.trim(),
+      avatarPath: resolvedDoctorImage,
       age: parseAgeInput(_ageController.text.trim()) ?? _user.age,
       dateOfBirth: _lastDobFromInput,
       clearDateOfBirth: _lastDobFromInput == null,
@@ -222,7 +240,12 @@ class _DoctorFullEditFlowScreenState
       EditDoctorProfileContent(
         firstNameController: _firstNameController,
         lastNameController: _lastNameController,
-        imagePath: _doctor.image,
+        imagePath: _selectedDoctorImagePath ?? _doctor.image,
+        onImagePicked: (path) {
+          setState(() {
+            _selectedDoctorImagePath = path;
+          });
+        },
       ),
       EditPhoneContent(phoneController: _phoneController),
       EditAgeContent(
@@ -344,12 +367,14 @@ class EditDoctorProfileContent extends StatefulWidget {
   final TextEditingController firstNameController;
   final TextEditingController lastNameController;
   final String imagePath;
+  final ValueChanged<String> onImagePicked;
 
   const EditDoctorProfileContent({
     super.key,
     required this.firstNameController,
     required this.lastNameController,
     required this.imagePath,
+    required this.onImagePicked,
   });
 
   @override
@@ -358,6 +383,7 @@ class EditDoctorProfileContent extends StatefulWidget {
 }
 
 class _EditDoctorProfileContentState extends State<EditDoctorProfileContent> {
+  static final ImagePicker _imagePicker = ImagePicker();
   final FocusNode _lastNameFocusNode = FocusNode();
 
   void _autoCapitalizeFirstLetter(
@@ -383,6 +409,10 @@ class _EditDoctorProfileContentState extends State<EditDoctorProfileContent> {
 
   @override
   Widget build(BuildContext context) {
+    final fullName =
+        '${widget.firstNameController.text} ${widget.lastNameController.text}'
+            .trim();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -392,19 +422,17 @@ class _EditDoctorProfileContentState extends State<EditDoctorProfileContent> {
             width: 150,
             child: Stack(
               children: [
-                CircleAvatar(
+                AppAvatar(
                   radius: 70,
-                  backgroundImage: AssetImage(widget.imagePath),
+                  name: fullName,
+                  imagePath: widget.imagePath,
                 ),
                 Positioned(
                   bottom: 0,
                   right: 0,
                   child: InkWell(
                     onTap: () async {
-                      await FilePicker.platform.pickFiles(
-                        type: FileType.custom,
-                        allowedExtensions: ['jpg', 'jpeg', 'png'],
-                      );
+                      await _showAvatarActions();
                     },
                     child: Container(
                       height: 45,
@@ -490,6 +518,146 @@ class _EditDoctorProfileContentState extends State<EditDoctorProfileContent> {
           ),
         ),
       ],
+    );
+  }
+
+  Future<void> _showAvatarActions() async {
+    final hasImage = _hasCustomImage(widget.imagePath);
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: false,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 18),
+              Container(
+                width: 45,
+                height: 7,
+                decoration: BoxDecoration(
+                  color: Colors.grey,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              const SizedBox(height: 26),
+              const Text(
+                'Profile Photo',
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 12),
+              InkWell(
+                onTap: () async {
+                  Navigator.pop(sheetContext);
+                  await _pickAvatarImage(ImageSource.gallery);
+                },
+                child: _photoOption(
+                  icon: const Icon(
+                    Icons.photo_library_outlined,
+                    size: 24,
+                    color: Color(0xff3F67FD),
+                  ),
+                  title: 'Upload from Gallery',
+                ),
+              ),
+              InkWell(
+                onTap: () async {
+                  Navigator.pop(sheetContext);
+                  await _pickAvatarImage(ImageSource.camera);
+                },
+                child: _photoOption(
+                  icon: const Icon(
+                    Icons.photo_camera_outlined,
+                    size: 24,
+                    color: Color(0xff3F67FD),
+                  ),
+                  title: 'Take with Camera',
+                ),
+              ),
+              if (hasImage)
+                InkWell(
+                  child: _photoOption(
+                    icon: SvgPicture.asset(
+                      'assets/icons/delete.svg',
+                      width: 24,
+                      height: 24,
+                      colorFilter: const ColorFilter.mode(
+                        Color(0xff3F67FD),
+                        BlendMode.srcIn,
+                      ),
+                    ),
+                    title: 'Remove photo',
+                  ),
+                  onTap: () {
+                    Navigator.pop(sheetContext);
+                    widget.onImagePicked('');
+                  },
+                ),
+              const SizedBox(height: 12),
+              TextButton(
+                onPressed: () => Navigator.pop(sheetContext),
+                child: const Text(
+                  'Cancel',
+                  style: TextStyle(
+                    color: Color(0xff3F67FD),
+                    fontSize: 18,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _pickAvatarImage(ImageSource source) async {
+    final picked = await _imagePicker.pickImage(
+      source: source,
+      imageQuality: 85,
+    );
+    final path = picked?.path;
+    if (path == null || path.isEmpty) return;
+    widget.onImagePicked(path);
+  }
+
+  bool _hasCustomImage(String? path) {
+    final value = path?.trim() ?? '';
+    if (value.isEmpty) return false;
+    if (value.startsWith('http://') || value.startsWith('https://'))
+      return true;
+    if (RegExp(r'^[a-zA-Z]:[\\/]').hasMatch(value) || value.startsWith('/')) {
+      return true;
+    }
+    return false;
+  }
+
+  Widget _photoOption({required Widget icon, required String title}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+      child: Container(
+        height: 60,
+        decoration: BoxDecoration(
+          color: const Color.fromARGB(255, 201, 212, 253),
+          borderRadius: BorderRadius.circular(35),
+        ),
+        child: Row(
+          children: [
+            const SizedBox(width: 30),
+            icon,
+            const SizedBox(width: 16),
+            Text(
+              title,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w400),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -1394,6 +1562,3 @@ class _EditSlotDurationContentState extends State<EditSlotDurationContent> {
     );
   }
 }
-
-
-
