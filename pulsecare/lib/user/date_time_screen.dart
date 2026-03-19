@@ -5,6 +5,7 @@ import 'package:pulsecare/utils/keyboard_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:intl/intl.dart';
+import 'package:pulsecare/constrains/app_toast.dart';
 import 'package:pulsecare/constrains/schedule_date_picker_dialog.dart';
 import 'package:pulsecare/model/appointment_model.dart';
 import 'package:pulsecare/model/doctor_availability.dart';
@@ -696,11 +697,7 @@ class _DateTimeScreenState extends ConsumerState<DateTimeScreen> {
                     }
 
                     if (selectedSlot == null) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text("Please select a time slot"),
-                        ),
-                      );
+                      showAppToast(context, 'Please select a time slot');
                       return;
                     }
 
@@ -712,12 +709,9 @@ class _DateTimeScreenState extends ConsumerState<DateTimeScreen> {
                         'dd/MM/yyyy',
                       ).parseStrict(_dateController.text);
                     } catch (e) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            "Please enter a valid date (dd/MM/yyyy)",
-                          ),
-                        ),
+                      showAppToast(
+                        context,
+                        'Please enter a valid date (dd/MM/yyyy)',
                       );
                       return;
                     }
@@ -738,11 +732,7 @@ class _DateTimeScreenState extends ConsumerState<DateTimeScreen> {
                         appointmentDate.month == now.month &&
                         appointmentDate.day == now.day &&
                         appointmentDateTime.isBefore(now)) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text("Please select a future time"),
-                        ),
-                      );
+                      showAppToast(context, 'Please select a future time');
                       return;
                     }
 

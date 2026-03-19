@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:pulsecare/constrains/add_leave_date_sheet.dart';
+import 'package:pulsecare/constrains/logout_delete.dart';
 import 'package:pulsecare/doctor/doctor_app_shell.dart';
 import 'package:pulsecare/constrains/edit_day_schedule_sheet.dart';
 import 'package:pulsecare/model/day_schedule.dart';
@@ -127,37 +128,23 @@ class _DoctorScheduleScreenState extends ConsumerState<DoctorScheduleScreen> {
     String doctorId,
     DateOverride override,
   ) async {
-    await showDialog<void>(
-      context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          title: const Text('Remove Leave'),
-          content: const Text('Are you sure you want to remove this leave?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () async {
-                await ref
-                    .read(doctorRepositoryProvider)
-                    .removeOverride(
-                      doctorId: doctorId,
-                      date: override.startDate,
-                    );
-                if (!mounted) return;
-                Navigator.pop(dialogContext);
-                setState(() {});
-                final shell = DoctorAppShell.of(context);
-                if (shell != null) {
-                  shell.setState(() {});
-                }
-              },
-              child: const Text('Confirm'),
-            ),
-          ],
-        );
+    showConfirmationDialog(
+      context,
+      title: 'Remove Leave',
+      message: 'Are you sure you want to remove this leave?',
+      iconPath: null,
+      confirmText: 'Confirm',
+      onConfirm: () async {
+        await ref.read(doctorRepositoryProvider).removeOverride(
+              doctorId: doctorId,
+              date: override.startDate,
+            );
+        if (!mounted) return;
+        setState(() {});
+        final shell = DoctorAppShell.of(context);
+        if (shell != null) {
+          shell.setState(() {});
+        }
       },
     );
   }

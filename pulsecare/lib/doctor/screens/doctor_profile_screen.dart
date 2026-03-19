@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:pulsecare/auth/auth_screen.dart';
 import 'package:pulsecare/constrains/app_avatar.dart';
+import 'package:pulsecare/constrains/app_page_loader.dart';
 import 'package:pulsecare/constrains/logout_delete.dart';
+import 'package:pulsecare/constrains/skeleton_widgets.dart';
 import 'package:pulsecare/doctor/doctor_app_shell.dart';
 import 'package:pulsecare/doctor/doctor_full_edit_flow_screen.dart';
 import 'package:pulsecare/doctor/screens/edit_about_screen.dart';
@@ -124,7 +126,7 @@ class _DoctorProfileScreenState extends ConsumerState<DoctorProfileScreen> {
   Widget build(BuildContext context) {
     final userId = ref.watch(sessionUserIdProvider);
     if (userId == null) {
-      return const SizedBox.shrink();
+      return const AppPageLoader(message: 'Loading profile...');
     }
     final doctorAsync = ref.watch(_doctorProfileDoctorProvider(userId));
     return doctorAsync.when(
@@ -585,8 +587,13 @@ class _DoctorProfileScreenState extends ConsumerState<DoctorProfileScreen> {
                                   showDialog(
                                     context: loadingContext,
                                     barrierDismissible: false,
-                                    builder: (_) => const Center(
-                                      child: CircularProgressIndicator(),
+                                    builder: (_) => const SizedBox.expand(
+                                      child: ColoredBox(
+                                        color: Color(0xFFEFF3F6),
+                                        child: Center(
+                                          child: CircularProgressIndicator(),
+                                        ),
+                                      ),
                                     ),
                                   );
                                   final sessionRepository = SessionRepository();
@@ -629,21 +636,39 @@ class _DoctorProfileScreenState extends ConsumerState<DoctorProfileScreen> {
                                         e.code == 'requires-recent-login'
                                         ? 'For security, please log in again and then delete your account.'
                                         : 'Unable to delete account. Please try again.';
-                                    ScaffoldMessenger.of(
-                                      loadingContext,
-                                    ).showSnackBar(
-                                      SnackBar(content: Text(message)),
+                                    await showDialog<void>(
+                                      context: loadingContext,
+                                      builder: (dialogContext) => AlertDialog(
+                                        title: const Text('Delete Account'),
+                                        content: Text(message),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () => Navigator.of(
+                                              dialogContext,
+                                            ).pop(),
+                                            child: const Text('OK'),
+                                          ),
+                                        ],
+                                      ),
                                     );
                                   } catch (_) {
                                     if (!loadingContext.mounted) return;
                                     Navigator.of(loadingContext).pop();
-                                    ScaffoldMessenger.of(
-                                      loadingContext,
-                                    ).showSnackBar(
-                                      const SnackBar(
-                                        content: Text(
+                                    await showDialog<void>(
+                                      context: loadingContext,
+                                      builder: (dialogContext) => AlertDialog(
+                                        title: const Text('Delete Account'),
+                                        content: const Text(
                                           'Unable to delete account. Please try again.',
                                         ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () => Navigator.of(
+                                              dialogContext,
+                                            ).pop(),
+                                            child: const Text('OK'),
+                                          ),
+                                        ],
                                       ),
                                     );
                                   }
@@ -662,8 +687,7 @@ class _DoctorProfileScreenState extends ConsumerState<DoctorProfileScreen> {
           ),
         );
       },
-      loading: () =>
-          const Scaffold(body: Center(child: CircularProgressIndicator())),
+      loading: () => const ProfileScreenSkeleton(title: 'My Profile'),
       error: (error, stack) =>
           Scaffold(body: Center(child: Text('Error: $error'))),
     );

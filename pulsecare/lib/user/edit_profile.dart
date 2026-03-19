@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:pulsecare/constrains/app_avatar.dart';
+import 'package:pulsecare/constrains/app_page_loader.dart';
 import 'package:pulsecare/constrains/primary_icon_button.dart';
 import 'package:pulsecare/model/user_model.dart';
 import 'package:pulsecare/constrains/schedule_date_picker_dialog.dart';
@@ -40,6 +41,7 @@ class _EditProfileState extends ConsumerState<EditProfile> {
   String _selectedGender = 'Female';
   User? user;
   String? _selectedAvatarPath;
+  String? _stepErrorMessage;
 
   static const List<String> _titles = [
     'Edit Profile',
@@ -146,9 +148,7 @@ class _EditProfileState extends ConsumerState<EditProfile> {
     if (_currentStep == 1) {
       final phone = phoneController.text.trim();
       if (phone.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please enter your phone.')),
-        );
+        _setStepError('Please enter your phone.');
         return;
       }
       final updatedUser = user.copyWith(phone: phone);
@@ -163,9 +163,7 @@ class _EditProfileState extends ConsumerState<EditProfile> {
         final message = rawAge.isEmpty
             ? 'Please enter your age.'
             : 'Please enter a valid age or DOB (dd/MM/yyyy).';
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(message)));
+        _setStepError(message);
         return;
       }
       final updatedUser = user.copyWith(age: parsedAge);
@@ -184,6 +182,7 @@ class _EditProfileState extends ConsumerState<EditProfile> {
   }
 
   Future<void> _onNext() async {
+    _clearStepError();
     if (_currentStep == 2) {
       final parsedAge = parseAgeInput(ageController.text.trim());
       if (parsedAge == null) {
@@ -191,9 +190,7 @@ class _EditProfileState extends ConsumerState<EditProfile> {
         final message = raw.isEmpty
             ? 'Please enter your age.'
             : 'Please enter a valid age or DOB (dd/MM/yyyy).';
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(message)));
+        _setStepError(message);
         return;
       }
     }
@@ -355,6 +352,20 @@ class _EditProfileState extends ConsumerState<EditProfile> {
         ),
       ],
     );
+  }
+
+  void _setStepError(String message) {
+    if (!mounted) return;
+    setState(() {
+      _stepErrorMessage = message;
+    });
+  }
+
+  void _clearStepError() {
+    if (!mounted || _stepErrorMessage == null) return;
+    setState(() {
+      _stepErrorMessage = null;
+    });
   }
 
   Future<void> _showAvatarActions() async {
@@ -791,7 +802,7 @@ class _EditProfileState extends ConsumerState<EditProfile> {
   @override
   Widget build(BuildContext context) {
     if (!_ready) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const AppPageLoader(message: 'Preparing edit profile...');
     }
     final allPages = List.generate(4, _buildStep);
     final visiblePages = widget.singleStepMode
@@ -840,6 +851,7 @@ class _EditProfileState extends ConsumerState<EditProfile> {
                   if (!widget.singleStepMode) {
                     setState(() {
                       _currentStep = index;
+                      _stepErrorMessage = null;
                     });
                   }
                 },
@@ -858,6 +870,21 @@ class _EditProfileState extends ConsumerState<EditProfile> {
                 }).toList(),
               ),
             ),
+            if (_stepErrorMessage != null)
+              Padding(
+                padding: const EdgeInsets.only(left: 16, right: 16, top: 8),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    _stepErrorMessage!,
+                    style: const TextStyle(
+                      color: Color(0xFFD32F2F),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
             Padding(
               padding: const EdgeInsets.only(
                 left: 16,

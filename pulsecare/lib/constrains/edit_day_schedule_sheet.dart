@@ -30,6 +30,7 @@ class _EditDayScheduleSheetState extends State<EditDayScheduleSheet> {
   late FocusNode morningEndFocusNode;
   late FocusNode afternoonStartFocusNode;
   late FocusNode afternoonEndFocusNode;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -167,6 +168,11 @@ class _EditDayScheduleSheetState extends State<EditDayScheduleSheet> {
   }
 
   bool _validateAndSave() {
+    if (_errorMessage != null) {
+      setState(() {
+        _errorMessage = null;
+      });
+    }
     TimeOfDay? morningStart;
     TimeOfDay? morningEnd;
     TimeOfDay? afternoonStart;
@@ -261,7 +267,9 @@ class _EditDayScheduleSheetState extends State<EditDayScheduleSheet> {
   }
 
   void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    setState(() {
+      _errorMessage = message;
+    });
   }
 
   Widget _timeField({
@@ -481,6 +489,17 @@ class _EditDayScheduleSheetState extends State<EditDayScheduleSheet> {
                   ],
                 ),
               ),
+              if (_errorMessage != null) ...[
+                const SizedBox(height: 10),
+                Text(
+                  _errorMessage!,
+                  style: const TextStyle(
+                    color: Color(0xFFD32F2F),
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
               const SizedBox(height: 16),
               GestureDetector(
                 onTap: _validateAndSave,

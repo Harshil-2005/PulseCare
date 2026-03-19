@@ -41,13 +41,6 @@ class DoctorReviewRepository extends ChangeNotifier {
       newAverage = newRatingTotal / newReviews;
     }
     newAverage = double.parse(newAverage.toStringAsFixed(2));
-
-    // Debug: verify value change before write
-    // (kept as print per request to trace real values)
-    // ignore: avoid_print
-    print("OLD → rating: ${current.rating}, reviews: ${current.reviews}");
-    // ignore: avoid_print
-    print("NEW → rating: $newAverage, reviews: $newReviews");
     try {
       await _doctorDataSource.updateRating(
         doctorId: review.doctorId,

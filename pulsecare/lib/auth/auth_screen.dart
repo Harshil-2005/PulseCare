@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:pulsecare/utils/keyboard_utils.dart';
+import 'package:firebase_auth/firebase_auth.dart' show FirebaseAuthException;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pulsecare/accountsetup/account_setup_flow_screen.dart';
+import 'package:pulsecare/constrains/app_toast.dart';
 import 'package:pulsecare/constrains/app_text_field.dart';
 import 'package:pulsecare/constrains/next_action_button.dart';
 import 'package:pulsecare/constrains/toggle_button.dart';
@@ -45,6 +47,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
   bool _registerSubmitted = false;
   bool _loginEmailTouched = false;
   bool _registerEmailTouched = false;
+  bool _authBusy = false;
 
   @override
   void initState() {
@@ -103,6 +106,11 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
     }
 
     final authRepository = ref.read(authRepositoryProvider);
+    if (mounted) {
+      setState(() {
+        _authBusy = true;
+      });
+    }
 
     try {
       final uid = await authRepository.register(
@@ -115,11 +123,32 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
 
       if (!mounted) return;
       goToLogin();
-    } catch (e) {
+    } on FirebaseAuthException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
+      String message = 'Registration failed. Please try again.';
+      if (e.code == 'email-already-in-use') {
+        message =
+            'This email is already registered. Please log in or continue with Google.';
+      } else if (e.code == 'invalid-email') {
+        message = 'Please enter a valid email address and try again.';
+      } else if (e.code == 'weak-password') {
+        message =
+            'Password is too weak. Use at least 6 characters and try again.';
+      }
+      showAppToast(context, message, position: AppToastPosition.top);
+    } catch (_) {
+      if (!mounted) return;
+      showAppToast(
         context,
-      ).showSnackBar(SnackBar(content: Text('Registration failed: $e')));
+        'Registration failed. Please try again.',
+        position: AppToastPosition.top,
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _authBusy = false;
+        });
+      }
     }
   }
 
@@ -133,6 +162,11 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
     }
 
     final authRepository = ref.read(authRepositoryProvider);
+    if (mounted) {
+      setState(() {
+        _authBusy = true;
+      });
+    }
 
     try {
       final uid = await authRepository.login(
@@ -147,9 +181,17 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
       await _navigateAfterLogin(uid);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
+      showAppToast(
         context,
-      ).showSnackBar(SnackBar(content: Text('Login failed: $e')));
+        'Login failed. Please check your credentials.',
+        position: AppToastPosition.top,
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _authBusy = false;
+        });
+      }
     }
   }
 
@@ -566,6 +608,11 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                                         const SizedBox(height: 20),
                                         GestureDetector(
                                           onTap: () async {
+                                            if (mounted) {
+                                              setState(() {
+                                                _authBusy = true;
+                                              });
+                                            }
                                             try {
                                               final authRepository = ref.read(
                                                 authRepositoryProvider,
@@ -589,15 +636,17 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                                               await _navigateAfterLogin(uid);
                                             } catch (e) {
                                               if (!context.mounted) return;
-                                              ScaffoldMessenger.of(
+                                              showAppToast(
                                                 context,
-                                              ).showSnackBar(
-                                                SnackBar(
-                                                  content: Text(
-                                                    'Google login failed: $e',
-                                                  ),
-                                                ),
+                                                'Google sign-in failed. Please try again.',
+                                                position: AppToastPosition.top,
                                               );
+                                            } finally {
+                                              if (mounted) {
+                                                setState(() {
+                                                  _authBusy = false;
+                                                });
+                                              }
                                             }
                                           },
                                           child: Container(
@@ -639,6 +688,18 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                       ),
                     ),
                   ),
+                  if (_authBusy)
+                    Positioned.fill(
+                      child: AbsorbPointer(
+                        absorbing: true,
+                        child: Container(
+                          color: Colors.black.withValues(alpha: 0.18),
+                          child: const Center(
+                            child: CircularProgressIndicator(),
+                          ),
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),

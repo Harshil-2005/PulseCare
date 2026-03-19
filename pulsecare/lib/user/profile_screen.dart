@@ -5,8 +5,10 @@ import 'package:pulsecare/accountsetup/account_setup_flow_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:pulsecare/auth/auth_screen.dart';
 import 'package:pulsecare/constrains/app_avatar.dart';
+import 'package:pulsecare/constrains/app_page_loader.dart';
 import 'package:pulsecare/constrains/primary_icon_button.dart';
 import 'package:pulsecare/constrains/logout_delete.dart';
+import 'package:pulsecare/constrains/skeleton_widgets.dart';
 import 'package:pulsecare/providers/repository_providers.dart';
 import 'package:pulsecare/providers/session_provider.dart';
 import 'package:pulsecare/repositories/session_repository.dart';
@@ -26,7 +28,7 @@ class ProfileScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final userId = ref.watch(sessionUserIdProvider);
     if (userId == null) {
-      return const SizedBox.shrink();
+      return const AppPageLoader(message: 'Loading profile...');
     }
     final userAsync = ref.watch(_profileUserProvider(userId));
 
@@ -490,8 +492,13 @@ class ProfileScreen extends ConsumerWidget {
                                   showDialog(
                                     context: loadingContext,
                                     barrierDismissible: false,
-                                    builder: (_) => const Center(
-                                      child: CircularProgressIndicator(),
+                                    builder: (_) => const SizedBox.expand(
+                                      child: ColoredBox(
+                                        color: Color(0xFFEFF3F6),
+                                        child: Center(
+                                          child: CircularProgressIndicator(),
+                                        ),
+                                      ),
                                     ),
                                   );
                                   final sessionRepository = SessionRepository();
@@ -534,21 +541,39 @@ class ProfileScreen extends ConsumerWidget {
                                         e.code == 'requires-recent-login'
                                         ? 'For security, please log in again and then delete your account.'
                                         : 'Unable to delete account. Please try again.';
-                                    ScaffoldMessenger.of(
-                                      loadingContext,
-                                    ).showSnackBar(
-                                      SnackBar(content: Text(message)),
+                                    await showDialog<void>(
+                                      context: loadingContext,
+                                      builder: (dialogContext) => AlertDialog(
+                                        title: const Text('Delete Account'),
+                                        content: Text(message),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () => Navigator.of(
+                                              dialogContext,
+                                            ).pop(),
+                                            child: const Text('OK'),
+                                          ),
+                                        ],
+                                      ),
                                     );
                                   } catch (_) {
                                     if (!loadingContext.mounted) return;
                                     Navigator.of(loadingContext).pop();
-                                    ScaffoldMessenger.of(
-                                      loadingContext,
-                                    ).showSnackBar(
-                                      const SnackBar(
-                                        content: Text(
+                                    await showDialog<void>(
+                                      context: loadingContext,
+                                      builder: (dialogContext) => AlertDialog(
+                                        title: const Text('Delete Account'),
+                                        content: const Text(
                                           'Unable to delete account. Please try again.',
                                         ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () => Navigator.of(
+                                              dialogContext,
+                                            ).pop(),
+                                            child: const Text('OK'),
+                                          ),
+                                        ],
                                       ),
                                     );
                                   }
@@ -592,8 +617,7 @@ class ProfileScreen extends ConsumerWidget {
           ),
         ),
       ),
-      loading: () =>
-          const Scaffold(body: Center(child: CircularProgressIndicator())),
+      loading: () => const ProfileScreenSkeleton(title: 'My Profile'),
       error: (error, stack) {
         final isMissingProfile = error.toString().contains('profile_not_found');
         if (!isMissingProfile) {

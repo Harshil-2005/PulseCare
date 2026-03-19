@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pulsecare/constrains/app_avatar.dart';
+import 'package:pulsecare/constrains/skeleton_widgets.dart';
 import 'package:pulsecare/doctor/doctor_onboarding_screen.dart';
 import 'package:pulsecare/doctor/screens/doctor_profile_screen.dart';
 import 'package:pulsecare/model/appointment_model.dart';
@@ -180,11 +181,29 @@ class _DoctorDashboardScreenState extends ConsumerState<DoctorDashboardScreen> {
                 );
               },
             ),
-            if (_identityLoading)
-              const SliverFillRemaining(
-                hasScrollBody: false,
-                child: Center(child: CircularProgressIndicator()),
-              )
+            if (_identityLoading) ...[
+              SliverToBoxAdapter(child: SizedBox(height: sectionGap)),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                  child: _DoctorStatsSkeletonCard(isCompact: isCompact),
+                ),
+              ),
+              SliverToBoxAdapter(child: SizedBox(height: sectionGap)),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                  child: const SkeletonBox(width: 210, height: 22, radius: 8),
+                ),
+              ),
+              SliverToBoxAdapter(child: SizedBox(height: isCompact ? 8 : 6)),
+              SliverList(
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  return const _DoctorAppointmentPreviewSkeleton();
+                }, childCount: 3),
+              ),
+              SliverToBoxAdapter(child: SizedBox(height: isCompact ? 20 : 24)),
+            ]
             else if (!_hasDoctorProfile)
               SliverFillRemaining(
                 hasScrollBody: false,
@@ -616,6 +635,96 @@ class _StatPill extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _DoctorStatsSkeletonCard extends StatelessWidget {
+  const _DoctorStatsSkeletonCard({required this.isCompact});
+
+  final bool isCompact;
+
+  @override
+  Widget build(BuildContext context) {
+    final cardMinHeight = isCompact ? 172.0 : 182.0;
+    return Container(
+      width: double.infinity,
+      constraints: BoxConstraints(minHeight: cardMinHeight),
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        gradient: const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color.fromARGB(255, 174, 192, 255), Color(0xFF3F67FD)],
+        ),
+      ),
+      child: const Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SkeletonBox(width: 170, height: 20, radius: 8),
+          SizedBox(height: 8),
+          SkeletonBox(width: 130, height: 14, radius: 8),
+          SizedBox(height: 14),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              SkeletonBox(width: 110, height: 30, radius: 22),
+              SkeletonBox(width: 110, height: 30, radius: 22),
+              SkeletonBox(width: 110, height: 30, radius: 22),
+              SkeletonBox(width: 110, height: 30, radius: 22),
+            ],
+          ),
+          SizedBox(height: 14),
+          SkeletonBox(height: 48, radius: 30),
+        ],
+      ),
+    );
+  }
+}
+
+class _DoctorAppointmentPreviewSkeleton extends StatelessWidget {
+  const _DoctorAppointmentPreviewSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 16, left: 16, right: 16),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 10,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: const Padding(
+          padding: EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  SkeletonBox(width: 96, height: 24, radius: 30),
+                  Spacer(),
+                  SkeletonBox(width: 70, height: 14, radius: 8),
+                ],
+              ),
+              SizedBox(height: 10),
+              SkeletonBox(width: 170, height: 20, radius: 8),
+              SizedBox(height: 8),
+              SkeletonBox(height: 14, radius: 8),
+              SizedBox(height: 6),
+              SkeletonBox(width: 220, height: 14, radius: 8),
+            ],
+          ),
+        ),
       ),
     );
   }

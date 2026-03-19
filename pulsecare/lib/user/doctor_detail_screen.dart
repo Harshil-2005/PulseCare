@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:pulsecare/constrains/app_avatar.dart';
+import 'package:pulsecare/constrains/app_page_loader.dart';
 import 'package:pulsecare/constrains/primary_icon_button.dart';
 import 'package:pulsecare/model/day_schedule.dart';
 import 'package:pulsecare/model/doctor_model.dart';
@@ -89,7 +90,7 @@ class _DoctorDetailScreenState extends ConsumerState<DoctorDetailScreen> {
   @override
   Widget build(BuildContext context) {
     if (!_ready) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const AppPageLoader(message: 'Loading doctor details...');
     }
     final currentDoctor = doctor;
     if (currentDoctor == null) {
@@ -127,7 +128,12 @@ class _DoctorDetailScreenState extends ConsumerState<DoctorDetailScreen> {
             ),
           ),
         ),
-        body: const SizedBox.shrink(),
+        body: const Center(
+          child: Text(
+            'Doctor details are unavailable right now.',
+            style: TextStyle(fontSize: 15, color: Colors.grey),
+          ),
+        ),
       );
     }
     final phone = currentDoctor.phone?.trim() ?? '';

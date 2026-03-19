@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:pulsecare/constrains/app_toast.dart';
 import 'package:pulsecare/model/report_model.dart';
 import 'package:pulsecare/repositories/session_repository.dart';
 import '../providers/repository_providers.dart';
@@ -52,12 +53,10 @@ void showUploadReportBottomSheet(
                         }
                       })();
                 if (effectiveUserId == null || effectiveUserId.isEmpty) {
-                  debugPrint('Report upload blocked: missing user context');
                   if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Report upload requires user context.'),
-                      ),
+                    showAppToast(
+                      context,
+                      'Report upload requires user context.',
                     );
                   }
                   return;
@@ -96,12 +95,10 @@ void showUploadReportBottomSheet(
                         }
                       })();
                 if (effectiveUserId == null || effectiveUserId.isEmpty) {
-                  debugPrint('Report upload blocked: missing user context');
                   if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Report upload requires user context.'),
-                      ),
+                    showAppToast(
+                      context,
+                      'Report upload requires user context.',
                     );
                   }
                   return;

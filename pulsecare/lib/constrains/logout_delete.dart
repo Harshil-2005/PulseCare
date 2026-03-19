@@ -5,45 +5,54 @@ void showConfirmationDialog(
   BuildContext context, {
   required String title,
   required String message,
-  required String iconPath,
+  String? iconPath,
   required String confirmText,
   required VoidCallback onConfirm,
 }) {
-  String formatMessage(String text) {
-    if (text.length <= 30) return text;
-    final mid = text.length ~/ 2;
-    final splitAt = text.lastIndexOf(' ', mid);
-    if (splitAt <= 0) return text;
-    return '${text.substring(0, splitAt)}\n${text.substring(splitAt + 1)}';
-  }
+  String formatMessage(String text) => text;
 
   showDialog(
     context: context,
     builder: (context) {
       final screenWidth = MediaQuery.of(context).size.width;
       final isCompact = screenWidth < 390;
+      final hasIcon = iconPath != null && iconPath.trim().isNotEmpty;
       final buttonFontSize = isCompact ? 14.0 : 16.0;
+      final titleFontSize = isCompact ? 20.0 : 24.0;
       final buttonHorizontalPadding = isCompact ? 4.0 : 20.0;
       final actionsSidePadding = isCompact ? 4.0 : 20.0;
-      final buttonHeight = isCompact ? 56.0 : 50.0;
+      final buttonHeight = 50.0;
 
       return AlertDialog(
         backgroundColor: Colors.white,
-        insetPadding: EdgeInsets.symmetric(horizontal: isCompact ? 12 : 24),
+        insetPadding: EdgeInsets.symmetric(horizontal: isCompact ? 16 : 24),
+        titlePadding: EdgeInsets.fromLTRB(
+          24,
+          hasIcon ? 0 : (isCompact ? 22 : 24),
+          24,
+          12,
+        ),
+        contentPadding: const EdgeInsets.fromLTRB(24, 0, 24, 4),
         actionsPadding: EdgeInsets.fromLTRB(
           isCompact ? 10 : 20,
-          0,
+          14,
           isCompact ? 10 : 20,
           20,
         ),
-        icon: CircleAvatar(
-          radius: 30,
-          backgroundColor: const Color.fromARGB(255, 222, 229, 255),
-          child: SvgPicture.asset(iconPath, height: 20, width: 20),
-        ),
+        icon: !hasIcon
+            ? null
+            : CircleAvatar(
+                radius: 30,
+                backgroundColor: const Color.fromARGB(255, 222, 229, 255),
+                child: SvgPicture.asset(iconPath, height: 20, width: 20),
+              ),
         title: Text(
           title,
-          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w500),
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: titleFontSize,
+            fontWeight: FontWeight.w500,
+          ),
         ),
         content: Text(
           formatMessage(message),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:pulsecare/constrains/app_page_loader.dart';
 import 'package:pulsecare/constrains/primary_icon_button.dart';
 import 'package:pulsecare/providers/repository_providers.dart';
 import 'package:pulsecare/repositories/session_repository.dart';
@@ -44,7 +45,7 @@ class _EditAboutScreenState extends ConsumerState<EditAboutScreen> {
   @override
   Widget build(BuildContext context) {
     if (!_ready) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const AppPageLoader(message: 'Loading about details...');
     }
     return Scaffold(
       resizeToAvoidBottomInset: true,

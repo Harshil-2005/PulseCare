@@ -32,6 +32,7 @@ class _DoctorAccountSetupFlowScreenState
   final TextEditingController _consultationFeeController =
       TextEditingController();
   List<DaySchedule> weeklySchedule = [];
+  String? _stepErrorMessage;
   final Map<String, Map<String, TextEditingController>>
   _availabilityControllers = {};
   final Map<String, Map<String, FocusNode>> _availabilityFocusNodes = {};
@@ -131,6 +132,7 @@ class _DoctorAccountSetupFlowScreenState
 
   Future<void> _onNext() async {
     KeyboardUtils.hideKeyboardKeepFocus();
+    _clearStepError();
 
     if (_currentPage == 4) {
       final fee = double.tryParse(_consultationFeeController.text.trim());
@@ -152,7 +154,6 @@ class _DoctorAccountSetupFlowScreenState
       _ensureDefaultsForDayIfNeeded(day);
     }
 
-    _printOnboardingValues();
     final schedule = _normalizedWeeklySchedule(weeklySchedule);
     final userId = SessionRepository().getCurrentUserId();
     final userRepository = ref.read(userRepositoryProvider);
@@ -548,9 +549,17 @@ class _DoctorAccountSetupFlowScreenState
   }
 
   void _showError(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    if (!mounted) return;
+    setState(() {
+      _stepErrorMessage = message;
+    });
+  }
+
+  void _clearStepError() {
+    if (!mounted || _stepErrorMessage == null) return;
+    setState(() {
+      _stepErrorMessage = null;
+    });
   }
 
   String? _validateDaySlots(DaySchedule daySlots) {
@@ -1206,21 +1215,6 @@ class _DoctorAccountSetupFlowScreenState
     }
   }
 
-  void _printOnboardingValues() {
-    final payload = {
-      'experienceYears': _experienceController.text.trim(),
-      'specialization': _specializationController.text.trim(),
-      'hospitalName': _hospitalNameController.text.trim(),
-      'about': _aboutController.text.trim(),
-      'consultationFee': _consultationFeeController.text.trim(),
-      'workingDays': _selectedDays.toList(),
-      'weeklySchedule': weeklySchedule,
-      'slotDuration': _slotDuration,
-    };
-
-    debugPrint('Doctor Onboarding Data: $payload');
-  }
-
   @override
   void dispose() {
     _pageController.dispose();
@@ -1326,12 +1320,24 @@ class _DoctorAccountSetupFlowScreenState
                           onPageChanged: (index) {
                             setState(() {
                               _currentPage = index;
+                              _stepErrorMessage = null;
                             });
                           },
                           itemBuilder: (context, index) =>
                               SingleChildScrollView(child: _stepContent(index)),
                         ),
                       ),
+                      if (_stepErrorMessage != null) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          _stepErrorMessage!,
+                          style: const TextStyle(
+                            color: Color(0xFFD32F2F),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 16),
                       NextActionButton(
                         text: _currentPage == 7 ? 'Finish' : 'Next',

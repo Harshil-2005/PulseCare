@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:pulsecare/constrains/app_avatar.dart';
+import 'package:pulsecare/constrains/app_page_loader.dart';
 import 'package:pulsecare/constrains/primary_icon_button.dart';
+import 'package:pulsecare/constrains/skeleton_widgets.dart';
 import 'package:pulsecare/domain/availability_engine.dart';
 import 'package:pulsecare/model/appointment_model.dart';
 import 'package:pulsecare/model/doctor_availability.dart';
@@ -154,7 +156,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     final userId = ref.watch(sessionUserIdProvider);
     if (userId == null) {
-      return const SizedBox.shrink();
+      return const AppPageLoader(message: 'Preparing your dashboard...');
     }
 
     final screenWidth = MediaQuery.sizeOf(context).width;
@@ -355,6 +357,9 @@ class HomeHeader extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final userAsync = ref.watch(_homeUserProvider(userId));
+    if (userAsync.isLoading) {
+      return const _HomeHeaderSkeleton();
+    }
     final user = userAsync.valueOrNull;
 
     return Row(
@@ -391,6 +396,89 @@ class HomeHeader extends ConsumerWidget {
               imagePath: user?.avatarPath,
             ),
           ),
+        ),
+      ],
+    );
+  }
+}
+
+class _HomeHeaderSkeleton extends StatelessWidget {
+  const _HomeHeaderSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Row(
+      children: [
+        Padding(
+          padding: EdgeInsets.fromLTRB(16, 16, 16, 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SkeletonBox(width: 150, height: 24, radius: 8),
+              SizedBox(height: 10),
+              SkeletonBox(width: 190, height: 16, radius: 8),
+            ],
+          ),
+        ),
+        Spacer(),
+        Padding(
+          padding: EdgeInsets.only(right: 16.0),
+          child: SkeletonBox(width: 56, height: 56, radius: 28),
+        ),
+      ],
+    );
+  }
+}
+
+class _DoctorListSectionSkeleton extends StatelessWidget {
+  const _DoctorListSectionSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return SliverMainAxisGroup(
+      slivers: [
+        SliverAppBar(
+          pinned: true,
+          primary: false,
+          automaticallyImplyLeading: false,
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          surfaceTintColor: Theme.of(context).scaffoldBackgroundColor,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          toolbarHeight: 58,
+          titleSpacing: 0,
+          title: const Padding(
+            padding: EdgeInsets.fromLTRB(16, 0, 16, 0),
+            child: SkeletonBox(height: 52, radius: 30),
+          ),
+          bottom: const PreferredSize(
+            preferredSize: Size.fromHeight(58),
+            child: Padding(
+              padding: EdgeInsets.only(top: 8, bottom: 8, left: 16, right: 16),
+              child: Row(
+                children: [
+                  Expanded(child: SkeletonBox(height: 34, radius: 30)),
+                  SizedBox(width: 8),
+                  Expanded(child: SkeletonBox(height: 34, radius: 30)),
+                  SizedBox(width: 8),
+                  Expanded(child: SkeletonBox(height: 34, radius: 30)),
+                ],
+              ),
+            ),
+          ),
+        ),
+        const SliverToBoxAdapter(
+          child: Padding(
+            padding: EdgeInsets.only(left: 16, bottom: 8, top: 12),
+            child: SkeletonBox(width: 190, height: 22, radius: 8),
+          ),
+        ),
+        SliverList(
+          delegate: SliverChildBuilderDelegate((context, index) {
+            return DoctorRecommendationCardSkeleton(
+              topPadding: index == 0 ? 0 : 16,
+            );
+          }, childCount: 3),
         ),
       ],
     );
@@ -524,12 +612,7 @@ class DoctorListSection extends ConsumerWidget {
           ],
         );
       },
-      loading: () => const SliverToBoxAdapter(
-        child: Padding(
-          padding: EdgeInsets.only(top: 24),
-          child: Center(child: CircularProgressIndicator()),
-        ),
-      ),
+      loading: () => const _DoctorListSectionSkeleton(),
       error: (e, _) => SliverToBoxAdapter(
         child: Padding(
           padding: const EdgeInsets.all(16),

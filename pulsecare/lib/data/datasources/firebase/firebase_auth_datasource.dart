@@ -7,6 +7,7 @@ class FirebaseAuthDatasource implements AuthDatasource {
     : _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance;
 
   final FirebaseAuth _firebaseAuth;
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
 
   @override
   Future<String> register(String email, String password) async {
@@ -28,7 +29,12 @@ class FirebaseAuthDatasource implements AuthDatasource {
 
   @override
   Future<String> signInWithGoogle() async {
-    final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+    try {
+      await _googleSignIn.signOut();
+      await _googleSignIn.disconnect();
+    } catch (_) {}
+
+    final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
 
     if (googleUser == null) {
       throw Exception('Google sign in aborted');
@@ -50,6 +56,9 @@ class FirebaseAuthDatasource implements AuthDatasource {
   @override
   Future<void> logout() async {
     await _firebaseAuth.signOut();
+    try {
+      await _googleSignIn.signOut();
+    } catch (_) {}
   }
 
   @override

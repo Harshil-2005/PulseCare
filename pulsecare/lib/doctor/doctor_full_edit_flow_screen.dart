@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:pulsecare/constrains/app_avatar.dart';
+import 'package:pulsecare/constrains/app_page_loader.dart';
 import 'package:pulsecare/constrains/primary_icon_button.dart';
 import 'package:pulsecare/constrains/schedule_date_picker_dialog.dart';
 import 'package:pulsecare/model/doctor_model.dart';
@@ -51,6 +52,7 @@ class _DoctorFullEditFlowScreenState
   String? _selectedDoctorImagePath;
   late int _selectedDuration;
   int _currentStep = 0;
+  String? _stepErrorMessage;
 
   final List<String> _titles = [
     'Edit Profile',
@@ -114,6 +116,7 @@ class _DoctorFullEditFlowScreenState
   }
 
   Future<void> _onNext() async {
+    _clearStepError();
     if (_currentStep == 2) {
       final parsedAge = parseAgeInput(_ageController.text.trim());
       if (parsedAge == null) {
@@ -121,9 +124,7 @@ class _DoctorFullEditFlowScreenState
         final message = raw.isEmpty
             ? 'Please enter your age.'
             : 'Please enter a valid age or DOB (dd/MM/yyyy).';
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(message)));
+        _setStepError(message);
         return;
       }
     }
@@ -151,6 +152,20 @@ class _DoctorFullEditFlowScreenState
     } else {
       Navigator.pop(context);
     }
+  }
+
+  void _setStepError(String message) {
+    if (!mounted) return;
+    setState(() {
+      _stepErrorMessage = message;
+    });
+  }
+
+  void _clearStepError() {
+    if (!mounted || _stepErrorMessage == null) return;
+    setState(() {
+      _stepErrorMessage = null;
+    });
   }
 
   Future<void> _saveDoctorUpdates() async {
@@ -234,7 +249,7 @@ class _DoctorFullEditFlowScreenState
   @override
   Widget build(BuildContext context) {
     if (!_ready) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const AppPageLoader(message: 'Preparing edit profile...');
     }
     final allPages = [
       EditDoctorProfileContent(
@@ -324,6 +339,7 @@ class _DoctorFullEditFlowScreenState
                   if (!widget.singleStepMode) {
                     setState(() {
                       _currentStep = index;
+                      _stepErrorMessage = null;
                     });
                   }
                 },
@@ -342,6 +358,21 @@ class _DoctorFullEditFlowScreenState
                 }).toList(),
               ),
             ),
+            if (_stepErrorMessage != null)
+              Padding(
+                padding: const EdgeInsets.only(left: 16, right: 16, top: 8),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    _stepErrorMessage!,
+                    style: const TextStyle(
+                      color: Color(0xFFD32F2F),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
             Padding(
               padding: const EdgeInsets.only(
                 left: 16,

@@ -79,8 +79,6 @@ class FirebaseDoctorDataSource implements DoctorDataSource {
         .orderBy('experience', descending: true)
         .snapshots()
         .map((snapshot) {
-          // ignore: avoid_print
-          print("STREAM EMITTED: ${snapshot.docs.length}");
           final doctors = snapshot.docs
               .map((doc) {
                 final data = doc.data();

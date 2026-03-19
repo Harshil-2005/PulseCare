@@ -105,7 +105,6 @@ class AISummaryRepository extends ChangeNotifier {
       return true;
     } on FirebaseException catch (e) {
       if (e.code == 'permission-denied') {
-        debugPrint('AISummary remote sync skipped: permission denied');
         return false;
       }
       rethrow;

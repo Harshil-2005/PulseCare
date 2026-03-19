@@ -67,6 +67,7 @@ class _AccountSetupFlowScreenState
   DateTime? _selectedDob;
   String _selectedGender = 'Female';
   String _selectedRole = 'Patient';
+  String? _stepErrorMessage;
 
   static const List<String> _titles = [
     "What's your first name?",
@@ -86,6 +87,7 @@ class _AccountSetupFlowScreenState
 
   Future<void> _onNext() async {
     KeyboardUtils.hideKeyboardKeepFocus();
+    _clearStepError();
 
     if (_currentPage == 2) {
       final rawAge = _ageController.text.trim();
@@ -95,9 +97,7 @@ class _AccountSetupFlowScreenState
         final message = rawAge.isEmpty
             ? 'Please enter your age.'
             : 'Please enter a valid age or DOB (dd/MM/yyyy).';
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(message)));
+        _setStepError(message);
         return;
       }
       _ageController.text = parsedAge.toString();
@@ -105,9 +105,7 @@ class _AccountSetupFlowScreenState
 
     if (_currentPage == 1) {
       if (_phoneController.text.trim().isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please enter your phone.')),
-        );
+        _setStepError('Please enter your phone.');
         return;
       }
     }
@@ -179,6 +177,20 @@ class _AccountSetupFlowScreenState
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
     );
+  }
+
+  void _setStepError(String message) {
+    if (!mounted) return;
+    setState(() {
+      _stepErrorMessage = message;
+    });
+  }
+
+  void _clearStepError() {
+    if (!mounted || _stepErrorMessage == null) return;
+    setState(() {
+      _stepErrorMessage = null;
+    });
   }
 
   void _autoCapitalizeFirstName(String value) {
@@ -544,11 +556,23 @@ class _AccountSetupFlowScreenState
                           onPageChanged: (index) {
                             setState(() {
                               _currentPage = index;
+                              _stepErrorMessage = null;
                             });
                           },
                           itemBuilder: (context, index) => _stepContent(index),
                         ),
                       ),
+                      if (_stepErrorMessage != null) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          _stepErrorMessage!,
+                          style: const TextStyle(
+                            color: Color(0xFFD32F2F),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
                       const Spacer(),
                       NextActionButton(
                         text: _currentPage == 4 ? 'Finish' : 'Next',

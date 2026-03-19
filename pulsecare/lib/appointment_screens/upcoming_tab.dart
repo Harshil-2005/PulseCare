@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pulsecare/constrains/appointment_card.dart';
+import 'package:pulsecare/constrains/skeleton_widgets.dart';
 import 'package:pulsecare/model/appointment_model.dart';
 import 'package:pulsecare/providers/session_provider.dart';
 import 'package:pulsecare/user/app_shell.dart';
@@ -86,7 +87,11 @@ class _UpcomingTabState extends ConsumerState<UpcomingTab> {
           ),
         );
       },
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => ListView.builder(
+        padding: const EdgeInsets.only(bottom: 20),
+        itemCount: 3,
+        itemBuilder: (_, __) => const AppointmentCardSkeleton(dualActions: true),
+      ),
       error: (error, stack) => Center(child: Text('Error: $error')),
     );
   }

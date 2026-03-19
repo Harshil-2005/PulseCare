@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pulsecare/constrains/app_toast.dart';
 import 'package:pulsecare/model/appointment_model.dart';
 import 'package:pulsecare/model/doctor_review_model.dart';
 import 'package:pulsecare/providers/repository_providers.dart';
@@ -33,9 +34,7 @@ class _ReviewBottomSheetState extends ConsumerState<ReviewBottomSheet> {
   Future<void> _submitReview() async {
     if (_rating == 0 || _isSubmitting) {
       if (_rating == 0 && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please select a rating.')),
-        );
+        showAppToast(context, 'Please select a rating.');
       }
       return;
     }
@@ -81,17 +80,13 @@ class _ReviewBottomSheetState extends ConsumerState<ReviewBottomSheet> {
 
       // HANDLE DUPLICATE CASE
       if (e.toString().contains('duplicate_review_for_appointment')) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Review already submitted')),
-        );
+        showAppToast(context, 'Review already submitted');
         Navigator.pop(context);
         return;
       }
 
       // SHOW REAL ERROR
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: ${e.toString()}')),
-      );
+      showAppToast(context, 'Error: ${e.toString()}');
     }
   }
 

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:pulsecare/utils/keyboard_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:pulsecare/constrains/app_page_loader.dart';
 import 'package:pulsecare/constrains/upload_report_bottom_sheet.dart';
 import 'package:pulsecare/model/doctor_model.dart';
 import 'package:pulsecare/model/report_model.dart';
@@ -51,6 +52,7 @@ class _UserDetailScreenState extends ConsumerState<PatientDetailScreen> {
   OverlayEntry? _genderOverlay;
   bool _ready = false;
   dynamic _currentUser;
+  String? _ageErrorMessage;
 
   @override
   void initState() {
@@ -514,7 +516,7 @@ class _UserDetailScreenState extends ConsumerState<PatientDetailScreen> {
   @override
   Widget build(BuildContext context) {
     if (!_ready) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const AppPageLoader(message: 'Loading patient details...');
     }
     final user = _currentUser;
     return Scaffold(
@@ -659,6 +661,12 @@ class _UserDetailScreenState extends ConsumerState<PatientDetailScreen> {
                             child: TextField(
                               keyboardType: TextInputType.number,
                               controller: ageController,
+                              onChanged: (_) {
+                                if (_ageErrorMessage == null) return;
+                                setState(() {
+                                  _ageErrorMessage = null;
+                                });
+                              },
                               onTapOutside: (_) {
                                 KeyboardUtils.hideKeyboardKeepFocus();
 },
@@ -684,6 +692,17 @@ class _UserDetailScreenState extends ConsumerState<PatientDetailScreen> {
                               ),
                             ),
                           ),
+                          if (_ageErrorMessage != null) ...[
+                            const SizedBox(height: 8),
+                            Text(
+                              _ageErrorMessage!,
+                              style: const TextStyle(
+                                color: Color(0xFFD32F2F),
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -1050,10 +1069,15 @@ class _UserDetailScreenState extends ConsumerState<PatientDetailScreen> {
                       final parsedAge = int.tryParse(ageController.text.trim());
 
                       if (parsedAge == null || parsedAge <= 0) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text("Please enter a valid age")),
-                        );
+                        setState(() {
+                          _ageErrorMessage = 'Please enter a valid age';
+                        });
                         return;
+                      }
+                      if (_ageErrorMessage != null) {
+                        setState(() {
+                          _ageErrorMessage = null;
+                        });
                       }
 
                       Navigator.push(

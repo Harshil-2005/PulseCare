@@ -125,10 +125,8 @@ class ChatRepository extends ChangeNotifier {
         AISummaryModel storedSummary;
         try {
           storedSummary = await _aiSummaryRepository.addSummaryAsync(summary);
-        } catch (error, stackTrace) {
+        } catch (_) {
           // Keep the intake flow alive if remote persistence fails.
-          debugPrint('AISummary remote save failed: $error');
-          debugPrintStack(stackTrace: stackTrace);
           storedSummary = _aiSummaryRepository.addSummary(summary);
           _scheduleSummaryRetry(storedSummary);
         }
@@ -217,12 +215,7 @@ class ChatRepository extends ChangeNotifier {
         await Future<void>.delayed(const Duration(seconds: 2));
         try {
           await _aiSummaryRepository.addSummaryAsync(summary);
-          debugPrint('AISummary retry sync succeeded for id=${summary.id}');
-        } catch (error, stackTrace) {
-          debugPrint(
-            'AISummary retry sync failed for id=${summary.id}: $error',
-          );
-          debugPrintStack(stackTrace: stackTrace);
+        } catch (_) {
         }
       }),
     );

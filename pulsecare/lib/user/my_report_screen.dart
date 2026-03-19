@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:pulsecare/utils/keyboard_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:pulsecare/constrains/app_toast.dart';
+import 'package:pulsecare/constrains/logout_delete.dart';
 import 'package:pulsecare/constrains/primary_icon_button.dart';
 import 'package:pulsecare/constrains/report_card.dart';
+import 'package:pulsecare/constrains/skeleton_widgets.dart';
 import 'package:pulsecare/constrains/upload_report_bottom_sheet.dart';
 import 'package:pulsecare/model/report_model.dart';
 import 'package:pulsecare/providers/session_provider.dart';
@@ -163,7 +166,13 @@ class _MyReportScreenState extends ConsumerState<MyReportScreen> {
             const SizedBox(height: 8),
             Expanded(
               child: reportsAsync.when(
-                loading: () => const Center(child: CircularProgressIndicator()),
+                loading: () => ListView.builder(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  itemCount: 5,
+                  itemBuilder: (context, index) => ReportCardSkeleton(
+                    topPadding: index == 0 ? 0 : 16,
+                  ),
+                ),
                 error: (error, stack) => Center(child: Text('Error: $error')),
                 data: (reports) {
                   final query = searchController.text.trim().toLowerCase();
@@ -190,43 +199,27 @@ class _MyReportScreenState extends ConsumerState<MyReportScreen> {
                             "Uploaded ${TimeUtils.formatDate(report.uploadedAt)}",
                         icon: report.icon,
                         onDownload: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text("${report.title} downloading..."),
-                            ),
+                          showAppToast(
+                            context,
+                            '${report.title} downloading...',
                           );
                         },
                         onShare: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text("${report.title} sharing..."),
-                            ),
-                          );
+                          showAppToast(context, '${report.title} sharing...');
                         },
                         onDelete: () {
-                          showDialog(
-                            context: context,
-                            builder: (context) => AlertDialog(
-                              title: const Text("Delete Report"),
-                              content: const Text(
-                                "Are you sure you want to delete this report?",
-                              ),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.pop(context),
-                                  child: const Text("Cancel"),
-                                ),
-                                TextButton(
-                                  onPressed: () {
-                                    ref
-                                        .read(reportRepositoryProvider)
-                                        .removeReport(report);
-                                    Navigator.pop(context);
-                                  },
-                                  child: const Text("Delete"),
-                                ),
-                              ],
-                            ),
+                          showConfirmationDialog(
+                            context,
+                            title: 'Delete Report',
+                            message:
+                                'Are you sure you want to delete this report?',
+                            iconPath: null,
+                            confirmText: 'Delete',
+                            onConfirm: () {
+                              ref
+                                  .read(reportRepositoryProvider)
+                                  .removeReport(report);
+                            },
                           );
                         },
                       );

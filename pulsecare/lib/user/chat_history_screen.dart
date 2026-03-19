@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:intl/intl.dart';
+import 'package:pulsecare/constrains/app_toast.dart';
 import 'package:pulsecare/constrains/schedule_date_picker_dialog.dart';
 import 'package:pulsecare/model/chat_history_entry.dart';
 import 'package:pulsecare/repositories/chat_repository.dart';
@@ -146,10 +147,9 @@ class _ChatHistoryScreenState extends ConsumerState<ChatHistoryScreen> {
               onTap: () async {
                 final today = DateTime.now();
                 if (_entries.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('No chat history yet. Start a chat first.'),
-                    ),
+                  showAppToast(
+                    context,
+                    'No chat history yet. Start a chat first.',
                   );
                   return;
                 }
