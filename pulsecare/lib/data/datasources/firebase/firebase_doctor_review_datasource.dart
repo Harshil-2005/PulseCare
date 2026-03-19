@@ -24,8 +24,26 @@ class FirebaseDoctorReviewDataSource implements DoctorReviewDataSource {
     }
 
     final docRef = _reviews.doc(appointmentId);
+    final appointmentRef = _firestore
+        .collection('appointments')
+        .doc(appointmentId);
     final toStore = review.copyWith(id: appointmentId);
-    await docRef.set(toStore.toJson());
+
+    final batch = _firestore.batch();
+    batch.set(docRef, toStore.toJson());
+    batch.update(appointmentRef, {
+      'reviewSubmitted': true,
+      'updatedAt': DateTime.now().toIso8601String(),
+    });
+
+    try {
+      await batch.commit();
+    } on FirebaseException catch (error) {
+      if (error.code == 'not-found') {
+        throw StateError('appointment_not_found');
+      }
+      throw StateError('review_submission_failed');
+    }
   }
 
   @override

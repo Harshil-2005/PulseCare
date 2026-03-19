@@ -3,8 +3,10 @@ import 'package:pulsecare/controllers/ai_controller.dart';
 import 'package:pulsecare/controllers/appointment_controller.dart';
 import 'package:pulsecare/controllers/auth_controller.dart';
 import 'package:pulsecare/controllers/report_controller.dart';
+import 'package:pulsecare/config/app_environment.dart';
 
 import '../data/datasources/appointment_datasource.dart';
+import '../data/datasources/availability_datasource.dart';
 import '../data/datasources/auth_datasource.dart';
 import '../data/datasources/chat_datasource.dart';
 import '../data/datasources/doctor_datasource.dart';
@@ -29,12 +31,10 @@ import '../repositories/availability_repository.dart';
 import '../repositories/ai_summary_repository.dart';
 import '../services/ai_service.dart';
 
-const bool _useFirebaseAppointmentDatasource = true;
-const bool _useFirebaseUserDatasource = true;
-const bool _useFirebaseReportDatasource = true;
-
 final doctorDatasourceProvider = Provider<DoctorDataSource>(
-  (ref) => FirebaseDoctorDataSource(),
+  (ref) => AppEnvironment.useLocalSeedData
+      ? LocalDoctorDataSource()
+      : FirebaseDoctorDataSource(),
 );
 
 final doctorReviewDatasourceProvider = Provider<DoctorReviewDataSource>(
@@ -42,21 +42,27 @@ final doctorReviewDatasourceProvider = Provider<DoctorReviewDataSource>(
 );
 
 final appointmentDatasourceProvider = Provider<AppointmentDataSource>(
-  (ref) => _useFirebaseAppointmentDatasource
-      ? FirebaseAppointmentDataSource()
-      : LocalAppointmentDataSource(),
+  (ref) => AppEnvironment.useLocalSeedData
+      ? LocalAppointmentDataSource()
+      : FirebaseAppointmentDataSource(),
 );
 
 final userDatasourceProvider = Provider<UserDataSource>(
-  (ref) => _useFirebaseUserDatasource
-      ? FirebaseUserDataSource()
-      : LocalUserDataSource(),
+  (ref) => AppEnvironment.useLocalSeedData
+      ? LocalUserDataSource()
+      : FirebaseUserDataSource(),
 );
 
 final reportDatasourceProvider = Provider<ReportDataSource>(
-  (ref) => _useFirebaseReportDatasource
-      ? FirebaseReportDataSource()
-      : LocalReportDataSource(),
+  (ref) => AppEnvironment.useLocalSeedData
+      ? LocalReportDataSource()
+      : FirebaseReportDataSource(),
+);
+
+final availabilityDatasourceProvider = Provider<AvailabilityDataSource>(
+  (ref) => AppEnvironment.useLocalSeedData
+      ? LocalAvailabilityDataSource()
+      : ProductionAvailabilityDataSource(),
 );
 
 final chatDatasourceProvider = Provider<ChatDataSource>(
@@ -72,10 +78,7 @@ final doctorRepositoryProvider = ChangeNotifierProvider<DoctorRepository>(
 );
 
 final doctorReviewRepositoryProvider = Provider<DoctorReviewRepository>(
-  (ref) => DoctorReviewRepository(
-    ref.read(doctorReviewDatasourceProvider),
-    doctorDataSource: FirebaseDoctorDataSource(),
-  ),
+  (ref) => DoctorReviewRepository(ref.read(doctorReviewDatasourceProvider)),
 );
 
 final appointmentRepositoryProvider = Provider<AppointmentRepository>(
@@ -107,7 +110,7 @@ final reportRepositoryProvider = Provider<ReportRepository>(
 );
 
 final availabilityRepositoryProvider = Provider<AvailabilityRepository>(
-  (ref) => AvailabilityRepository(),
+  (ref) => AvailabilityRepository(ref.read(availabilityDatasourceProvider)),
 );
 
 final aiSummaryRepositoryProvider = Provider<AISummaryRepository>(

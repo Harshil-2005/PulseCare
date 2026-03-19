@@ -1,4 +1,5 @@
 import 'package:pulsecare/model/report_model.dart';
+import 'package:pulsecare/config/app_environment.dart';
 import 'package:pulsecare/data/report_upload_service.dart';
 
 abstract class ReportDataSource {
@@ -20,7 +21,11 @@ abstract class ReportDataSource {
 }
 
 class LocalReportDataSource implements ReportDataSource {
-  LocalReportDataSource();
+  LocalReportDataSource() {
+    if (AppEnvironment.isProduction) {
+      throw StateError('LocalReportDataSource is disabled in production');
+    }
+  }
 
   final List<ReportModel> _reports = [
     ReportModel(

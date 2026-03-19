@@ -1,4 +1,5 @@
 import 'package:pulsecare/model/appointment_model.dart';
+import 'package:pulsecare/config/app_environment.dart';
 import 'package:pulsecare/model/doctor_model.dart';
 
 abstract class AppointmentDataSource {
@@ -19,7 +20,24 @@ abstract class AppointmentDataSource {
 }
 
 class LocalAppointmentDataSource implements AppointmentDataSource {
-  LocalAppointmentDataSource();
+  LocalAppointmentDataSource() {
+    if (AppEnvironment.isProduction) {
+      throw StateError(
+        'LocalAppointmentDataSource is disabled in production',
+      );
+    }
+  }
+
+  String _buildSlotAppointmentId(String doctorId, DateTime dateTime) {
+    final y = dateTime.year.toString().padLeft(4, '0');
+    final m = dateTime.month.toString().padLeft(2, '0');
+    final d = dateTime.day.toString().padLeft(2, '0');
+    final hh = dateTime.hour.toString().padLeft(2, '0');
+    final mm = dateTime.minute.toString().padLeft(2, '0');
+    final dateKey = '$y$m$d';
+    final timeSlot = '$hh$mm';
+    return '${doctorId}_${dateKey}_${timeSlot}';
+  }
 
   static Doctor _seedDoctor(String id) {
     return Doctor(
@@ -167,9 +185,16 @@ class LocalAppointmentDataSource implements AppointmentDataSource {
 
   @override
   Future<void> add(Appointment appointment) async {
-    final generatedAppointment = appointment.copyWith(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-    );
+    final resolvedId = appointment.id.isNotEmpty
+        ? appointment.id
+        : _buildSlotAppointmentId(
+            appointment.doctorId,
+            appointment.scheduledAt,
+          );
+    if (_appointments.any((existing) => existing.id == resolvedId)) {
+      throw StateError('duplicate_slot');
+    }
+    final generatedAppointment = appointment.copyWith(id: resolvedId);
     _appointments.add(generatedAppointment);
   }
 

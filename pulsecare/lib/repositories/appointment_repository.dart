@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pulsecare/config/app_environment.dart';
 import 'package:pulsecare/utils/time_utils.dart';
 import 'package:pulsecare/data/datasources/appointment_datasource.dart';
 import 'package:pulsecare/model/appointment_model.dart';
@@ -11,7 +12,13 @@ class AppointmentRepository extends ChangeNotifier {
     AppointmentDataSource? dataSource,
     required DoctorRepository doctorRepository,
     required UserRepository userRepository,
-  }) : _dataSource = dataSource ?? LocalAppointmentDataSource(),
+  }) : _dataSource =
+           dataSource ??
+           (AppEnvironment.useLocalSeedData
+               ? LocalAppointmentDataSource()
+               : (throw StateError(
+                   'AppointmentDataSource must be injected in production',
+                 ))),
        _doctorRepository = doctorRepository,
        _userRepository = userRepository;
 
@@ -19,6 +26,17 @@ class AppointmentRepository extends ChangeNotifier {
   final DoctorRepository _doctorRepository;
   final UserRepository _userRepository;
   static const int _fallbackSlotDurationMinutes = 30;
+
+  String _buildSlotAppointmentId(String doctorId, DateTime dateTime) {
+    final y = dateTime.year.toString().padLeft(4, '0');
+    final m = dateTime.month.toString().padLeft(2, '0');
+    final d = dateTime.day.toString().padLeft(2, '0');
+    final hh = dateTime.hour.toString().padLeft(2, '0');
+    final mm = dateTime.minute.toString().padLeft(2, '0');
+    final dateKey = '$y$m$d';
+    final timeSlot = '$hh$mm';
+    return '${doctorId}_${dateKey}_${timeSlot}';
+  }
 
   Future<Appointment> _applyAutomaticStatusUpdates(
     Appointment appointment,
@@ -137,6 +155,69 @@ class AppointmentRepository extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> submitBooking({
+    required String doctorId,
+    required String? userId,
+    required String dateInput,
+    required String? selectedSlotTime,
+    Appointment? existingAppointment,
+    required String symptoms,
+    String patientName = '',
+    int age = 0,
+    String gender = '',
+    List<ReportModel> reports = const [],
+    String? aiSummaryId,
+  }) async {
+    final normalizedUserId = userId?.trim() ?? '';
+    if (normalizedUserId.isEmpty) {
+      throw StateError('missing_user');
+    }
+
+    final normalizedSlotTime = selectedSlotTime?.trim() ?? '';
+    if (normalizedSlotTime.isEmpty) {
+      throw StateError('missing_slot');
+    }
+
+    DateTime appointmentDate;
+    try {
+      appointmentDate = TimeUtils.parseDateStrict(dateInput.trim());
+    } catch (_) {
+      throw StateError('invalid_date');
+    }
+
+    final normalizedDate = TimeUtils.formatDate(appointmentDate);
+    final appointmentDateTime = TimeUtils.parseDateTime(
+      normalizedDate,
+      normalizedSlotTime,
+    );
+
+    if (appointmentDateTime.isBefore(DateTime.now())) {
+      throw StateError('past_date');
+    }
+
+    if (existingAppointment != null) {
+      await rescheduleAppointment(
+        appointmentId: existingAppointment.id,
+        newDate: appointmentDate,
+        newTime: normalizedSlotTime,
+      );
+      return;
+    }
+
+    await createAppointment(
+      doctorId: doctorId,
+      userId: normalizedUserId,
+      dateTime: appointmentDateTime,
+      status: AppointmentStatus.pending,
+      symptoms: symptoms,
+      patientName: patientName,
+      age: age,
+      gender: gender,
+      reports: reports,
+      aiSummaryId: aiSummaryId,
+    );
+  }
+
   Future<void> createAppointment({
     required String doctorId,
     required String userId,
@@ -149,18 +230,15 @@ class AppointmentRepository extends ChangeNotifier {
     List<ReportModel> reports = const [],
     String? aiSummaryId,
   }) async {
+    if (userId.trim().isEmpty) {
+      throw StateError('missing_user');
+    }
+
     if (dateTime.isBefore(DateTime.now())) {
       throw StateError('past_date');
     }
 
-    final appointments = await _dataSource.getForDoctorAt(doctorId, dateTime);
-    final hasDuplicate = appointments.any((appointment) {
-      return appointment.status != AppointmentStatus.cancelled;
-    });
-
-    if (hasDuplicate) {
-      throw StateError('duplicate_slot');
-    }
+    final slotDocId = _buildSlotAppointmentId(doctorId, dateTime);
 
     final doctor = await _doctorRepository.getDoctorById(doctorId);
 
@@ -170,6 +248,7 @@ class AppointmentRepository extends ChangeNotifier {
     final currentUser = await _userRepository.getUserById(userId);
 
     final appointment = Appointment(
+      id: slotDocId,
       userId: userId,
       doctorId: doctorId,
       doctor: doctor,
@@ -185,7 +264,7 @@ class AppointmentRepository extends ChangeNotifier {
       aiSummaryId: aiSummaryId,
     );
 
-    _dataSource.add(appointment);
+    await _dataSource.add(appointment);
     notifyListeners();
   }
 
@@ -226,18 +305,18 @@ class AppointmentRepository extends ChangeNotifier {
       status: AppointmentStatus.pending,
     );
 
-    _dataSource.update(updated);
+    await _dataSource.update(updated);
     notifyListeners();
   }
 
-  void removeAppointment(Appointment appointment) {
-    _dataSource.remove(appointment);
+  Future<void> removeAppointment(Appointment appointment) async {
+    await _dataSource.remove(appointment);
     notifyListeners();
   }
 
   Future<void> updateAppointment(Appointment updated) async {
     if (await _dataSource.getById(updated.id) != null) {
-      _dataSource.update(updated);
+      await _dataSource.update(updated);
       notifyListeners();
     }
   }
@@ -278,7 +357,7 @@ class AppointmentRepository extends ChangeNotifier {
       throw StateError('Invalid status transition');
     }
 
-    _dataSource.update(appointment.copyWith(status: newStatus));
+    await _dataSource.update(appointment.copyWith(status: newStatus));
     if (currentStatus != AppointmentStatus.completed &&
         newStatus == AppointmentStatus.completed) {
       await _doctorRepository.incrementPatients(appointment.doctorId);

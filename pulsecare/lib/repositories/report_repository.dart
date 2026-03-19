@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:pulsecare/config/app_environment.dart';
 import 'package:pulsecare/data/datasources/report_datasource.dart';
+import 'package:pulsecare/data/datasources/firebase/firebase_report_datasource.dart';
 import 'package:pulsecare/model/report_model.dart';
 
 class ReportRepository extends ChangeNotifier {
@@ -9,7 +11,10 @@ class ReportRepository extends ChangeNotifier {
 
   factory ReportRepository([ReportDataSource? dataSource]) {
     _instance ??= ReportRepository._privateConstructor(
-      dataSource ?? LocalReportDataSource(),
+      dataSource ??
+          (AppEnvironment.useLocalSeedData
+              ? LocalReportDataSource()
+              : FirebaseReportDataSource()),
     );
     return _instance!;
   }

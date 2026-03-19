@@ -15,8 +15,8 @@ import '../providers/repository_providers.dart';
 final _allReportsProvider = StreamProvider.autoDispose<List<ReportModel>>((
   ref,
 ) {
-  final repo = ref.watch(reportRepositoryProvider);
-  final userId = ref.watch(sessionUserIdProvider);
+  final repo = ref.read(reportRepositoryProvider);
+  final userId = ref.watch(sessionUserIdProvider.select((id) => id));
 
   if (userId == null) {
     return const Stream<List<ReportModel>>.empty();

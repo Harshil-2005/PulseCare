@@ -20,9 +20,9 @@ import 'package:pulsecare/user/doctor_detail_screen.dart';
 final _homeDoctorsProvider = StreamProvider<List<Doctor>>((ref) {
   // Recreate this provider when account/session changes to avoid stale doctor
   // list after logout/login without a full app restart.
-  ref.watch(sessionUserIdProvider);
+  ref.watch(sessionUserIdProvider.select((userId) => userId));
 
-  final doctorRepository = ref.watch(doctorRepositoryProvider);
+  final doctorRepository = ref.read(doctorRepositoryProvider);
   return doctorRepository.watchAllDoctors();
 });
 
@@ -147,9 +147,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(() {
-      ref.invalidate(_homeDoctorsProvider);
-    });
   }
 
   @override

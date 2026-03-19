@@ -1,0 +1,129 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isDoctorOwnerByDoctorId(doctorId) {
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/doctors/$(doctorId)) &&
+        get(/databases/$(database)/documents/doctors/$(doctorId)).data.userId == request.auth.uid;
+    }
+
+    function canReadAppointment(data) {
+      return isSignedIn() && (
+        data.userId == request.auth.uid ||
+        data.doctorId == request.auth.uid ||
+        isDoctorOwnerByDoctorId(data.doctorId)
+      );
+    }
+
+    function appointmentIdentityUnchanged() {
+      return request.resource.data.userId == resource.data.userId &&
+        request.resource.data.doctorId == resource.data.doctorId;
+    }
+
+    function hasValidAppointmentStatusTransition() {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(['status']) ||
+        (
+          resource.data.status == 'pending' &&
+          (request.resource.data.status == 'confirmed' || request.resource.data.status == 'cancelled')
+        ) ||
+        (
+          resource.data.status == 'confirmed' &&
+          (request.resource.data.status == 'completed' || request.resource.data.status == 'cancelled')
+        ) ||
+        (resource.data.status == request.resource.data.status);
+    }
+
+    match /users/{userId} {
+      allow create: if isSignedIn() &&
+        request.auth.uid == userId &&
+        request.resource.data.id == userId;
+
+      allow read: if isSignedIn() && request.auth.uid == userId;
+
+      allow update: if isSignedIn() &&
+        request.auth.uid == userId &&
+        request.resource.data.id == resource.data.id;
+
+      allow delete: if isSignedIn() && request.auth.uid == userId;
+    }
+
+    match /doctors/{doctorId} {
+      allow read: if isSignedIn();
+
+      allow create: if isSignedIn() &&
+        request.resource.data.userId == request.auth.uid;
+
+      allow update: if isSignedIn() &&
+        resource.data.userId == request.auth.uid &&
+        request.resource.data.userId == resource.data.userId &&
+        request.resource.data.id == resource.data.id &&
+        !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+          'rating',
+          'reviews',
+          'ratingTotal',
+          'patients'
+        ]);
+
+      allow delete: if false;
+    }
+
+    match /appointments/{appointmentId} {
+      allow create: if isSignedIn() &&
+        request.auth.uid == request.resource.data.userId &&
+        request.resource.data.userId is string &&
+        request.resource.data.userId.size() > 0 &&
+        request.resource.data.doctorId is string &&
+        request.resource.data.doctorId.size() > 0;
+
+      allow read: if canReadAppointment(resource.data);
+
+      allow update: if canReadAppointment(resource.data) &&
+        appointmentIdentityUnchanged() &&
+        hasValidAppointmentStatusTransition();
+
+      allow delete: if canReadAppointment(resource.data);
+    }
+
+    match /doctor_reviews/{reviewId} {
+      allow create: if isSignedIn() &&
+        request.resource.data.userId == request.auth.uid &&
+        request.resource.data.appointmentId == reviewId &&
+        !exists(/databases/$(database)/documents/doctor_reviews/$(reviewId)) &&
+        exists(/databases/$(database)/documents/appointments/$(request.resource.data.appointmentId)) &&
+        get(/databases/$(database)/documents/appointments/$(request.resource.data.appointmentId)).data.userId == request.auth.uid &&
+        get(/databases/$(database)/documents/appointments/$(request.resource.data.appointmentId)).data.doctorId == request.resource.data.doctorId;
+
+      allow read: if isSignedIn() &&
+        (
+          resource.data.userId == request.auth.uid ||
+          resource.data.doctorId == request.auth.uid ||
+          isDoctorOwnerByDoctorId(resource.data.doctorId)
+        );
+
+      allow update, delete: if false;
+    }
+
+    match /reports/{reportId} {
+      allow create: if isSignedIn() &&
+        request.resource.data.userId == request.auth.uid;
+
+      allow read: if isSignedIn() &&
+        resource.data.userId == request.auth.uid;
+
+      allow update: if isSignedIn() &&
+        resource.data.userId == request.auth.uid &&
+        request.resource.data.userId == resource.data.userId;
+
+      allow delete: if isSignedIn() &&
+        resource.data.userId == request.auth.uid;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

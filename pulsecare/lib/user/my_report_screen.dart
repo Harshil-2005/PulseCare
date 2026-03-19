@@ -16,8 +16,8 @@ import 'package:pulsecare/utils/time_utils.dart';
 import '../providers/repository_providers.dart';
 
 final _myReportsProvider = StreamProvider.autoDispose<List<ReportModel>>((ref) {
-  final repo = ref.watch(reportRepositoryProvider);
-  final userId = ref.watch(sessionUserIdProvider);
+  final repo = ref.read(reportRepositoryProvider);
+  final userId = ref.watch(sessionUserIdProvider.select((id) => id));
   if (userId == null) {
     return const Stream<List<ReportModel>>.empty();
   }
@@ -82,9 +82,10 @@ class _MyReportScreenState extends ConsumerState<MyReportScreen> {
                 text: 'Upload New Report',
                 iconPath: 'assets/icons/upload_reports.svg',
                 onTap: () {
+                  final userId = ref.read(sessionUserIdProvider);
                   showUploadReportBottomSheet(
                     context,
-                    userId: ref.read(sessionUserIdProvider),
+                    userId: userId,
                     onReportAdded: () {
                       // Stream updates automatically.
                     },

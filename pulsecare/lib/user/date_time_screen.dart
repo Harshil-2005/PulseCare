@@ -425,7 +425,7 @@ class _DateTimeScreenState extends ConsumerState<DateTimeScreen> {
                 keyboardType: TextInputType.datetime,
                 onTapOutside: (_) {
                   KeyboardUtils.hideKeyboardKeepFocus();
-},
+                },
                 onChanged: (value) {
                   _handleDateInputChanged(value);
                 },
@@ -687,83 +687,23 @@ class _DateTimeScreenState extends ConsumerState<DateTimeScreen> {
                 height: 65,
                 child: InkWell(
                   onTap: () async {
-                    TimeSlot? selectedSlot;
-
-                    for (var slot in [...morningSlots, ...afternoonSlots]) {
-                      if (slot.status == SlotStatus.selected) {
-                        selectedSlot = slot;
-                        break;
-                      }
-                    }
-
-                    if (selectedSlot == null) {
-                      showAppToast(context, 'Please select a time slot');
-                      return;
-                    }
-
-                    // ✅ Validate Date From TextField
-                    DateTime appointmentDate;
-
-                    try {
-                      appointmentDate = DateFormat(
-                        'dd/MM/yyyy',
-                      ).parseStrict(_dateController.text);
-                    } catch (e) {
-                      showAppToast(
-                        context,
-                        'Please enter a valid date (dd/MM/yyyy)',
-                      );
-                      return;
-                    }
-
-                    String formattedDate = TimeUtils.formatDate(
-                      appointmentDate,
-                    );
-
-                    DateTime appointmentDateTime = TimeUtils.parseDateTime(
-                      formattedDate,
-                      selectedSlot.time,
-                    );
-
-                    DateTime now = DateTime.now();
-
-                    // ✅ Prevent past time booking for today
-                    if (appointmentDate.year == now.year &&
-                        appointmentDate.month == now.month &&
-                        appointmentDate.day == now.day &&
-                        appointmentDateTime.isBefore(now)) {
-                      showAppToast(context, 'Please select a future time');
-                      return;
-                    }
-
-                    // ✅ Create Appointment
-                    // 🔁 If rescheduling
                     final appointmentRepository = ref.read(
                       appointmentRepositoryProvider,
                     );
-                    final userRepository = ref.read(userRepositoryProvider);
-                    final currentUser = await userRepository.getUserById(
-                      SessionRepository().getCurrentUserId(),
-                    );
-                    if (!mounted) return;
+                    final selectedSlotTime =
+                        [...morningSlots, ...afternoonSlots]
+                            .where((slot) => slot.status == SlotStatus.selected)
+                            .map((slot) => slot.time)
+                            .cast<String?>()
+                            .firstOrNull;
 
-                    if (widget.existingAppointment != null) {
-                      final existingAppointment = widget.existingAppointment!;
-                      final selectedDate = appointmentDate;
-                      final selectedTime = selectedSlot.time;
-
-                      await appointmentRepository.rescheduleAppointment(
-                        appointmentId: existingAppointment.id,
-                        newDate: selectedDate,
-                        newTime: selectedTime,
-                      );
-                      if (!mounted) return;
-                    } else {
-                      await appointmentRepository.createAppointment(
+                    try {
+                      await appointmentRepository.submitBooking(
                         doctorId: widget.doctorId,
-                        userId: currentUser?.id ?? '',
-                        dateTime: appointmentDateTime,
-                        status: AppointmentStatus.pending,
+                        userId: SessionRepository().getCurrentUserId(),
+                        dateInput: _dateController.text,
+                        selectedSlotTime: selectedSlotTime,
+                        existingAppointment: widget.existingAppointment,
                         symptoms: widget.symptoms,
                         patientName: widget.patientName,
                         age: widget.age,
@@ -772,6 +712,36 @@ class _DateTimeScreenState extends ConsumerState<DateTimeScreen> {
                         aiSummaryId: widget.aiSummaryId,
                       );
                       if (!mounted) return;
+                    } on StateError catch (error) {
+                      if (!mounted) return;
+                      final message = error.message.toString();
+                      if (message == 'missing_slot') {
+                        showAppToast(context, 'Please select a time slot');
+                        return;
+                      }
+                      if (message == 'invalid_date') {
+                        showAppToast(
+                          context,
+                          'Please enter a valid date (dd/MM/yyyy)',
+                        );
+                        return;
+                      }
+                      if (message == 'past_date') {
+                        showAppToast(context, 'Please select a future time');
+                        return;
+                      }
+                      if (message == 'duplicate_slot') {
+                        showAppToast(
+                          context,
+                          'This time slot was just booked. Please choose another slot.',
+                        );
+                        return;
+                      }
+                      if (message == 'missing_user') {
+                        showAppToast(context, 'Please log in and try again.');
+                        return;
+                      }
+                      rethrow;
                     }
 
                     // ✅ Go to Appointments tab (Upcoming by default)
@@ -855,5 +825,3 @@ Widget timeSlotItem(TimeSlot slot) {
     ),
   );
 }
-
-

@@ -118,39 +118,6 @@ class FirebaseDoctorDataSource implements DoctorDataSource {
     }
   }
 
-  Future<void> updateRating({
-    required String doctorId,
-    required double rating,
-    required int reviews,
-    required double ratingTotal,
-  }) async {
-    await _doctors.doc(doctorId).set({
-      'rating': rating,
-      'reviews': reviews,
-      'ratingTotal': ratingTotal,
-      'updatedAt': DateTime.now().toIso8601String(),
-    }, SetOptions(merge: true));
-  }
-
-  Future<_DoctorRatingStats> getRatingStats(String doctorId) async {
-    final snapshot = await _doctors.doc(doctorId).get();
-    final data = snapshot.data();
-    if (data == null) {
-      return const _DoctorRatingStats(rating: 0, reviews: 0, ratingTotal: 0);
-    }
-    final rating = (data['rating'] as num?)?.toDouble() ?? 0;
-    final reviews = data['reviews'] is int
-        ? data['reviews'] as int
-        : int.tryParse((data['reviews'] ?? '').toString()) ?? 0;
-    final ratingTotal =
-        (data['ratingTotal'] as num?)?.toDouble() ?? (rating * reviews);
-    return _DoctorRatingStats(
-      rating: rating,
-      reviews: reviews,
-      ratingTotal: ratingTotal,
-    );
-  }
-
   Map<String, dynamic> _normalizeMap(Map<String, dynamic> raw) {
     final map = Map<String, dynamic>.from(raw);
     map['id'] = (map['id'] ?? '').toString();
@@ -166,16 +133,4 @@ class FirebaseDoctorDataSource implements DoctorDataSource {
     }
     return map;
   }
-}
-
-class _DoctorRatingStats {
-  const _DoctorRatingStats({
-    required this.rating,
-    required this.reviews,
-    required this.ratingTotal,
-  });
-
-  final double rating;
-  final int reviews;
-  final double ratingTotal;
 }

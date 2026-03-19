@@ -1,4 +1,5 @@
 import 'package:pulsecare/model/user_model.dart';
+import 'package:pulsecare/config/app_environment.dart';
 
 abstract class UserDataSource {
   Future<List<User>> getAll();
@@ -10,7 +11,11 @@ abstract class UserDataSource {
 }
 
 class LocalUserDataSource implements UserDataSource {
-  LocalUserDataSource();
+  LocalUserDataSource() {
+    if (AppEnvironment.isProduction) {
+      throw StateError('LocalUserDataSource is disabled in production');
+    }
+  }
 
   final List<User> _users = [
     User(

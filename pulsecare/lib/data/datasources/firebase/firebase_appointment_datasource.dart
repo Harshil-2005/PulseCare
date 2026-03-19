@@ -11,6 +11,17 @@ class FirebaseAppointmentDataSource implements AppointmentDataSource {
   CollectionReference<Map<String, dynamic>> get _appointments =>
       _firestore.collection('appointments');
 
+  String _buildSlotAppointmentId(String doctorId, DateTime dateTime) {
+    final y = dateTime.year.toString().padLeft(4, '0');
+    final m = dateTime.month.toString().padLeft(2, '0');
+    final d = dateTime.day.toString().padLeft(2, '0');
+    final hh = dateTime.hour.toString().padLeft(2, '0');
+    final mm = dateTime.minute.toString().padLeft(2, '0');
+    final dateKey = '$y$m$d';
+    final timeSlot = '$hh$mm';
+    return '${doctorId}_${dateKey}_${timeSlot}';
+  }
+
   @override
   Future<List<Appointment>> getAll() async {
     throw UnsupportedError(
@@ -75,27 +86,18 @@ class FirebaseAppointmentDataSource implements AppointmentDataSource {
 
   @override
   Future<void> add(Appointment appointment) async {
-    final docRef = appointment.id.isNotEmpty
-        ? _appointments.doc(appointment.id)
-        : _appointments.doc();
+    final resolvedDocId = appointment.id.isNotEmpty
+        ? appointment.id
+        : _buildSlotAppointmentId(
+            appointment.doctorId,
+            appointment.scheduledAt,
+          );
+    final docRef = _appointments.doc(resolvedDocId);
     final toStore = appointment.copyWith(id: docRef.id);
 
     await _firestore.runTransaction((transaction) async {
-      final duplicateQuery = await _appointments
-          .where('doctorId', isEqualTo: toStore.doctorId)
-          .where(
-            'scheduledAt',
-            isEqualTo: toStore.scheduledAt.toIso8601String(),
-          )
-          .limit(1)
-          .get();
-
-      final hasConflict = duplicateQuery.docs.any((doc) {
-        final status = (doc.data()['status'] ?? '').toString().toLowerCase();
-        return status != 'cancelled';
-      });
-
-      if (hasConflict) {
+      final existing = await transaction.get(docRef);
+      if (existing.exists) {
         throw StateError('duplicate_slot');
       }
 

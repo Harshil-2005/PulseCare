@@ -1,5 +1,6 @@
 ﻿import 'dart:async';
 
+import 'package:pulsecare/config/app_environment.dart';
 import 'package:pulsecare/model/doctor_model.dart';
 import 'package:pulsecare/model/day_schedule.dart';
 
@@ -17,7 +18,11 @@ abstract class DoctorDataSource {
 }
 
 class LocalDoctorDataSource implements DoctorDataSource {
-  LocalDoctorDataSource();
+  LocalDoctorDataSource() {
+    if (AppEnvironment.isProduction) {
+      throw StateError('LocalDoctorDataSource is disabled in production');
+    }
+  }
 
   final StreamController<List<Doctor>> _doctorStreamController =
       StreamController<List<Doctor>>.broadcast();

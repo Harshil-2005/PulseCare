@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:pulsecare/accountsetup/account_setup_flow_screen.dart';
 import 'package:pulsecare/auth/auth_screen.dart';
@@ -10,18 +10,21 @@ import 'package:pulsecare/model/day_schedule.dart';
 import 'package:pulsecare/repositories/session_repository.dart';
 import 'package:pulsecare/user/app_shell.dart';
 import 'package:pulsecare/onboarding/onboarding_wrapper.dart';
+import 'package:pulsecare/providers/repository_providers.dart';
 
-class SplashScreen extends StatefulWidget {
+class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
+class _SplashScreenState extends ConsumerState<SplashScreen> {
   Future<void> _navigate() async {
     final user = FirebaseAuth.instance.currentUser;
     final sessionRepository = SessionRepository();
+    final userRepository = ref.read(userRepositoryProvider);
+    final doctorRepository = ref.read(doctorRepositoryProvider);
 
     final prefs = await SharedPreferences.getInstance();
     final isOnboardingDone = prefs.getBool('onboarding_done') ?? false;
@@ -30,14 +33,13 @@ class _SplashScreenState extends State<SplashScreen> {
 
     if (user != null) {
       final uid = user.uid;
-      final firestore = FirebaseFirestore.instance;
       await sessionRepository.clearSession();
       await sessionRepository.setCurrentUser(uid);
 
-      final userDoc = await firestore.collection('users').doc(uid).get();
+      final userProfile = await userRepository.getUserById(uid);
       if (!mounted) return;
 
-      if (!userDoc.exists || userDoc.data() == null) {
+      if (userProfile == null) {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const AccountSetupFlowScreen()),
@@ -45,17 +47,13 @@ class _SplashScreenState extends State<SplashScreen> {
         return;
       }
 
-      final role = (userDoc.data()!['role'] ?? '').toString().toLowerCase();
+      final role = userProfile.role.toLowerCase();
       if (role == 'doctor') {
         await sessionRepository.setRole('doctor');
-        final doctorQuery = await firestore
-            .collection('doctors')
-            .where('userId', isEqualTo: uid)
-            .limit(1)
-            .get();
+        final doctorProfile = await doctorRepository.getDoctorByUserId(uid);
         if (!mounted) return;
 
-        if (doctorQuery.docs.isEmpty) {
+        if (doctorProfile == null) {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (_) => const DoctorOnboardingScreen()),
@@ -63,7 +61,7 @@ class _SplashScreenState extends State<SplashScreen> {
           return;
         }
 
-        final doctorId = doctorQuery.docs.first.id;
+        final doctorId = doctorProfile.id;
         await sessionRepository.setCurrentDoctor(doctorId);
         if (!mounted) return;
         Navigator.pushReplacement(
@@ -127,10 +125,7 @@ class _SplashScreenState extends State<SplashScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Image.asset(
-                    'assets/images/logo.png',
-                    height: 150,
-                  ),
+                  Image.asset('assets/images/logo.png', height: 150),
                   const SizedBox(height: 10),
                   const Text(
                     'PulseCare',

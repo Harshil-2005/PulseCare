@@ -56,17 +56,6 @@ class _ReviewBottomSheetState extends ConsumerState<ReviewBottomSheet> {
     try {
       await ref.read(doctorReviewRepositoryProvider).createReview(review);
 
-      final updatedAppointment = widget.appointment.copyWith(
-        reviewSubmitted: true,
-      );
-      try {
-        await ref
-            .read(appointmentRepositoryProvider)
-            .updateAppointment(updatedAppointment);
-      } catch (_) {
-        // ignore appointment update failure
-      }
-
       if (!mounted) return;
       setState(() {
         _isSubmitting = false;
@@ -82,6 +71,19 @@ class _ReviewBottomSheetState extends ConsumerState<ReviewBottomSheet> {
       if (e.toString().contains('duplicate_review_for_appointment')) {
         showAppToast(context, 'Review already submitted');
         Navigator.pop(context);
+        return;
+      }
+
+      if (e.toString().contains('appointment_not_found')) {
+        showAppToast(context, 'Appointment not found for this review.');
+        return;
+      }
+
+      if (e.toString().contains('review_submission_failed')) {
+        showAppToast(
+          context,
+          'Could not submit review right now. Please try again.',
+        );
         return;
       }
 

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:pulsecare/config/app_environment.dart';
 import 'package:pulsecare/data/datasources/user_datasource.dart';
+import 'package:pulsecare/data/datasources/firebase/firebase_user_datasource.dart';
 import 'package:pulsecare/model/user_model.dart';
 
 class UserRepository extends ChangeNotifier {
@@ -9,7 +11,10 @@ class UserRepository extends ChangeNotifier {
 
   factory UserRepository([UserDataSource? dataSource]) {
     _instance ??= UserRepository._privateConstructor(
-      dataSource ?? LocalUserDataSource(),
+      dataSource ??
+          (AppEnvironment.useLocalSeedData
+              ? LocalUserDataSource()
+              : FirebaseUserDataSource()),
     );
     return _instance!;
   }

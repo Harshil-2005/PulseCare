@@ -13,7 +13,7 @@ import 'package:pulsecare/providers/session_provider.dart';
 
 final _doctorScheduleDoctorProvider = StreamProvider.autoDispose
     .family<Doctor?, String>((ref, userId) {
-      final doctorRepository = ref.watch(doctorRepositoryProvider);
+      final doctorRepository = ref.read(doctorRepositoryProvider);
       return doctorRepository.watchDoctorByUserId(userId);
     });
 
@@ -213,7 +213,7 @@ class _DoctorScheduleScreenState extends ConsumerState<DoctorScheduleScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final userId = ref.watch(sessionUserIdProvider);
+    final userId = ref.watch(sessionUserIdProvider.select((id) => id));
     if (userId == null) {
       return const SizedBox.shrink();
     }
@@ -318,12 +318,6 @@ class _DoctorScheduleScreenState extends ConsumerState<DoctorScheduleScreen> {
                                   updatedDoctor,
                                 );
                                 if (!mounted) return;
-                                ref.invalidate(
-                                  _doctorScheduleDoctorProvider(userId),
-                                );
-                                setState(() {
-                                  isAvailableForBooking = value;
-                                });
                               },
                             ),
                           ],

@@ -42,10 +42,28 @@ class DoctorAppShellState extends ConsumerState<DoctorAppShell> {
   late Doctor currentDoctor;
   late DoctorRepository _doctorRepository;
   StreamSubscription<List<Appointment>>? _appointmentsSubscription;
+  Set<String> _knownAppointmentIds = <String>{};
+  bool _hasPrimedAppointmentSnapshot = false;
   List<DateTime> leaveDates = [];
   bool isAvailableForBooking = true;
   final GlobalKey<DoctorAppointmentsScreenState> doctorAppointmentsKey =
       GlobalKey<DoctorAppointmentsScreenState>();
+
+  void _showNewBookingNotification(int newCount) {
+    if (!mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          newCount == 1
+              ? 'You have 1 new booking.'
+              : 'You have $newCount new bookings.',
+        ),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
 
   Future<void> cancelStreams() async {
     final subscription = _appointmentsSubscription;
@@ -127,6 +145,29 @@ class DoctorAppShellState extends ConsumerState<DoctorAppShell> {
         .watchAppointmentsForDoctor(doctor.id)
         .listen((nextAppointments) {
           if (!mounted) return;
+
+          final currentIds = nextAppointments
+              .map((appointment) => appointment.id)
+              .where((id) => id.isNotEmpty)
+              .toSet();
+
+          if (_hasPrimedAppointmentSnapshot) {
+            final newBookingCount = nextAppointments
+                .where(
+                  (appointment) =>
+                      appointment.id.isNotEmpty &&
+                      !_knownAppointmentIds.contains(appointment.id) &&
+                      appointment.status == AppointmentStatus.pending,
+                )
+                .length;
+            if (newBookingCount > 0) {
+              _showNewBookingNotification(newBookingCount);
+            }
+          }
+
+          _knownAppointmentIds = currentIds;
+          _hasPrimedAppointmentSnapshot = true;
+
           setState(() {
             appointments = nextAppointments;
             _ready = true;
@@ -176,6 +217,7 @@ class DoctorAppShellState extends ConsumerState<DoctorAppShell> {
   void dispose() {
     _doctorRepository.removeListener(_onDoctorUpdated);
     _appointmentsSubscription?.cancel();
+    _knownAppointmentIds = <String>{};
     super.dispose();
   }
 

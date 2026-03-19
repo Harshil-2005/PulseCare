@@ -1,4 +1,5 @@
 import 'package:pulsecare/data/datasources/availability_datasource.dart';
+import 'package:pulsecare/config/app_environment.dart';
 import 'package:pulsecare/domain/availability_engine.dart';
 import 'package:pulsecare/model/appointment_model.dart';
 import 'package:pulsecare/model/doctor_availability.dart';
@@ -8,7 +9,11 @@ class AvailabilityRepository {
   AvailabilityRepository([
     AvailabilityDataSource? dataSource,
     AvailabilityEngine? engine,
-  ]) : _dataSource = dataSource ?? LocalAvailabilityDataSource(),
+  ]) : _dataSource =
+           dataSource ??
+           (AppEnvironment.useLocalSeedData
+               ? LocalAvailabilityDataSource()
+               : ProductionAvailabilityDataSource()),
        _engine = engine ?? AvailabilityEngine();
 
   final AvailabilityDataSource _dataSource;
