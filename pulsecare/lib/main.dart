@@ -2,12 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:pulsecare/utils/keyboard_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:pulsecare/doctor/doctor_app_shell.dart';
-import 'package:pulsecare/model/day_schedule.dart';
-import 'package:pulsecare/user/app_shell.dart';
 import 'firebase_options.dart';
-
-import 'package:pulsecare/repositories/session_repository.dart';
 import 'package:pulsecare/splash_screen.dart';
 
 Future<void> main() async {
@@ -17,46 +12,9 @@ Future<void> main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  final sessionRepository = SessionRepository();
-
-  final restoredUserId = await sessionRepository.restoreUserId();
-  if (restoredUserId != null && restoredUserId.isNotEmpty) {
-    await sessionRepository.setCurrentUser(restoredUserId);
-  }
-
-  final restoredDoctorId = await sessionRepository.restoreDoctorId();
-  if (restoredDoctorId != null && restoredDoctorId.isNotEmpty) {
-    await sessionRepository.setCurrentDoctor(restoredDoctorId);
-  }
-
-  final restoredRole = await sessionRepository.restoreRole();
-  if (restoredRole != null && restoredRole.isNotEmpty) {
-    await sessionRepository.setRole(restoredRole);
-  }
-
-  final role = sessionRepository.getRole();
-  final userId = restoredUserId != null && restoredUserId.isNotEmpty
-      ? restoredUserId
-      : null;
-  final doctorId = sessionRepository.getDoctorId();
-
-  Widget home = const SplashScreen();
-  if (role == 'doctor' &&
-      doctorId != null &&
-      doctorId.isNotEmpty &&
-      userId != null &&
-      userId.isNotEmpty) {
-    home = DoctorAppShell(
-      doctorId: doctorId,
-      initialSchedule: const <DaySchedule>[],
-    );
-  } else if (role == 'patient' && userId != null && userId.isNotEmpty) {
-    home = const AppShell();
-  }
-
   runApp(
     ProviderScope(
-      child: MyApp(home: home),
+      child: const MyApp(home: SplashScreen()),
     ),
   );
 }

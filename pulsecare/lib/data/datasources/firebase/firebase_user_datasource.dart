@@ -51,13 +51,14 @@ class FirebaseUserDataSource implements UserDataSource {
   }
 
   Stream<User> watchUser(String userId) {
-    return FirebaseFirestore.instance
-        .collection('users')
+    return _users
         .doc(userId)
         .snapshots()
-        .where((doc) => doc.exists && doc.data() != null)
         .map((doc) {
-          final data = doc.data()!;
+          final data = doc.data();
+          if (!doc.exists || data == null) {
+            throw StateError('profile_not_found');
+          }
           data['id'] = doc.id;
           return User.fromJson(_normalizeMap(data));
         });

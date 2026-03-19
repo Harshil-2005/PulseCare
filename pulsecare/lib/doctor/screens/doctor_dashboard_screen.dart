@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:pulsecare/constrains/app_avatar.dart';
 import 'package:pulsecare/doctor/doctor_onboarding_screen.dart';
 import 'package:pulsecare/doctor/screens/doctor_profile_screen.dart';

@@ -981,7 +981,7 @@ class _DoctorAccountSetupFlowScreenState
           keyboardType: TextInputType.multiline,
           textInputAction: TextInputAction.newline,
           minLines: 3,
-          maxLines: null,
+          maxLines: 5,
         );
       case 4:
         return _textFieldStep(
@@ -1249,7 +1249,7 @@ class _DoctorAccountSetupFlowScreenState
 
     return Scaffold(
       backgroundColor: Colors.white,
-      resizeToAvoidBottomInset: true,
+      resizeToAvoidBottomInset: false,
       body: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: () => KeyboardUtils.hideKeyboardKeepFocus(),
@@ -1329,14 +1329,7 @@ class _DoctorAccountSetupFlowScreenState
                             });
                           },
                           itemBuilder: (context, index) =>
-                              SingleChildScrollView(
-                                padding: EdgeInsets.only(
-                                  bottom: MediaQuery.of(
-                                    context,
-                                  ).viewInsets.bottom,
-                                ),
-                                child: _stepContent(index),
-                              ),
+                              SingleChildScrollView(child: _stepContent(index)),
                         ),
                       ),
                       const SizedBox(height: 16),

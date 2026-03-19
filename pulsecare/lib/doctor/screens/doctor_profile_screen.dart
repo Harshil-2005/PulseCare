@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:pulsecare/auth/auth_screen.dart';
@@ -620,6 +621,18 @@ class _DoctorProfileScreenState extends ConsumerState<DoctorProfileScreen> {
                                         builder: (_) => const AuthScreen(),
                                       ),
                                       (route) => false,
+                                    );
+                                  } on FirebaseAuthException catch (e) {
+                                    if (!loadingContext.mounted) return;
+                                    Navigator.of(loadingContext).pop();
+                                    final message =
+                                        e.code == 'requires-recent-login'
+                                        ? 'For security, please log in again and then delete your account.'
+                                        : 'Unable to delete account. Please try again.';
+                                    ScaffoldMessenger.of(
+                                      loadingContext,
+                                    ).showSnackBar(
+                                      SnackBar(content: Text(message)),
                                     );
                                   } catch (_) {
                                     if (!loadingContext.mounted) return;

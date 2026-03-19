@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:pulsecare/accountsetup/account_setup_flow_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:pulsecare/auth/auth_screen.dart';
 import 'package:pulsecare/constrains/app_avatar.dart';
+import 'package:pulsecare/constrains/primary_icon_button.dart';
 import 'package:pulsecare/constrains/logout_delete.dart';
 import 'package:pulsecare/providers/repository_providers.dart';
 import 'package:pulsecare/providers/session_provider.dart';
@@ -55,75 +57,75 @@ class ProfileScreen extends ConsumerWidget {
                   bottom: 30,
                   right: 16,
                 ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      AppAvatar(
-                        radius: 50,
-                        name: user.fullName,
-                        imagePath: user.avatarPath,
-                      ),
-                      SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              user.fullName,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(fontWeight: .w600, fontSize: 22),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AppAvatar(
+                      radius: 50,
+                      name: user.fullName,
+                      imagePath: user.avatarPath,
+                    ),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            user.fullName,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(fontWeight: .w600, fontSize: 22),
+                          ),
+                          SizedBox(height: 7),
+                          Text(
+                            user.email,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontWeight: .w400,
+                              fontSize: 14,
+                              color: Colors.grey.shade400,
                             ),
-                            SizedBox(height: 7),
-                            Text(
-                              user.email,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontWeight: .w400,
-                                fontSize: 14,
-                                color: Colors.grey.shade400,
-                              ),
-                            ),
-                            SizedBox(height: 7),
-                            InkWell(
-                              onTap: () async {
-                                await Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => const EditProfile(
-                                      initialStep: 0,
-                                      singleStepMode: false,
-                                    ),
-                                  ),
-                                );
-                                ref.invalidate(_profileUserProvider(userId));
-                              },
-                              child: Container(
-                                height: 30,
-                                width: 90,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(15),
-                                  color: Color(0xff3F67FD),
-                                ),
-                                child: Center(
-                                  child: Text(
-                                    'Edit Profile',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: .w500,
-                                      fontSize: 12,
-                                    ),
+                          ),
+                          SizedBox(height: 7),
+                          InkWell(
+                            onTap: () async {
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const EditProfile(
+                                    initialStep: 0,
+                                    singleStepMode: false,
                                   ),
                                 ),
+                              );
+                              ref.invalidate(_profileUserProvider(userId));
+                            },
+                            child: Container(
+                              height: 30,
+                              width: 90,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(15),
+                                color: Color(0xff3F67FD),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  'Edit Profile',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: .w500,
+                                    fontSize: 12,
+                                  ),
+                                ),
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
+              ),
               Padding(
                 padding: const EdgeInsets.only(left: 16, right: 16, bottom: 24),
                 child: Container(
@@ -516,12 +518,6 @@ class ProfileScreen extends ConsumerWidget {
                                       sessionRepository: sessionRepository,
                                     );
                                     if (!loadingContext.mounted) return;
-                                    ref
-                                            .read(
-                                              sessionUserIdProvider.notifier,
-                                            )
-                                            .state =
-                                        null;
                                     Navigator.of(loadingContext).pop();
                                     Navigator.of(
                                       loadingContext,
@@ -598,8 +594,121 @@ class ProfileScreen extends ConsumerWidget {
       ),
       loading: () =>
           const Scaffold(body: Center(child: CircularProgressIndicator())),
-      error: (error, stack) =>
-          Scaffold(body: Center(child: Text('Error: $error'))),
+      error: (error, stack) {
+        final isMissingProfile = error.toString().contains('profile_not_found');
+        if (!isMissingProfile) {
+          return Scaffold(body: Center(child: Text('Error: $error')));
+        }
+
+        return Scaffold(
+          appBar: AppBar(
+            toolbarHeight: 85,
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
+            ),
+            elevation: 0.3,
+            title: const Center(
+              child: Text(
+                'My Profile',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+              ),
+            ),
+            shadowColor: Colors.black,
+            automaticallyImplyLeading: false,
+          ),
+          body: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Center(
+              child: Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.1),
+                      blurRadius: 10,
+                      offset: const Offset(3, 3),
+                    ),
+                  ],
+                ),
+                padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Profile Setup Required',
+                      style: TextStyle(fontWeight: .w600, fontSize: 18),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      'Your profile is incomplete. Please finish setup to continue.',
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 14,
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    PrimaryIconButton(
+                      text: 'Complete Profile',
+                      iconPath: 'assets/icons/save.svg',
+                      onTap: () {
+                        Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const AccountSetupFlowScreen(),
+                          ),
+                          (route) => false,
+                        );
+                      },
+                      height: 54,
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton(
+                        onPressed: () async {
+                          final authRepository = ref.read(
+                            authRepositoryProvider,
+                          );
+                          await authRepository.logout();
+                          await SessionRepository().clearSession();
+                          if (!context.mounted) return;
+                          ref.read(sessionUserIdProvider.notifier).state = null;
+                          Navigator.pushAndRemoveUntil(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const AuthScreen(),
+                            ),
+                            (route) => false,
+                          );
+                        },
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size.fromHeight(50),
+                          side: BorderSide(color: Colors.grey.shade300),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                        ),
+                        child: const Text(
+                          'Log out',
+                          style: TextStyle(
+                            color: Color(0xff3F67FD),
+                            fontWeight: FontWeight.w500,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

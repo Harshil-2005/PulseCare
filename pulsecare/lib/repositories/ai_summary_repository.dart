@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:pulsecare/model/ai_summary_model.dart';
@@ -27,14 +29,14 @@ class AISummaryRepository extends ChangeNotifier {
 
   AISummaryModel addSummary(AISummaryModel summary) {
     final storedSummary = _dataSource.addSummary(summary);
-    _upsertRemote(storedSummary);
+    unawaited(_upsertRemoteSafely(storedSummary));
     notifyListeners();
     return storedSummary;
   }
 
   Future<AISummaryModel> addSummaryAsync(AISummaryModel summary) async {
     final storedSummary = _dataSource.addSummary(summary);
-    await _upsertRemote(storedSummary);
+    await _upsertRemoteSafely(storedSummary);
     notifyListeners();
     return storedSummary;
   }
@@ -95,6 +97,19 @@ class AISummaryRepository extends ChangeNotifier {
     await _summaries
         .doc(summary.id)
         .set(summary.toJson(), SetOptions(merge: true));
+  }
+
+  Future<bool> _upsertRemoteSafely(AISummaryModel summary) async {
+    try {
+      await _upsertRemote(summary);
+      return true;
+    } on FirebaseException catch (e) {
+      if (e.code == 'permission-denied') {
+        debugPrint('AISummary remote sync skipped: permission denied');
+        return false;
+      }
+      rethrow;
+    }
   }
 
   Map<String, dynamic> _normalizeMap(Map<String, dynamic> raw) {

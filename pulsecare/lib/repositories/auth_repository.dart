@@ -52,6 +52,32 @@ class AuthRepository {
     }
   }
 
+  Future<void> _ensureRecentLoginForDelete() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      throw FirebaseAuthException(
+        code: 'no-current-user',
+        message: 'No authenticated user found for account deletion.',
+      );
+    }
+
+    final lastSignIn = user.metadata.lastSignInTime;
+    if (lastSignIn == null) {
+      throw FirebaseAuthException(
+        code: 'requires-recent-login',
+        message: 'Please log in again before deleting your account.',
+      );
+    }
+
+    final minutesSinceLogin = DateTime.now().difference(lastSignIn).inMinutes;
+    if (minutesSinceLogin > 5) {
+      throw FirebaseAuthException(
+        code: 'requires-recent-login',
+        message: 'Please log in again before deleting your account.',
+      );
+    }
+  }
+
   Future<void> deleteAccount({
     required String userId,
     required ReportRepository reportRepository,
@@ -59,6 +85,7 @@ class AuthRepository {
     required UserRepository userRepository,
     required SessionRepository sessionRepository,
   }) async {
+    await _ensureRecentLoginForDelete();
     await reportRepository.deleteReportsForUser(userId);
     await doctorRepository.deleteDoctorProfileForUser(userId);
     await userRepository.deleteUserProfile(userId);
