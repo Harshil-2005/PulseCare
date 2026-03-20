@@ -985,13 +985,16 @@ class MockAIService implements AIService {
         : (session.temperature == null || session.temperature!.trim().isEmpty)
         ? null
         : 'Temperature is ${session.temperature!.trim()}.';
+    final optionalSummaryParts = <String?>[
+      durationSentence,
+      frequencySentence,
+      medicationsSentence,
+      severitySentence,
+      temperatureSentence,
+    ];
     final clinicalSummaryParts = <String>[
       "$displayName has $symptomsText.",
-      if (durationSentence != null) durationSentence,
-      if (frequencySentence != null) frequencySentence,
-      if (medicationsSentence != null) medicationsSentence,
-      if (severitySentence != null) severitySentence,
-      if (temperatureSentence != null) temperatureSentence,
+      ...optionalSummaryParts.whereType<String>(),
     ];
     final clinicalSummary = clinicalSummaryParts.join(' ');
 

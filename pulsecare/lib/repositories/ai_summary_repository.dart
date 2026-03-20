@@ -29,7 +29,6 @@ class AISummaryRepository extends ChangeNotifier {
 
   AISummaryModel addSummary(AISummaryModel summary) {
     final storedSummary = _dataSource.addSummary(summary);
-    unawaited(_upsertRemoteSafely(storedSummary));
     notifyListeners();
     return storedSummary;
   }
@@ -83,9 +82,9 @@ class AISummaryRepository extends ChangeNotifier {
     return summaries;
   }
 
-  void remove(String id) {
+  Future<void> remove(String id) async {
     _dataSource.remove(id);
-    _summaries.doc(id).delete();
+    await _summaries.doc(id).delete();
     notifyListeners();
   }
 

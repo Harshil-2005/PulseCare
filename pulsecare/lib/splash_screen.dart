@@ -103,7 +103,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   void initState() {
     super.initState();
 
-    Future.delayed(const Duration(seconds: 5), _navigate);
+    Future.delayed(const Duration(seconds: 3), _navigate);
   }
 
   @override

@@ -37,7 +37,7 @@ class UserRepository extends ChangeNotifier {
 
   Future<void> updateUser(String userId, User updatedUser) async {
     if (await _dataSource.getById(userId) != null) {
-      _dataSource.update(updatedUser);
+      await _dataSource.update(updatedUser);
       notifyListeners();
     }
   }

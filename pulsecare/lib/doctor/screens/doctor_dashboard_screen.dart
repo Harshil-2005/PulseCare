@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pulsecare/constrains/app_avatar.dart';
 import 'package:pulsecare/constrains/skeleton_widgets.dart';
+import 'package:pulsecare/doctor/doctor_app_shell.dart';
 import 'package:pulsecare/doctor/doctor_onboarding_screen.dart';
-import 'package:pulsecare/doctor/screens/doctor_profile_screen.dart';
 import 'package:pulsecare/model/appointment_model.dart';
 import 'package:pulsecare/repositories/appointment_repository.dart';
 import 'package:pulsecare/providers/session_provider.dart';
@@ -171,15 +171,7 @@ class _DoctorDashboardScreenState extends ConsumerState<DoctorDashboardScreen> {
               userId: userId,
               horizontalPadding: horizontalPadding,
               onIdentityResolved: _updateHeaderState,
-              onProfileTap: (doctorId) {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    settings: const RouteSettings(name: '/doctorProfile'),
-                    builder: (_) => DoctorProfileScreen(doctorId: doctorId),
-                  ),
-                );
-              },
+              onProfileTap: () => DoctorAppShell.of(context)?.switchToTab(3),
             ),
             if (_identityLoading) ...[
               SliverToBoxAdapter(child: SizedBox(height: sectionGap)),
@@ -203,8 +195,7 @@ class _DoctorDashboardScreenState extends ConsumerState<DoctorDashboardScreen> {
                 }, childCount: 3),
               ),
               SliverToBoxAdapter(child: SizedBox(height: isCompact ? 20 : 24)),
-            ]
-            else if (!_hasDoctorProfile)
+            ] else if (!_hasDoctorProfile)
               SliverFillRemaining(
                 hasScrollBody: false,
                 child: Center(
@@ -303,7 +294,7 @@ class DashboardHeader extends ConsumerWidget {
     required String doctorDisplayName,
   })
   onIdentityResolved;
-  final ValueChanged<String> onProfileTap;
+  final VoidCallback onProfileTap;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -383,7 +374,7 @@ class DashboardHeader extends ConsumerWidget {
             ),
             Spacer(),
             InkWell(
-              onTap: () => onProfileTap(currentDoctor.id),
+              onTap: onProfileTap,
               child: AppAvatar(
                 radius: 28,
                 name: doctorName,

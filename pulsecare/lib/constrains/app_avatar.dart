@@ -13,6 +13,7 @@ class AppAvatar extends StatelessWidget {
   Widget build(BuildContext context) {
     final provider = _imageProvider(imagePath);
     final initials = _initials(name);
+    final accentColor = _seedColor(name);
 
     if (provider != null) {
       return CircleAvatar(radius: radius, backgroundImage: provider);
@@ -20,13 +21,13 @@ class AppAvatar extends StatelessWidget {
 
     return CircleAvatar(
       radius: radius,
-      backgroundColor: _seedColor(name),
+      backgroundColor: const Color(0xFFDDE8FF),
       child: initials.isEmpty
-          ? Icon(Icons.person_rounded, size: radius, color: Colors.white)
+          ? Icon(Icons.person_rounded, size: radius, color: accentColor)
           : Text(
               initials,
               style: TextStyle(
-                color: Colors.white,
+                color: accentColor,
                 fontWeight: FontWeight.w700,
                 fontSize: radius * 0.7,
               ),
@@ -66,12 +67,14 @@ class AppAvatar extends StatelessWidget {
 
   Color _seedColor(String? seed) {
     final palette = <Color>[
-      const Color(0xFF3F67FD),
-      const Color(0xFF6C5CE7),
-      const Color(0xFF00B894),
-      const Color(0xFFE17055),
-      const Color(0xFF0984E3),
-      const Color(0xFF8E44AD),
+      const Color(0xFF4F7EDB),
+      const Color(0xFF6D87D8),
+      const Color(0xFF5C9DBE),
+      const Color(0xFF7E94C7),
+      const Color(0xFF5B9E95),
+      const Color(0xFF8A84C8),
+      const Color(0xFFC184A8),
+      const Color(0xFFA389C9),
     ];
     final normalizedSeed = _nameParts(seed).join(' ').toLowerCase();
     final hash = normalizedSeed.isEmpty ? 0 : normalizedSeed.hashCode;
