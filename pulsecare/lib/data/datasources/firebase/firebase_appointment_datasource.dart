@@ -25,7 +25,7 @@ class FirebaseAppointmentDataSource implements AppointmentDataSource {
   @override
   Future<List<Appointment>> getAll() async {
     throw UnsupportedError(
-      'Unfiltered appointment reads are disabled. Use getForUser/getForDoctor/getForDoctorAt.',
+      'Unfiltered appointment reads are disabled. Use getForUser/getForDoctor.',
     );
   }
 
@@ -58,24 +58,6 @@ class FirebaseAppointmentDataSource implements AppointmentDataSource {
   }
 
   @override
-  Future<List<Appointment>> getForDoctorAt(
-    String doctorId,
-    DateTime scheduledAt,
-  ) async {
-    final snapshot = await _appointments
-        .where('doctorId', isEqualTo: doctorId)
-        .where('scheduledAt', isEqualTo: scheduledAt.toIso8601String())
-        .get();
-    return snapshot.docs
-        .map((doc) {
-          final data = doc.data();
-          data['id'] = doc.id;
-          return Appointment.fromJson(_normalizeMap(data));
-        })
-        .toList(growable: false);
-  }
-
-  @override
   Future<Appointment?> getById(String id) async {
     final snapshot = await _appointments.doc(id).get();
     if (!snapshot.exists) return null;
@@ -94,13 +76,11 @@ class FirebaseAppointmentDataSource implements AppointmentDataSource {
           );
     final docRef = _appointments.doc(resolvedDocId);
     final toStore = appointment.copyWith(id: docRef.id);
-
     await _firestore.runTransaction((transaction) async {
       final existing = await transaction.get(docRef);
       if (existing.exists) {
         throw StateError('duplicate_slot');
       }
-
       transaction.set(docRef, toStore.toJson());
     });
   }

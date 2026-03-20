@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pulsecare/controllers/ai_controller.dart';
 import 'package:pulsecare/controllers/appointment_controller.dart';
@@ -8,6 +9,7 @@ import 'package:pulsecare/config/app_environment.dart';
 import '../data/datasources/appointment_datasource.dart';
 import '../data/datasources/availability_datasource.dart';
 import '../data/datasources/auth_datasource.dart';
+import '../data/datasources/api/api_chat_datasource.dart';
 import '../data/datasources/chat_datasource.dart';
 import '../data/datasources/doctor_datasource.dart';
 import '../data/datasources/doctor_review_datasource.dart';
@@ -30,6 +32,8 @@ import '../repositories/report_repository.dart';
 import '../repositories/availability_repository.dart';
 import '../repositories/ai_summary_repository.dart';
 import '../services/ai_service.dart';
+
+final bool isDev = kDebugMode;
 
 final doctorDatasourceProvider = Provider<DoctorDataSource>(
   (ref) => AppEnvironment.useLocalSeedData
@@ -66,7 +70,7 @@ final availabilityDatasourceProvider = Provider<AvailabilityDataSource>(
 );
 
 final chatDatasourceProvider = Provider<ChatDataSource>(
-  (ref) => LocalChatDataSource(),
+  (ref) => isDev ? LocalChatDataSource() : ApiChatDataSource(),
 );
 
 final authDatasourceProvider = Provider<AuthDatasource>(
@@ -117,7 +121,9 @@ final aiSummaryRepositoryProvider = Provider<AISummaryRepository>(
   (ref) => AISummaryRepository(),
 );
 
-final aiServiceProvider = Provider<AIService>((ref) => MockAIService());
+final aiServiceProvider = Provider<AIService>(
+  (ref) => isDev ? MockAIService() : ProductionAIService(),
+);
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   final datasource = ref.read(authDatasourceProvider);

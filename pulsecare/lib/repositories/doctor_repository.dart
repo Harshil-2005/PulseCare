@@ -69,14 +69,13 @@ class DoctorRepository extends ChangeNotifier {
             )
             .toList(),
       );
-      _dataSource.update(normalizedDoctor);
+      await _dataSource.update(normalizedDoctor);
       notifyListeners();
     }
   }
 
   Future<void> incrementPatients(String doctorId) async {
-    await _dataSource.incrementPatients(doctorId);
-    notifyListeners();
+    // TODO: Move aggregation to Cloud Function or backend
   }
 
   Future<void> deleteDoctorProfileForUser(String userId) async {
@@ -108,7 +107,7 @@ class DoctorRepository extends ChangeNotifier {
     updatedOverrides.add(override);
 
     final updatedDoctor = doctor.copyWith(overrides: updatedOverrides);
-    _dataSource.update(updatedDoctor);
+    await _dataSource.update(updatedDoctor);
     notifyListeners();
   }
 
@@ -123,7 +122,7 @@ class DoctorRepository extends ChangeNotifier {
         .where((item) => !item.appliesTo(date))
         .toList();
     final updatedDoctor = doctor.copyWith(overrides: updatedOverrides);
-    _dataSource.update(updatedDoctor);
+    await _dataSource.update(updatedDoctor);
     notifyListeners();
   }
 

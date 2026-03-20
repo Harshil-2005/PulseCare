@@ -330,11 +330,7 @@ class LocalDoctorDataSource implements DoctorDataSource {
 
   @override
   Future<void> incrementPatients(String doctorId) async {
-    final index = _doctors.indexWhere((doctor) => doctor.id == doctorId);
-    if (index == -1) return;
-    final current = _doctors[index];
-    _doctors[index] = current.copyWith(patients: current.patients + 1);
-    _doctorStreamController.add(List.unmodifiable(_doctors));
+    // TODO: Move aggregation to Cloud Function or backend
   }
 
   @override

@@ -12,6 +12,27 @@ abstract class AIService {
   });
 }
 
+class ProductionAIService implements AIService {
+  @override
+  Future<AIResponse> generateResponse({
+    required String conversationId,
+    required String userId,
+    required List<ChatMessage> conversation,
+  }) async {
+    return AIResponse(
+      rawText:
+          'AI assistant is currently unavailable. Please try again shortly.',
+      detectedSymptoms: const <String>[],
+      recommendedSpecialty: 'General Physician',
+      triageLevel: 'Low',
+      confidence: 0.0,
+      generatedAt: DateTime.now(),
+      stage: IntakeStage.completed,
+      followUpAnswers: const <String, String>{},
+    );
+  }
+}
+
 class MockAIService implements AIService {
   final Map<String, IntakeSession> _sessions = {};
   final Map<String, List<FollowUpQuestion>> _pendingFollowUps = {};

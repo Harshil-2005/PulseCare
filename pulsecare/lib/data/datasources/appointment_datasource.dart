@@ -6,10 +6,6 @@ abstract class AppointmentDataSource {
   Future<List<Appointment>> getAll();
   Future<List<Appointment>> getForUser(String userId);
   Future<List<Appointment>> getForDoctor(String doctorId);
-  Future<List<Appointment>> getForDoctorAt(
-    String doctorId,
-    DateTime scheduledAt,
-  );
   Future<Appointment?> getById(String id);
   Stream<List<Appointment>> watchForUser(String userId);
   Stream<List<Appointment>> watchForDoctor(String doctorId);
@@ -143,24 +139,6 @@ class LocalAppointmentDataSource implements AppointmentDataSource {
   }
 
   @override
-  Future<List<Appointment>> getForDoctorAt(
-    String doctorId,
-    DateTime scheduledAt,
-  ) async {
-    return _appointments
-        .where(
-          (appointment) =>
-              appointment.doctorId == doctorId &&
-              appointment.scheduledAt.year == scheduledAt.year &&
-              appointment.scheduledAt.month == scheduledAt.month &&
-              appointment.scheduledAt.day == scheduledAt.day &&
-              appointment.scheduledAt.hour == scheduledAt.hour &&
-              appointment.scheduledAt.minute == scheduledAt.minute,
-        )
-        .toList(growable: false);
-  }
-
-  @override
   Future<Appointment?> getById(String id) async {
     try {
       return _appointments.firstWhere((a) => a.id == id);
@@ -191,7 +169,8 @@ class LocalAppointmentDataSource implements AppointmentDataSource {
             appointment.doctorId,
             appointment.scheduledAt,
           );
-    if (_appointments.any((existing) => existing.id == resolvedId)) {
+    if (_appointments.indexWhere((existing) => existing.id == resolvedId) !=
+        -1) {
       throw StateError('duplicate_slot');
     }
     final generatedAppointment = appointment.copyWith(id: resolvedId);

@@ -69,7 +69,7 @@ class AppointmentRepository extends ChangeNotifier {
           appointment.id,
           appointmentStatusCompletedAuto,
         );
-        await _doctorRepository.incrementPatients(appointment.doctorId);
+        // TODO: Move aggregation to Cloud Function or backend
         return appointment.copyWith(status: AppointmentStatus.completed);
       }
     }
@@ -285,27 +285,34 @@ class AppointmentRepository extends ChangeNotifier {
       throw StateError('past_date');
     }
 
-    final appointments = await _dataSource.getForDoctorAt(
+    final newAppointmentId = _buildSlotAppointmentId(
       existing.doctorId,
       newDateTime,
     );
-    final hasDuplicate = appointments.any((appointment) {
-      if (appointment.id == appointmentId) {
-        return false;
-      }
-      return appointment.status != AppointmentStatus.cancelled;
-    });
-
-    if (hasDuplicate) {
-      throw StateError('duplicate_slot');
-    }
 
     final updated = existing.copyWith(
+      id: newAppointmentId,
       scheduledAt: newDateTime,
       status: AppointmentStatus.pending,
     );
 
-    await _dataSource.update(updated);
+    if (newAppointmentId == existing.id) {
+      await _dataSource.update(updated);
+      notifyListeners();
+      return;
+    }
+
+    await _dataSource.remove(existing);
+    try {
+      await _dataSource.add(updated);
+    } on StateError catch (error) {
+      // Restore original appointment if new slot is already taken.
+      if (error.message.toString() == 'duplicate_slot') {
+        await _dataSource.add(existing);
+      }
+      rethrow;
+    }
+
     notifyListeners();
   }
 
@@ -360,7 +367,7 @@ class AppointmentRepository extends ChangeNotifier {
     await _dataSource.update(appointment.copyWith(status: newStatus));
     if (currentStatus != AppointmentStatus.completed &&
         newStatus == AppointmentStatus.completed) {
-      await _doctorRepository.incrementPatients(appointment.doctorId);
+      // TODO: Move aggregation to Cloud Function or backend
     }
     notifyListeners();
   }

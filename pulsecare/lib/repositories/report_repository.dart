@@ -29,13 +29,13 @@ class ReportRepository extends ChangeNotifier {
     return _dataSource.watchReportsByUser(userId);
   }
 
-  void addReport(ReportModel report) {
-    _dataSource.add(report);
+  Future<void> addReport(ReportModel report) async {
+    await _dataSource.add(report);
     notifyListeners();
   }
 
-  void removeReport(ReportModel report) {
-    _dataSource.remove(report);
+  Future<void> removeReport(ReportModel report) async {
+    await _dataSource.remove(report);
     notifyListeners();
   }
 

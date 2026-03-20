@@ -168,8 +168,8 @@ class _AllReportsScreenState extends ConsumerState<AllReportsScreen> {
                                 'Are you sure you want to delete this report?',
                             iconPath: null,
                             confirmText: 'Delete',
-                            onConfirm: () {
-                              ref
+                            onConfirm: () async {
+                              await ref
                                   .read(reportRepositoryProvider)
                                   .removeReport(report);
                             },

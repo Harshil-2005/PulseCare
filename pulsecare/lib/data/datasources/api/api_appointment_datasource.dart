@@ -23,14 +23,6 @@ class ApiAppointmentDataSource implements AppointmentDataSource {
   }
 
   @override
-  Future<List<Appointment>> getForDoctorAt(
-    String doctorId,
-    DateTime scheduledAt,
-  ) async {
-    throw UnimplementedError('API not implemented yet');
-  }
-
-  @override
   Future<Appointment?> getById(String id) async {
     throw UnimplementedError('API not implemented yet');
   }

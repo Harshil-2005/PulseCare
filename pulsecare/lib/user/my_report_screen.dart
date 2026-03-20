@@ -170,9 +170,8 @@ class _MyReportScreenState extends ConsumerState<MyReportScreen> {
                 loading: () => ListView.builder(
                   padding: const EdgeInsets.only(bottom: 16),
                   itemCount: 5,
-                  itemBuilder: (context, index) => ReportCardSkeleton(
-                    topPadding: index == 0 ? 0 : 16,
-                  ),
+                  itemBuilder: (context, index) =>
+                      ReportCardSkeleton(topPadding: index == 0 ? 0 : 16),
                 ),
                 error: (error, stack) => Center(child: Text('Error: $error')),
                 data: (reports) {
@@ -216,8 +215,8 @@ class _MyReportScreenState extends ConsumerState<MyReportScreen> {
                                 'Are you sure you want to delete this report?',
                             iconPath: null,
                             confirmText: 'Delete',
-                            onConfirm: () {
-                              ref
+                            onConfirm: () async {
+                              await ref
                                   .read(reportRepositoryProvider)
                                   .removeReport(report);
                             },
@@ -235,6 +234,3 @@ class _MyReportScreenState extends ConsumerState<MyReportScreen> {
     );
   }
 }
-
-
-
