@@ -65,16 +65,23 @@ void showUploadReportBottomSheet(
                   context,
                   listen: false,
                 ).read(reportRepositoryProvider);
-                final report = await reportRepository.uploadFromFile(
-                  userId: effectiveUserId,
-                  appointmentId: appointmentId,
-                  doctorId: doctorId,
-                );
-                if (!context.mounted) return;
-                if (report != null) {
-                  onReportUploaded?.call(report);
-                  onReportAdded?.call();
-                  Navigator.pop(context);
+                try {
+                  final report = await reportRepository.uploadFromFile(
+                    userId: effectiveUserId,
+                    appointmentId: appointmentId,
+                    doctorId: doctorId,
+                  );
+                  if (!context.mounted) return;
+                  if (report != null) {
+                    onReportUploaded?.call(report);
+                    onReportAdded?.call();
+                    Navigator.pop(context);
+                  } else {
+                    showAppToast(context, 'No file selected');
+                  }
+                } catch (_) {
+                  if (!context.mounted) return;
+                  showAppToast(context, 'Upload failed. Please try again');
                 }
               },
               child: _uploadOption(
@@ -108,16 +115,21 @@ void showUploadReportBottomSheet(
                   context,
                   listen: false,
                 ).read(reportRepositoryProvider);
-                final report = await reportRepository.uploadFromCamera(
-                  userId: effectiveUserId,
-                  appointmentId: appointmentId,
-                  doctorId: doctorId,
-                );
-                if (!context.mounted) return;
-                if (report != null) {
-                  onReportUploaded?.call(report);
-                  onReportAdded?.call();
-                  Navigator.pop(context);
+                try {
+                  final report = await reportRepository.uploadFromCamera(
+                    userId: effectiveUserId,
+                    appointmentId: appointmentId,
+                    doctorId: doctorId,
+                  );
+                  if (!context.mounted) return;
+                  if (report != null) {
+                    onReportUploaded?.call(report);
+                    onReportAdded?.call();
+                    Navigator.pop(context);
+                  }
+                } catch (_) {
+                  if (!context.mounted) return;
+                  showAppToast(context, 'Upload failed. Please try again');
                 }
               },
               child: _uploadOption(

@@ -107,7 +107,7 @@ class _CancelledTabState extends ConsumerState<CancelledTab> {
             bg: Colors.grey.shade300,
             textColor: Colors.black,
             onTap: () async {
-              ref
+              await ref
                   .read(appointmentRepositoryProvider)
                   .removeAppointment(appointment);
               ref.invalidate(_cancelledAppointmentsProvider);

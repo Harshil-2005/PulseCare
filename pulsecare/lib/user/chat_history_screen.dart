@@ -36,12 +36,21 @@ class _ChatHistoryScreenState extends ConsumerState<ChatHistoryScreen> {
   }
 
   Future<void> _initialize() async {
-    final currentUser = await ref
-        .read(userRepositoryProvider)
-        .getUserById(SessionRepository().getCurrentUserId());
-    if (!mounted) return;
-    _userId = currentUser?.id ?? '';
-    await _loadEntries();
+    try {
+      final currentUser = await ref
+          .read(userRepositoryProvider)
+          .getUserById(SessionRepository().getCurrentUserId());
+      if (!mounted) return;
+      _userId = currentUser?.id ?? '';
+      await _loadEntries();
+    } catch (_) {
+      if (mounted) {
+        showAppToast(context, 'Failed to load chat history');
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   Future<void> _loadEntries() async {
@@ -51,6 +60,10 @@ class _ChatHistoryScreenState extends ConsumerState<ChatHistoryScreen> {
       setState(() {
         _entries = items;
       });
+    } catch (_) {
+      if (mounted) {
+        showAppToast(context, 'Failed to load chat history');
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -318,16 +331,17 @@ class _ChatHistoryScreenState extends ConsumerState<ChatHistoryScreen> {
                                           canPop: false,
                                           onPopInvokedWithResult:
                                               (didPop, result) {
-                                            Navigator.pushAndRemoveUntil(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (_) => const AppShell(
-                                                  initialTab: 0,
-                                                ),
-                                              ),
-                                              (route) => false,
-                                            );
-                                          },
+                                                Navigator.pushAndRemoveUntil(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder: (_) =>
+                                                        const AppShell(
+                                                          initialTab: 0,
+                                                        ),
+                                                  ),
+                                                  (route) => false,
+                                                );
+                                              },
                                           child: Scaffold(
                                             appBar: AppBar(
                                               leadingWidth: 40,

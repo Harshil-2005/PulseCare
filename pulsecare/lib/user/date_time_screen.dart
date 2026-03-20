@@ -43,8 +43,10 @@ class DateTimeScreen extends ConsumerStatefulWidget {
 }
 
 class _DateTimeScreenState extends ConsumerState<DateTimeScreen> {
+  static const int _sameDayBookingCutoffMinutes = 15;
   final TextEditingController _dateController = TextEditingController();
   late final AvailabilityRepository _availabilityRepository;
+  Timer? _slotRefreshTimer;
   String selectedDate = TimeUtils.formatDate(DateTime.now());
   bool _doctorAvailableOnSelectedDay = true;
   bool _isFormattingDateInput = false;
@@ -57,6 +59,7 @@ class _DateTimeScreenState extends ConsumerState<DateTimeScreen> {
     _availabilityRepository = ref.read(availabilityRepositoryProvider);
     morningSlots = _availabilityRepository.getDefaultMorningSlots();
     afternoonSlots = _availabilityRepository.getDefaultAfternoonSlots();
+    _startSlotRefreshTicker();
     Future.microtask(() => _setSelectedDateWithAutoShift(DateTime.now()));
   }
 
@@ -75,6 +78,39 @@ class _DateTimeScreenState extends ConsumerState<DateTimeScreen> {
       parsed.hour,
       parsed.minute,
     );
+  }
+
+  void _startSlotRefreshTicker() {
+    _slotRefreshTimer?.cancel();
+    _slotRefreshTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+      if (!mounted) return;
+      try {
+        final date = TimeUtils.parseDateStrict(selectedDate);
+        unawaited(_loadSlotsForDate(date));
+      } catch (_) {
+        // Ignore invalid in-progress manual date input.
+      }
+    });
+  }
+
+  bool _isBlockedByCurrentTime(DateTime date, String slotTime, DateTime now) {
+    if (!_isSameDay(date, now)) return false;
+    final slotDateTime = _slotDateTime(date, slotTime);
+    final minutesUntilSlot = slotDateTime.difference(now).inMinutes;
+    return minutesUntilSlot < _sameDayBookingCutoffMinutes;
+  }
+
+  List<TimeSlot> _applyTodayCutoff(List<TimeSlot> slots, DateTime date) {
+    final now = DateTime.now();
+    return slots.map((slot) {
+      if (slot.status == SlotStatus.booked) {
+        return slot;
+      }
+      if (_isBlockedByCurrentTime(date, slot.time, now)) {
+        return slot.copyWith(status: SlotStatus.booked);
+      }
+      return slot;
+    }).toList(growable: false);
   }
 
   Future<List<DateTime>> _getBookedSlotsForDate(DateTime date) async {
@@ -127,17 +163,22 @@ class _DateTimeScreenState extends ConsumerState<DateTimeScreen> {
       date: date,
       bookedSlotDateTimes: bookedSlotDateTimes,
     );
+    final filteredMorningSlots = _applyTodayCutoff(slots.morningSlots, date);
+    final filteredAfternoonSlots = _applyTodayCutoff(
+      slots.afternoonSlots,
+      date,
+    );
 
     if (triggerSetState) {
       setState(() {
         _doctorAvailableOnSelectedDay = slots.isAvailable;
-        morningSlots = slots.morningSlots;
-        afternoonSlots = slots.afternoonSlots;
+        morningSlots = filteredMorningSlots;
+        afternoonSlots = filteredAfternoonSlots;
       });
     } else {
       _doctorAvailableOnSelectedDay = slots.isAvailable;
-      morningSlots = slots.morningSlots;
-      afternoonSlots = slots.afternoonSlots;
+      morningSlots = filteredMorningSlots;
+      afternoonSlots = filteredAfternoonSlots;
     }
   }
 
@@ -145,8 +186,7 @@ class _DateTimeScreenState extends ConsumerState<DateTimeScreen> {
     final now = DateTime.now();
     for (final slot in _allSlots) {
       if (slot.status == SlotStatus.booked) continue;
-      final slotDateTime = _slotDateTime(today, slot.time);
-      if (slotDateTime.isAfter(now)) {
+      if (!_isBlockedByCurrentTime(today, slot.time, now)) {
         return true;
       }
     }
@@ -373,6 +413,13 @@ class _DateTimeScreenState extends ConsumerState<DateTimeScreen> {
         return slot;
       }).toList();
     });
+  }
+
+  @override
+  void dispose() {
+    _slotRefreshTimer?.cancel();
+    _dateController.dispose();
+    super.dispose();
   }
 
   @override

@@ -12,6 +12,7 @@ import 'package:pulsecare/model/day_schedule.dart';
 import 'package:pulsecare/model/doctor_model.dart';
 import 'package:pulsecare/providers/session_provider.dart';
 import 'package:pulsecare/repositories/doctor_repository.dart';
+import 'package:pulsecare/utils/time_utils.dart';
 import '../providers/repository_providers.dart';
 
 class DoctorAppShell extends ConsumerStatefulWidget {
@@ -49,16 +50,23 @@ class DoctorAppShellState extends ConsumerState<DoctorAppShell> {
   final GlobalKey<DoctorAppointmentsScreenState> doctorAppointmentsKey =
       GlobalKey<DoctorAppointmentsScreenState>();
 
-  void _showNewBookingNotification(int newCount) {
+  void _showNewBookingNotification(List<Appointment> newAppointments) {
     if (!mounted) return;
+    final newCount = newAppointments.length;
+    final latest = newCount == 1 ? newAppointments.first : null;
+    final patientName = latest?.patientName.trim() ?? '';
+    final patientPart = patientName.isEmpty ? 'A patient' : patientName;
+    final slotPart = latest == null
+        ? ''
+        : ' at ${TimeUtils.formatTime(latest.scheduledAt)}';
     final messenger = ScaffoldMessenger.of(context);
     messenger.hideCurrentSnackBar();
     messenger.showSnackBar(
       SnackBar(
         content: Text(
           newCount == 1
-              ? 'You have 1 new booking.'
-              : 'You have $newCount new bookings.',
+              ? 'New appointment booked: $patientPart$slotPart'
+              : 'New appointment booked ($newCount)',
         ),
         behavior: SnackBarBehavior.floating,
       ),
@@ -152,16 +160,16 @@ class DoctorAppShellState extends ConsumerState<DoctorAppShell> {
               .toSet();
 
           if (_hasPrimedAppointmentSnapshot) {
-            final newBookingCount = nextAppointments
+            final newBookings = nextAppointments
                 .where(
                   (appointment) =>
                       appointment.id.isNotEmpty &&
                       !_knownAppointmentIds.contains(appointment.id) &&
                       appointment.status == AppointmentStatus.pending,
                 )
-                .length;
-            if (newBookingCount > 0) {
-              _showNewBookingNotification(newBookingCount);
+                .toList(growable: false);
+            if (newBookings.isNotEmpty) {
+              _showNewBookingNotification(newBookings);
             }
           }
 
