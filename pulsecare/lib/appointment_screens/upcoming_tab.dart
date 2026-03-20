@@ -90,7 +90,8 @@ class _UpcomingTabState extends ConsumerState<UpcomingTab> {
       loading: () => ListView.builder(
         padding: const EdgeInsets.only(bottom: 20),
         itemCount: 3,
-        itemBuilder: (_, __) => const AppointmentCardSkeleton(dualActions: true),
+        itemBuilder: (context, _) =>
+            const AppointmentCardSkeleton(dualActions: true),
       ),
       error: (error, stack) => Center(child: Text('Error: $error')),
     );

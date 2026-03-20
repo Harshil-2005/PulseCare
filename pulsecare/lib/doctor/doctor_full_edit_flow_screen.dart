@@ -298,10 +298,11 @@ class _DoctorFullEditFlowScreenState
         ? [allPages[widget.initialStep]]
         : allPages;
 
-    return WillPopScope(
-      onWillPop: () async {
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
         _onBack();
-        return false;
       },
       child: Scaffold(
         resizeToAvoidBottomInset: true,
@@ -660,8 +661,9 @@ class _EditDoctorProfileContentState extends State<EditDoctorProfileContent> {
   bool _hasCustomImage(String? path) {
     final value = path?.trim() ?? '';
     if (value.isEmpty) return false;
-    if (value.startsWith('http://') || value.startsWith('https://'))
+    if (value.startsWith('http://') || value.startsWith('https://')) {
       return true;
+    }
     if (RegExp(r'^[a-zA-Z]:[\\/]').hasMatch(value) || value.startsWith('/')) {
       return true;
     }

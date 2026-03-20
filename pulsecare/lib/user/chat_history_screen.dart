@@ -52,10 +52,11 @@ class _ChatHistoryScreenState extends ConsumerState<ChatHistoryScreen> {
         _entries = items;
       });
     } finally {
-      if (!mounted) return;
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -315,7 +316,8 @@ class _ChatHistoryScreenState extends ConsumerState<ChatHistoryScreen> {
                                       MaterialPageRoute(
                                         builder: (_) => PopScope(
                                           canPop: false,
-                                          onPopInvoked: (_) {
+                                          onPopInvokedWithResult:
+                                              (didPop, result) {
                                             Navigator.pushAndRemoveUntil(
                                               context,
                                               MaterialPageRoute(

@@ -37,7 +37,7 @@ class NextActionButton extends StatelessWidget {
           height: height,
           width: double.infinity,
           decoration: BoxDecoration(
-            color: backgroundColor.withOpacity(isLoading ? 0.7 : 1),
+            color: backgroundColor.withValues(alpha: isLoading ? 0.7 : 1),
             borderRadius: BorderRadius.circular(30),
           ),
           child: Row(

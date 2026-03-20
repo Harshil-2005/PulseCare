@@ -148,6 +148,7 @@ class AddLeaveDateSheet extends ConsumerWidget {
     final doctorId = SessionRepository().getCurrentDoctorId();
 
     final doctor = await doctorRepository.getDoctorById(doctorId);
+    if (!context.mounted) return;
     final slotDuration = doctor?.slotDuration ?? 30;
     final rangeLabel = _formatLeaveRangeLabel(start, end);
     final baseSchedule = DaySchedule(

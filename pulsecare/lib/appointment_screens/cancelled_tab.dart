@@ -35,100 +35,105 @@ class CancelledTab extends ConsumerStatefulWidget {
 }
 
 class _CancelledTabState extends ConsumerState<CancelledTab> {
-AppointmentCardStatus mapToCardStatus(AppointmentStatus status) {
-  switch (status) {
-    case AppointmentStatus.pending:
-      return AppointmentCardStatus.pending;
-    case AppointmentStatus.confirmed:
-      return AppointmentCardStatus.confirmed;
-    case AppointmentStatus.cancelled:
-      return AppointmentCardStatus.cancelled;
-    case AppointmentStatus.completed:
-      return AppointmentCardStatus.completed;
+  AppointmentCardStatus mapToCardStatus(AppointmentStatus status) {
+    switch (status) {
+      case AppointmentStatus.pending:
+        return AppointmentCardStatus.pending;
+      case AppointmentStatus.confirmed:
+        return AppointmentCardStatus.confirmed;
+      case AppointmentStatus.cancelled:
+        return AppointmentCardStatus.cancelled;
+      case AppointmentStatus.completed:
+        return AppointmentCardStatus.completed;
+    }
   }
-}
 
   @override
-Widget build(BuildContext context) {
-  final cancelledAsync = ref.watch(_cancelledAppointmentsProvider);
-  return cancelledAsync.when(
-    data: (cancelledAppointments) {
-      final sortedAppointments = [...cancelledAppointments]
-        ..sort((a, b) => b.scheduledAt.compareTo(a.scheduledAt));
-      if (sortedAppointments.isEmpty) {
-        return const Center(child: NoAppointmentWidget());
-      }
+  Widget build(BuildContext context) {
+    final cancelledAsync = ref.watch(_cancelledAppointmentsProvider);
+    return cancelledAsync.when(
+      data: (cancelledAppointments) {
+        final sortedAppointments = [...cancelledAppointments]
+          ..sort((a, b) => b.scheduledAt.compareTo(a.scheduledAt));
+        if (sortedAppointments.isEmpty) {
+          return const Center(child: NoAppointmentWidget());
+        }
 
-      return ListView.builder(
+        return ListView.builder(
+          padding: const EdgeInsets.only(bottom: 20),
+          itemCount: sortedAppointments.length,
+          itemBuilder: (context, index) {
+            final appointment = sortedAppointments[index];
+
+            return GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        UserAppointmentDetailScreen(appointment: appointment),
+                  ),
+                );
+              },
+              child: AppointmentCard(
+                status: mapToCardStatus(appointment.status),
+                doctorName: appointment.resolvedDoctor.name,
+                speciality: appointment.resolvedDoctor.speciality,
+                image: appointment.resolvedDoctor.image,
+                date: TimeUtils.formatDate(appointment.scheduledAt),
+                time: TimeUtils.formatTime(appointment.scheduledAt),
+                bottomAction: _cancelledActions(context, appointment),
+              ),
+            );
+          },
+        );
+      },
+      loading: () => ListView.builder(
         padding: const EdgeInsets.only(bottom: 20),
-        itemCount: sortedAppointments.length,
-        itemBuilder: (context, index) {
-          final appointment = sortedAppointments[index];
+        itemCount: 3,
+        itemBuilder: (context, _) =>
+            const AppointmentCardSkeleton(dualActions: true),
+      ),
+      error: (error, stack) => Center(child: Text('Error: $error')),
+    );
+  }
 
-          return GestureDetector(
+  Widget _cancelledActions(BuildContext context, Appointment appointment) {
+    return Row(
+      children: [
+        Expanded(
+          child: _actionButton(
+            text: 'Remove',
+            bg: Colors.grey.shade300,
+            textColor: Colors.black,
+            onTap: () async {
+              ref
+                  .read(appointmentRepositoryProvider)
+                  .removeAppointment(appointment);
+              ref.invalidate(_cancelledAppointmentsProvider);
+            },
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _actionButton(
+            text: 'Book Again',
+            bg: const Color(0xff3F67FD),
+            textColor: Colors.white,
             onTap: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) =>
-                      UserAppointmentDetailScreen(appointment: appointment),
+                  builder: (_) =>
+                      PatientDetailScreen(doctor: appointment.resolvedDoctor),
                 ),
               );
             },
-            child: AppointmentCard(
-              status: mapToCardStatus(appointment.status),
-              doctorName: appointment.resolvedDoctor.name,
-              speciality: appointment.resolvedDoctor.speciality,
-              image: appointment.resolvedDoctor.image,
-              date: TimeUtils.formatDate(appointment.scheduledAt),
-              time: TimeUtils.formatTime(appointment.scheduledAt),
-              bottomAction: _cancelledActions(context, appointment),
-            ),
-          );
-        },
-      );
-    },
-    loading: () => ListView.builder(
-      padding: const EdgeInsets.only(bottom: 20),
-      itemCount: 3,
-      itemBuilder: (_, __) => const AppointmentCardSkeleton(dualActions: true),
-    ),
-    error: (error, stack) => Center(child: Text('Error: $error')),
-  );
-}
-Widget _cancelledActions(BuildContext context, Appointment appointment) {
-  return Row(
-    children: [
-      Expanded(
-        child: _actionButton(
-          text: 'Remove',
-          bg: Colors.grey.shade300,
-          textColor: Colors.black,
-          onTap: () async {
-            ref.read(appointmentRepositoryProvider).removeAppointment(appointment);
-            ref.invalidate(_cancelledAppointmentsProvider);
-          },
+          ),
         ),
-      ),
-      const SizedBox(width: 10),
-      Expanded(
-        child: _actionButton(
-          text: 'Book Again',
-          bg: const Color(0xff3F67FD),
-          textColor: Colors.white,
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => PatientDetailScreen(doctor: appointment.resolvedDoctor),
-              ),
-            );
-          },
-        ),
-      ),
-    ],
-  );
-}
+      ],
+    );
+  }
 
   Widget _actionButton({
     required String text,

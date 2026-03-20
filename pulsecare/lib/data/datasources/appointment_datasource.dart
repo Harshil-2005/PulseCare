@@ -36,7 +36,7 @@ class LocalAppointmentDataSource implements AppointmentDataSource {
     final mm = dateTime.minute.toString().padLeft(2, '0');
     final dateKey = '$y$m$d';
     final timeSlot = '$hh$mm';
-    return '${doctorId}_${dateKey}_${timeSlot}';
+    return '${doctorId}_${dateKey}_$timeSlot';
   }
 
   static Doctor _seedDoctor(String id) {

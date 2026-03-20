@@ -50,6 +50,7 @@ class FirebaseUserDataSource implements UserDataSource {
     await _users.doc(userId).delete();
   }
 
+  @override
   Stream<User> watchUser(String userId) {
     return _users
         .doc(userId)

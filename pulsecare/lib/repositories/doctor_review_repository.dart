@@ -11,7 +11,7 @@ class DoctorReviewRepository extends ChangeNotifier {
     _validateReview(review);
     final normalized = review.copyWith(id: review.appointmentId);
     await _dataSource.add(normalized);
-    // TODO: Move rating aggregation to Cloud Function
+    // Planned: move rating aggregation to a secure server-side workflow.
     notifyListeners();
   }
 

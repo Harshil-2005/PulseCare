@@ -37,7 +37,7 @@ class PatientDetailScreen extends ConsumerStatefulWidget {
 class _UserDetailScreenState extends ConsumerState<PatientDetailScreen> {
   final TextEditingController ageController = TextEditingController();
   final TextEditingController symptomsController = TextEditingController();
-  List<ReportModel> _selectedReports = [];
+  final List<ReportModel> _selectedReports = [];
 
   final List<String> bookfor = ['Self', 'Other'];
   final List<String> gender = ['Male', 'Female', 'Other'];
@@ -134,8 +134,10 @@ class _UserDetailScreenState extends ConsumerState<PatientDetailScreen> {
     final words = normalized
         .split(' ')
         .where((word) => word.isNotEmpty)
-        .map((word) =>
-            '${word[0].toUpperCase()}${word.substring(1).toLowerCase()}')
+        .map(
+          (word) =>
+              '${word[0].toUpperCase()}${word.substring(1).toLowerCase()}',
+        )
         .toList(growable: false);
     return words.join(' ');
   }
@@ -243,8 +245,7 @@ class _UserDetailScreenState extends ConsumerState<PatientDetailScreen> {
       'fever_chills': 'Chills',
       'fever_body_aches': 'Body aches',
       'fever_sore_throat': 'Sore throat',
-      'fever_taken_any_medicine_to_reduce_fever':
-          'Medication to reduce fever',
+      'fever_taken_any_medicine_to_reduce_fever': 'Medication to reduce fever',
       'cough_cough_dry': 'Dry cough',
       'cough_wheezing': 'Wheezing',
       'cold_a_runny_nose': 'Runny nose',
@@ -258,7 +259,8 @@ class _UserDetailScreenState extends ConsumerState<PatientDetailScreen> {
       'chest_pain_spread_to_arm': 'Pain radiates to arm',
       'chest_pain_worsen_with_exertion': 'Worse with exertion',
       'shortness_of_breath_start_suddenly': 'Sudden onset',
-      'shortness_of_breath_short_of_breath_at_rest': 'Shortness of breath at rest',
+      'shortness_of_breath_short_of_breath_at_rest':
+          'Shortness of breath at rest',
       'shortness_of_breath_chest_pain': 'Chest pain',
       'rash_rash': 'Rash location',
       'rash_itchy': 'Itching',
@@ -316,7 +318,8 @@ class _UserDetailScreenState extends ConsumerState<PatientDetailScreen> {
       'itching_itching_most': 'Itching location',
       'itching_a_rash_with_itching': 'Rash with itching',
       'itching_recently_use_a_new_soap': 'New soap exposure',
-      'neck_pain_neck_pain_start_after_poor_posture': 'Started after poor posture',
+      'neck_pain_neck_pain_start_after_poor_posture':
+          'Started after poor posture',
       'neck_pain_pain_spread_to_shoulder': 'Radiates to shoulder',
       'neck_pain_feel_numbness_in_arms': 'Arm numbness',
       'muscle_pain_painful': 'Painful muscles',
@@ -550,7 +553,7 @@ class _UserDetailScreenState extends ConsumerState<PatientDetailScreen> {
         behavior: HitTestBehavior.translucent,
         onTap: () {
           KeyboardUtils.hideKeyboardKeepFocus();
-},
+        },
         child: SingleChildScrollView(
           child: Column(
             children: [
@@ -669,7 +672,7 @@ class _UserDetailScreenState extends ConsumerState<PatientDetailScreen> {
                               },
                               onTapOutside: (_) {
                                 KeyboardUtils.hideKeyboardKeepFocus();
-},
+                              },
                               decoration: InputDecoration(
                                 hintText: user?.age.toString() ?? '',
                                 hintStyle: TextStyle(
@@ -815,7 +818,7 @@ class _UserDetailScreenState extends ConsumerState<PatientDetailScreen> {
                             maxLines: null,
                             onTapOutside: (_) {
                               KeyboardUtils.hideKeyboardKeepFocus();
-},
+                            },
 
                             decoration: InputDecoration(
                               border: InputBorder.none,
@@ -1129,5 +1132,3 @@ class _UserDetailScreenState extends ConsumerState<PatientDetailScreen> {
     );
   }
 }
-
-

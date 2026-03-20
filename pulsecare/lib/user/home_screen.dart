@@ -596,7 +596,7 @@ class DoctorListSection extends ConsumerWidget {
                       doctor: doctor,
                       appointments: appointments,
                     );
-                    return doctorCart(
+                    return _doctorCart(
                       doctor,
                       context,
                       status,
@@ -663,7 +663,7 @@ Widget navIcon(String assetPath, bool isSelected) {
   );
 }
 
-Widget doctorCart(
+Widget _doctorCart(
   Doctor doctor,
   BuildContext context,
   _DoctorStatusUi status, {

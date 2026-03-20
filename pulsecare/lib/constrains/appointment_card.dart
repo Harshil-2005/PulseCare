@@ -212,7 +212,8 @@ class AppointmentCard extends StatelessWidget {
         width: 92,
         height: 112,
         fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => _doctorImageFallback(doctorName),
+        errorBuilder: (context, error, stackTrace) =>
+            _doctorImageFallback(doctorName),
       );
     }
 

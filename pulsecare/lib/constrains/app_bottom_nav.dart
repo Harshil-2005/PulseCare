@@ -49,7 +49,10 @@ class AppBottomNav extends StatelessWidget {
         path,
         width: 24,
         height: 24,
-        color: isSelected ?Color(0xFF3F67FD) : Colors.grey,
+        colorFilter: ColorFilter.mode(
+          isSelected ? const Color(0xFF3F67FD) : Colors.grey,
+          BlendMode.srcIn,
+        ),
         ),
       );
     

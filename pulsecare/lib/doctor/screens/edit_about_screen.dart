@@ -162,8 +162,9 @@ class _EditAboutScreenState extends ConsumerState<EditAboutScreen> {
                     await ref
                         .read(doctorRepositoryProvider)
                         .updateDoctor(updatedDoctor);
-                    if (!mounted) return;
+                    if (!context.mounted) return;
                   }
+                  if (!context.mounted) return;
                   Navigator.pop(context);
                 },
                 height: 60,

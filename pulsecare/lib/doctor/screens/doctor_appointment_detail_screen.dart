@@ -283,7 +283,7 @@ class _ContentSection extends ConsumerWidget {
                     _buildSummaryRow('Triage Level', summary.triageLevel),
                     _buildSummaryRow(
                       'AI Confidence',
-                      (summary.confidence * 100).toStringAsFixed(0) + '%',
+                      '${(summary.confidence * 100).toStringAsFixed(0)}%',
                     ),
                   ] else ...[
                     Text(
@@ -410,7 +410,7 @@ class _BaseCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 20,
             spreadRadius: 0,
             offset: const Offset(0, 4),

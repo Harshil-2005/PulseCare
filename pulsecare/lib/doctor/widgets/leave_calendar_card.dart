@@ -23,7 +23,7 @@ class _LeaveCalendarCardState extends State<LeaveCalendarCard> {
   DateTime _focusedDay = DateTime.now();
   DateTime? _rangeStart;
   DateTime? _rangeEnd;
-  RangeSelectionMode _rangeSelectionMode = RangeSelectionMode.toggledOn;
+  final RangeSelectionMode _rangeSelectionMode = RangeSelectionMode.toggledOn;
   bool _showYearPicker = false;
   ScrollController? _yearScrollController;
 

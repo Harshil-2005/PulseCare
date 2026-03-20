@@ -152,7 +152,9 @@ class _AccountSetupFlowScreenState
     final createdUser = await userRepository.createUser(user);
     if (!mounted) return;
     await sessionRepository.setCurrentUser(createdUser.id);
+    if (!mounted) return;
     await sessionRepository.setRole(user.role);
+    if (!mounted) return;
 
     if (_selectedRole == 'Doctor') {
       Navigator.pushReplacement(

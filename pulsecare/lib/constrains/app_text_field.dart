@@ -61,7 +61,9 @@ class AppTextField extends StatelessWidget {
     final icon = _isSvg(path)
         ? SvgPicture.asset(
             path,
-            color: color,
+            colorFilter: color == null
+                ? null
+                : ColorFilter.mode(color, BlendMode.srcIn),
           )
         : Image.asset(
             path,

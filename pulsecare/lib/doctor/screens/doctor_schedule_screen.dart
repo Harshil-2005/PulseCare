@@ -96,7 +96,7 @@ class _DoctorScheduleScreenState extends ConsumerState<DoctorScheduleScreen> {
       context: context,
       useRootNavigator: true,
       barrierDismissible: true,
-      barrierColor: Colors.black.withOpacity(0.4),
+      barrierColor: Colors.black.withValues(alpha: 0.4),
       builder: (dialogContext) {
         return GestureDetector(
           behavior: HitTestBehavior.opaque,
@@ -291,7 +291,7 @@ class _DoctorScheduleScreenState extends ConsumerState<DoctorScheduleScreen> {
                             ),
                             Switch(
                               value: currentAvailability,
-                              activeColor: const Color(0xFF3F67FD),
+                              activeThumbColor: const Color(0xFF3F67FD),
                               activeTrackColor: const Color.fromARGB(
                                 255,
                                 196,

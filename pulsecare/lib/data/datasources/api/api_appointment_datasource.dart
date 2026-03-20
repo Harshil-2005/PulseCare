@@ -57,7 +57,7 @@ class ApiAppointmentDataSource implements AppointmentDataSource {
 
   @override
   Future<void> updateStatusRaw(String appointmentId, String rawStatus) {
-    // TODO: implement updateStatusRaw
+    // Pending API implementation.
     throw UnimplementedError();
   }
 }

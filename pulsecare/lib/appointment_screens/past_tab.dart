@@ -26,7 +26,6 @@ final _pastAppointmentsProvider = StreamProvider((ref) {
       );
 });
 
-
 class PastTab extends ConsumerStatefulWidget {
   const PastTab({super.key});
 
@@ -35,83 +34,83 @@ class PastTab extends ConsumerStatefulWidget {
 }
 
 class _PastTabState extends ConsumerState<PastTab> {
-AppointmentCardStatus mapToCardStatus(AppointmentStatus status) {
-  switch (status) {
-    case AppointmentStatus.pending:
-      return AppointmentCardStatus.pending;
-    case AppointmentStatus.confirmed:
-      return AppointmentCardStatus.confirmed;
-    case AppointmentStatus.cancelled:
-      return AppointmentCardStatus.cancelled;
-    case AppointmentStatus.completed:
-      return AppointmentCardStatus.completed;
+  AppointmentCardStatus mapToCardStatus(AppointmentStatus status) {
+    switch (status) {
+      case AppointmentStatus.pending:
+        return AppointmentCardStatus.pending;
+      case AppointmentStatus.confirmed:
+        return AppointmentCardStatus.confirmed;
+      case AppointmentStatus.cancelled:
+        return AppointmentCardStatus.cancelled;
+      case AppointmentStatus.completed:
+        return AppointmentCardStatus.completed;
+    }
   }
-}
 
-@override
-Widget build(BuildContext context) {
-  final pastAsync = ref.watch(_pastAppointmentsProvider);
-  return pastAsync.when(
-    data: (pastAppointments) {
-      final sortedAppointments = [...pastAppointments]
-        ..sort((a, b) => b.scheduledAt.compareTo(a.scheduledAt));
-      if (sortedAppointments.isEmpty) {
-        return const Center(child: NoAppointmentWidget());
-      }
+  @override
+  Widget build(BuildContext context) {
+    final pastAsync = ref.watch(_pastAppointmentsProvider);
+    return pastAsync.when(
+      data: (pastAppointments) {
+        final sortedAppointments = [...pastAppointments]
+          ..sort((a, b) => b.scheduledAt.compareTo(a.scheduledAt));
+        if (sortedAppointments.isEmpty) {
+          return const Center(child: NoAppointmentWidget());
+        }
 
-      return ListView.builder(
-        padding: const EdgeInsets.only(bottom: 20),
-        itemCount: sortedAppointments.length,
-        itemBuilder: (context, index) {
-          final appointment = sortedAppointments[index];
+        return ListView.builder(
+          padding: const EdgeInsets.only(bottom: 20),
+          itemCount: sortedAppointments.length,
+          itemBuilder: (context, index) {
+            final appointment = sortedAppointments[index];
 
-          return GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) =>
-                      UserAppointmentDetailScreen(appointment: appointment),
-                ),
-              );
-            },
-            child: AppointmentCard(
-              status: mapToCardStatus(appointment.status),
-              doctorName: appointment.resolvedDoctor.name,
-              speciality: appointment.resolvedDoctor.speciality,
-              image: appointment.resolvedDoctor.image,
-              date: TimeUtils.formatDate(appointment.scheduledAt),
-              time: TimeUtils.formatTime(appointment.scheduledAt),
-              bottomAction: PrimaryIconButton(
-                text: 'Book Again',
-                iconPath: 'assets/images/chat.png',
-                height: 50,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => PatientDetailScreen(
-                        doctor: appointment.resolvedDoctor,
-                        prefilledSymptoms: appointment.symptoms,
-                        prefilledAge: appointment.age,
-                        prefilledGender: appointment.gender,
+            return GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        UserAppointmentDetailScreen(appointment: appointment),
+                  ),
+                );
+              },
+              child: AppointmentCard(
+                status: mapToCardStatus(appointment.status),
+                doctorName: appointment.resolvedDoctor.name,
+                speciality: appointment.resolvedDoctor.speciality,
+                image: appointment.resolvedDoctor.image,
+                date: TimeUtils.formatDate(appointment.scheduledAt),
+                time: TimeUtils.formatTime(appointment.scheduledAt),
+                bottomAction: PrimaryIconButton(
+                  text: 'Book Again',
+                  iconPath: 'assets/images/chat.png',
+                  height: 50,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => PatientDetailScreen(
+                          doctor: appointment.resolvedDoctor,
+                          prefilledSymptoms: appointment.symptoms,
+                          prefilledAge: appointment.age,
+                          prefilledGender: appointment.gender,
+                        ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
-            ),
-          );
-        },
-      );
-    },
-    loading: () => ListView.builder(
-      padding: const EdgeInsets.only(bottom: 20),
-      itemCount: 3,
-      itemBuilder: (_, __) => const AppointmentCardSkeleton(dualActions: false),
-    ),
-    error: (error, stack) => Center(child: Text('Error: $error')),
-  );
-}
-
+            );
+          },
+        );
+      },
+      loading: () => ListView.builder(
+        padding: const EdgeInsets.only(bottom: 20),
+        itemCount: 3,
+        itemBuilder: (context, _) =>
+            const AppointmentCardSkeleton(dualActions: false),
+      ),
+      error: (error, stack) => Center(child: Text('Error: $error')),
+    );
+  }
 }

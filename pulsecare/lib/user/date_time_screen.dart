@@ -10,6 +10,7 @@ import 'package:pulsecare/constrains/schedule_date_picker_dialog.dart';
 import 'package:pulsecare/model/appointment_model.dart';
 import 'package:pulsecare/model/doctor_availability.dart';
 import 'package:pulsecare/model/report_model.dart';
+import 'package:pulsecare/repositories/availability_repository.dart';
 import 'package:pulsecare/repositories/session_repository.dart';
 import 'package:pulsecare/user/app_shell.dart';
 import 'package:pulsecare/utils/time_utils.dart';
@@ -43,7 +44,7 @@ class DateTimeScreen extends ConsumerStatefulWidget {
 
 class _DateTimeScreenState extends ConsumerState<DateTimeScreen> {
   final TextEditingController _dateController = TextEditingController();
-  late final _availabilityRepository;
+  late final AvailabilityRepository _availabilityRepository;
   String selectedDate = TimeUtils.formatDate(DateTime.now());
   bool _doctorAvailableOnSelectedDay = true;
   bool _isFormattingDateInput = false;
@@ -711,9 +712,9 @@ class _DateTimeScreenState extends ConsumerState<DateTimeScreen> {
                         reports: widget.selectedReports,
                         aiSummaryId: widget.aiSummaryId,
                       );
-                      if (!mounted) return;
+                      if (!context.mounted) return;
                     } on StateError catch (error) {
-                      if (!mounted) return;
+                      if (!context.mounted) return;
                       final message = error.message.toString();
                       if (message == 'missing_slot') {
                         showAppToast(context, 'Please select a time slot');

@@ -70,6 +70,7 @@ void showUploadReportBottomSheet(
                   appointmentId: appointmentId,
                   doctorId: doctorId,
                 );
+                if (!context.mounted) return;
                 if (report != null) {
                   onReportUploaded?.call(report);
                   onReportAdded?.call();
@@ -112,6 +113,7 @@ void showUploadReportBottomSheet(
                   appointmentId: appointmentId,
                   doctorId: doctorId,
                 );
+                if (!context.mounted) return;
                 if (report != null) {
                   onReportUploaded?.call(report);
                   onReportAdded?.call();

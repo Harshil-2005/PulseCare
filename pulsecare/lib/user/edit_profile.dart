@@ -809,10 +809,11 @@ class _EditProfileState extends ConsumerState<EditProfile> {
         ? [allPages[widget.initialStep]]
         : allPages;
 
-    return WillPopScope(
-      onWillPop: () async {
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
         _onBack();
-        return false;
       },
       child: Scaffold(
         resizeToAvoidBottomInset: true,

@@ -386,7 +386,7 @@ class _EditDayScheduleSheetState extends State<EditDayScheduleSheet> {
                               morningEnabled = value;
                             });
                           },
-                          activeColor: const Color(0xFF3F67FD),
+                          activeThumbColor: const Color(0xFF3F67FD),
                           activeTrackColor: const Color.fromARGB(255, 196, 209, 255),
                         ),
                       ],
@@ -447,7 +447,7 @@ class _EditDayScheduleSheetState extends State<EditDayScheduleSheet> {
                               afternoonEnabled = value;
                             });
                           },
-                          activeColor: const Color(0xFF3F67FD),
+                          activeThumbColor: const Color(0xFF3F67FD),
                           activeTrackColor: const Color.fromARGB(255, 196, 209, 255),
                         ),
                       ],
