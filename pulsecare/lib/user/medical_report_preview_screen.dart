@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:pulsecare/constrains/app_toast.dart';
 import 'package:pulsecare/constrains/primary_icon_button.dart';
 import 'package:pulsecare/model/report_model.dart';
 import 'package:pulsecare/user/ai_chat_screen.dart';
@@ -58,9 +59,7 @@ class _MedicalReportPreviewScreenState
     }
     if (opened || !mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Unable to open PDF reader on this device')),
-    );
+    showAppToast(context, 'Unable to open PDF reader on this device');
   }
 
   Widget _buildSinglePreviewPanel(int pageNumber) {

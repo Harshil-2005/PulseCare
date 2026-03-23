@@ -484,8 +484,9 @@ class _EditProfileState extends ConsumerState<EditProfile> {
   bool _hasCustomImage(String? path) {
     final value = path?.trim() ?? '';
     if (value.isEmpty) return false;
-    if (value.startsWith('http://') || value.startsWith('https://'))
+    if (value.startsWith('http://') || value.startsWith('https://')) {
       return true;
+    }
     if (RegExp(r'^[a-zA-Z]:[\\/]').hasMatch(value) || value.startsWith('/')) {
       return true;
     }

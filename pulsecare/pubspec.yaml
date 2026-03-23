@@ -54,6 +54,9 @@ dependencies:
   firebase_storage: ^12.4.10
   supabase_flutter: ^2.9.1
   url_launcher: ^6.3.1
+  open_filex: ^4.7.0
+  flutter_file_dialog: ^3.0.2
+  share_plus: ^10.1.2
 
 dev_dependencies:
   flutter_test:

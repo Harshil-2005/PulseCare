@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:pulsecare/constrains/app_toast.dart';
 import 'package:pulsecare/constrains/upload_report_bottom_sheet.dart';
 import 'package:pulsecare/model/appointment_model.dart';
 import 'package:pulsecare/model/report_model.dart';
 import 'package:pulsecare/providers/repository_providers.dart';
 import 'package:pulsecare/user/patient_detail_screen.dart';
 import 'package:pulsecare/user/review_bottom_sheet.dart';
+import 'package:pulsecare/utils/report_open_utils.dart';
 import 'package:pulsecare/utils/time_utils.dart';
 
 class UserAppointmentDetailScreen extends ConsumerStatefulWidget {
@@ -356,66 +358,82 @@ class _UserAppointmentDetailScreenState
                                 final report = _reports[index];
                                 return Padding(
                                   padding: const EdgeInsets.only(bottom: 10),
-                                  child: Container(
-                                    width: double.infinity,
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 10,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFF7F8FD),
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Icon(
-                                          Icons.insert_drive_file_outlined,
-                                          size: 20,
-                                          color: Colors.grey.shade700,
-                                        ),
-                                        const SizedBox(width: 10),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                report.title,
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: const TextStyle(
-                                                  fontSize: 14,
-                                                  fontWeight: FontWeight.w500,
-                                                ),
-                                              ),
-                                              const SizedBox(height: 4),
-                                              Text(
-                                                "Uploaded ${TimeUtils.formatDate(report.uploadedAt)}",
-                                                style: TextStyle(
-                                                  fontSize: 12,
-                                                  color: Colors.grey.shade600,
-                                                ),
-                                              ),
-                                            ],
+                                  child: InkWell(
+                                    borderRadius: BorderRadius.circular(10),
+                                    onTap: () async {
+                                      final opened = await openReportExternally(
+                                        report,
+                                      );
+                                      if (!mounted || opened) return;
+                                      showAppToast(
+                                        context,
+                                        'Unable to open PDF reader on this device',
+                                      );
+                                    },
+                                    child: Container(
+                                      width: double.infinity,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 10,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFF7F8FD),
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Icon(
+                                            Icons.insert_drive_file_outlined,
+                                            size: 20,
+                                            color: Colors.grey.shade700,
                                           ),
-                                        ),
-                                        if (isEditable)
-                                          InkWell(
-                                            onTap: () {
-                                              setState(() {
-                                                _reports.removeAt(index);
-                                              });
-                                            },
-                                            child: Padding(
-                                              padding: const EdgeInsets.all(4),
-                                              child: SvgPicture.asset(
-                                                'assets/icons/delete.svg',
-                                                width: 18,
-                                                height: 18,
-                                              ),
+                                          const SizedBox(width: 10),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  report.title,
+                                                  maxLines: 1,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                  style: const TextStyle(
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 4),
+                                                Text(
+                                                  "Uploaded ${TimeUtils.formatDate(report.uploadedAt)}",
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    color: Colors.grey.shade600,
+                                                  ),
+                                                ),
+                                              ],
                                             ),
                                           ),
-                                      ],
+                                          if (isEditable)
+                                            InkWell(
+                                              onTap: () {
+                                                setState(() {
+                                                  _reports.removeAt(index);
+                                                });
+                                              },
+                                              child: Padding(
+                                                padding: const EdgeInsets.all(
+                                                  4,
+                                                ),
+                                                child: SvgPicture.asset(
+                                                  'assets/icons/delete.svg',
+                                                  width: 18,
+                                                  height: 18,
+                                                ),
+                                              ),
+                                            ),
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 );

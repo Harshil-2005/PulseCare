@@ -9,6 +9,7 @@ import 'package:pulsecare/constrains/skeleton_widgets.dart';
 import 'package:pulsecare/model/report_model.dart';
 import 'package:pulsecare/providers/session_provider.dart';
 import 'package:pulsecare/user/my_reports_empty_widget.dart';
+import 'package:pulsecare/utils/report_open_utils.dart';
 import 'package:pulsecare/utils/time_utils.dart';
 import '../providers/repository_providers.dart';
 
@@ -176,13 +177,32 @@ class _AllReportsScreenState extends ConsumerState<AllReportsScreen> {
                           );
                         },
                         onDownload: () {
-                          showAppToast(
-                            context,
-                            '${report.title} downloading...',
-                          );
+                          saveReportWithSystemDialog(report).then((savedPath) {
+                            if (!context.mounted) return;
+                            if (savedPath != null &&
+                                savedPath.trim().isNotEmpty) {
+                              showAppToast(
+                                context,
+                                'Report saved successfully',
+                              );
+                            } else {
+                              showAppToast(
+                                context,
+                                'Unable to save report on this device',
+                              );
+                            }
+                          });
                         },
                         onShare: () {
-                          showAppToast(context, '${report.title} sharing...');
+                          shareReportFile(report).then((shared) {
+                            if (!context.mounted) return;
+                            if (!shared) {
+                              showAppToast(
+                                context,
+                                'Unable to share report on this device',
+                              );
+                            }
+                          });
                         },
                       );
                     },

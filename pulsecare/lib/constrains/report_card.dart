@@ -1,10 +1,9 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
+import 'package:pulsecare/constrains/app_toast.dart';
 import 'package:pulsecare/utils/keyboard_utils.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:pulsecare/model/report_model.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:pulsecare/utils/report_open_utils.dart';
 
 class ReportCard extends StatelessWidget {
   final ReportModel report;
@@ -31,31 +30,11 @@ class ReportCard extends StatelessWidget {
   });
 
   Future<void> _openReport(BuildContext context) async {
-    final localPath = report.pdfPath?.trim() ?? '';
-    final remoteUrl = report.storageUrl?.trim() ?? '';
-
-    Future<bool> tryLaunch(Uri uri) async {
-      try {
-        return await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } catch (_) {
-        return false;
-      }
-    }
-
-    if (localPath.isNotEmpty && File(localPath).existsSync()) {
-      final openedLocal = await tryLaunch(Uri.file(localPath));
-      if (openedLocal) return;
-    }
-
-    if (remoteUrl.startsWith('http://') || remoteUrl.startsWith('https://')) {
-      final openedRemote = await tryLaunch(Uri.parse(remoteUrl));
-      if (openedRemote) return;
-    }
+    final opened = await openReportExternally(report);
+    if (opened) return;
 
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Unable to open PDF reader on this device')),
-    );
+    showAppToast(context, 'Unable to open PDF reader on this device');
   }
 
   @override

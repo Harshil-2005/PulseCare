@@ -12,6 +12,7 @@ import 'package:pulsecare/model/report_model.dart';
 import 'package:pulsecare/providers/session_provider.dart';
 import 'package:pulsecare/user/all_reports_screen.dart';
 import 'package:pulsecare/user/my_reports_empty_widget.dart';
+import 'package:pulsecare/utils/report_open_utils.dart';
 import 'package:pulsecare/utils/time_utils.dart';
 import '../providers/repository_providers.dart';
 
@@ -198,14 +199,30 @@ class _MyReportScreenState extends ConsumerState<MyReportScreen> {
                         date:
                             "Uploaded ${TimeUtils.formatDate(report.uploadedAt)}",
                         icon: report.icon,
-                        onDownload: () {
-                          showAppToast(
-                            context,
-                            '${report.title} downloading...',
+                        onDownload: () async {
+                          final savedPath = await saveReportWithSystemDialog(
+                            report,
                           );
+                          if (!context.mounted) return;
+                          if (savedPath != null &&
+                              savedPath.trim().isNotEmpty) {
+                            showAppToast(context, 'Report saved successfully');
+                          } else {
+                            showAppToast(
+                              context,
+                              'Unable to save report on this device',
+                            );
+                          }
                         },
-                        onShare: () {
-                          showAppToast(context, '${report.title} sharing...');
+                        onShare: () async {
+                          final shared = await shareReportFile(report);
+                          if (!context.mounted) return;
+                          if (!shared) {
+                            showAppToast(
+                              context,
+                              'Unable to share report on this device',
+                            );
+                          }
                         },
                         onDelete: () {
                           showConfirmationDialog(

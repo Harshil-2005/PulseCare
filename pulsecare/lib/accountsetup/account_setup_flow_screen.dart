@@ -70,7 +70,7 @@ class _AccountSetupFlowScreenState
   String? _stepErrorMessage;
 
   static const List<String> _titles = [
-    "What's your first name?",
+    "What's your full name?",
     'What is your phone?',
     'How old are you?',
     'What is your gender?',
@@ -379,8 +379,8 @@ class _AccountSetupFlowScreenState
     switch (index) {
       case 0:
         return _textFieldStep(
-          label: 'First Name',
-          hintText: 'Enter your first name',
+          label: 'Full Name',
+          hintText: 'Enter your full name',
           controller: _nameController,
           keyboardType: TextInputType.name,
           onChanged: _autoCapitalizeFirstName,
