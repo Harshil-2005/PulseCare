@@ -47,6 +47,7 @@ class _DateTimeScreenState extends ConsumerState<DateTimeScreen> {
   final TextEditingController _dateController = TextEditingController();
   late final AvailabilityRepository _availabilityRepository;
   Timer? _slotRefreshTimer;
+  bool _isBooking = false;
   String selectedDate = TimeUtils.formatDate(DateTime.now());
   bool _doctorAvailableOnSelectedDay = true;
   bool _isFormattingDateInput = false;
@@ -102,15 +103,17 @@ class _DateTimeScreenState extends ConsumerState<DateTimeScreen> {
 
   List<TimeSlot> _applyTodayCutoff(List<TimeSlot> slots, DateTime date) {
     final now = DateTime.now();
-    return slots.map((slot) {
-      if (slot.status == SlotStatus.booked) {
-        return slot;
-      }
-      if (_isBlockedByCurrentTime(date, slot.time, now)) {
-        return slot.copyWith(status: SlotStatus.booked);
-      }
-      return slot;
-    }).toList(growable: false);
+    return slots
+        .map((slot) {
+          if (slot.status == SlotStatus.booked) {
+            return slot;
+          }
+          if (_isBlockedByCurrentTime(date, slot.time, now)) {
+            return slot.copyWith(status: SlotStatus.booked);
+          }
+          return slot;
+        })
+        .toList(growable: false);
   }
 
   Future<List<DateTime>> _getBookedSlotsForDate(DateTime date) async {
@@ -422,6 +425,73 @@ class _DateTimeScreenState extends ConsumerState<DateTimeScreen> {
     super.dispose();
   }
 
+  Future<void> _onBookAppointmentTap() async {
+    setState(() => _isBooking = true);
+    try {
+      final appointmentRepository = ref.read(appointmentRepositoryProvider);
+      final selectedSlotTime = [...morningSlots, ...afternoonSlots]
+          .where((slot) => slot.status == SlotStatus.selected)
+          .map((slot) => slot.time)
+          .cast<String?>()
+          .firstOrNull;
+
+      try {
+        await appointmentRepository.submitBooking(
+          doctorId: widget.doctorId,
+          userId: SessionRepository().getCurrentUserId(),
+          dateInput: _dateController.text,
+          selectedSlotTime: selectedSlotTime,
+          existingAppointment: widget.existingAppointment,
+          symptoms: widget.symptoms,
+          patientName: widget.patientName,
+          age: widget.age,
+          gender: widget.gender,
+          reports: widget.selectedReports,
+          aiSummaryId: widget.aiSummaryId,
+        );
+        if (!mounted) return;
+      } on StateError catch (error) {
+        if (!mounted) return;
+        final message = error.message.toString();
+        if (message == 'missing_slot') {
+          showAppToast(context, 'Please select a time slot');
+          return;
+        }
+        if (message == 'invalid_date') {
+          showAppToast(context, 'Please enter a valid date (dd/MM/yyyy)');
+          return;
+        }
+        if (message == 'past_date') {
+          showAppToast(context, 'Please select a future time');
+          return;
+        }
+        if (message == 'duplicate_slot') {
+          showAppToast(
+            context,
+            'This time slot was just booked. Please choose another slot.',
+          );
+          return;
+        }
+        if (message == 'missing_user') {
+          showAppToast(context, 'Please log in and try again.');
+          return;
+        }
+        rethrow;
+      }
+
+      if (!mounted) return;
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const AppShell(initialTab: 1)),
+        (route) => route.isFirst,
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isBooking = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -634,14 +704,17 @@ class _DateTimeScreenState extends ConsumerState<DateTimeScreen> {
                       Padding(
                         padding: const EdgeInsets.only(
                           bottom: 10,
-                          left: 60,
-                          right: 60,
+                          left: 16,
+                          right: 16,
                         ),
-                        child: SizedBox(
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        child: Center(
+                          child: Wrap(
+                            alignment: WrapAlignment.center,
+                            spacing: 18,
+                            runSpacing: 8,
                             children: [
                               Row(
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Container(
                                     width: 14,
@@ -665,6 +738,7 @@ class _DateTimeScreenState extends ConsumerState<DateTimeScreen> {
                                 ],
                               ),
                               Row(
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Container(
                                     width: 14,
@@ -688,6 +762,7 @@ class _DateTimeScreenState extends ConsumerState<DateTimeScreen> {
                                 ],
                               ),
                               Row(
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Container(
                                     width: 14,
@@ -729,78 +804,14 @@ class _DateTimeScreenState extends ConsumerState<DateTimeScreen> {
               child: Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(35),
-                  color: Color(0xff3F67FD),
+                  color: _isBooking
+                      ? const Color(0xff3F67FD).withValues(alpha: 0.65)
+                      : const Color(0xff3F67FD),
                 ),
                 width: double.infinity,
                 height: 65,
                 child: InkWell(
-                  onTap: () async {
-                    final appointmentRepository = ref.read(
-                      appointmentRepositoryProvider,
-                    );
-                    final selectedSlotTime =
-                        [...morningSlots, ...afternoonSlots]
-                            .where((slot) => slot.status == SlotStatus.selected)
-                            .map((slot) => slot.time)
-                            .cast<String?>()
-                            .firstOrNull;
-
-                    try {
-                      await appointmentRepository.submitBooking(
-                        doctorId: widget.doctorId,
-                        userId: SessionRepository().getCurrentUserId(),
-                        dateInput: _dateController.text,
-                        selectedSlotTime: selectedSlotTime,
-                        existingAppointment: widget.existingAppointment,
-                        symptoms: widget.symptoms,
-                        patientName: widget.patientName,
-                        age: widget.age,
-                        gender: widget.gender,
-                        reports: widget.selectedReports,
-                        aiSummaryId: widget.aiSummaryId,
-                      );
-                      if (!context.mounted) return;
-                    } on StateError catch (error) {
-                      if (!context.mounted) return;
-                      final message = error.message.toString();
-                      if (message == 'missing_slot') {
-                        showAppToast(context, 'Please select a time slot');
-                        return;
-                      }
-                      if (message == 'invalid_date') {
-                        showAppToast(
-                          context,
-                          'Please enter a valid date (dd/MM/yyyy)',
-                        );
-                        return;
-                      }
-                      if (message == 'past_date') {
-                        showAppToast(context, 'Please select a future time');
-                        return;
-                      }
-                      if (message == 'duplicate_slot') {
-                        showAppToast(
-                          context,
-                          'This time slot was just booked. Please choose another slot.',
-                        );
-                        return;
-                      }
-                      if (message == 'missing_user') {
-                        showAppToast(context, 'Please log in and try again.');
-                        return;
-                      }
-                      rethrow;
-                    }
-
-                    // ✅ Go to Appointments tab (Upcoming by default)
-                    Navigator.pushAndRemoveUntil(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const AppShell(initialTab: 1),
-                      ),
-                      (route) => route.isFirst,
-                    );
-                  },
+                  onTap: _isBooking ? null : _onBookAppointmentTap,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -814,7 +825,7 @@ class _DateTimeScreenState extends ConsumerState<DateTimeScreen> {
                       ),
                       SizedBox(width: 10),
                       Text(
-                        'Book Appointment',
+                        _isBooking ? 'Booking...' : 'Book Appointment',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 18,

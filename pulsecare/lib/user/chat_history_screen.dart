@@ -74,8 +74,14 @@ class _ChatHistoryScreenState extends ConsumerState<ChatHistoryScreen> {
   }
 
   Future<void> _deleteEntry(ChatHistoryEntry entry) async {
-    await _chatRepository.deleteMessage(entry.id);
-    await _loadEntries();
+    try {
+      await _chatRepository.deleteMessage(entry.id);
+      await _loadEntries();
+    } catch (_) {
+      if (mounted) {
+        showAppToast(context, 'Failed to delete chat');
+      }
+    }
   }
 
   String _dateLabel(DateTime dateTime) {

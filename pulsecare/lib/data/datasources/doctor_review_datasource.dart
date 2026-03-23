@@ -3,6 +3,7 @@ import 'package:pulsecare/model/doctor_review_model.dart';
 abstract class DoctorReviewDataSource {
   Future<void> add(DoctorReview review);
   Future<List<DoctorReview>> getForDoctor(String doctorId);
+  Stream<List<DoctorReview>> watchForDoctor(String doctorId);
 }
 
 class LocalDoctorReviewDataSource implements DoctorReviewDataSource {
@@ -26,5 +27,10 @@ class LocalDoctorReviewDataSource implements DoctorReviewDataSource {
     return _reviews
         .where((review) => review.doctorId == doctorId)
         .toList(growable: false);
+  }
+
+  @override
+  Stream<List<DoctorReview>> watchForDoctor(String doctorId) async* {
+    yield await getForDoctor(doctorId);
   }
 }

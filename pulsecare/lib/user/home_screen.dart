@@ -9,6 +9,7 @@ import 'package:pulsecare/domain/availability_engine.dart';
 import 'package:pulsecare/model/appointment_model.dart';
 import 'package:pulsecare/model/doctor_availability.dart';
 import 'package:pulsecare/model/doctor_model.dart';
+import 'package:pulsecare/model/doctor_with_rating.dart';
 import 'package:pulsecare/model/rating_model.dart';
 import 'package:pulsecare/model/user_model.dart';
 import 'package:pulsecare/providers/session_provider.dart';
@@ -31,6 +32,11 @@ final _homeDoctorAppointmentsProvider = StreamProvider.autoDispose
       return ref
           .read(appointmentRepositoryProvider)
           .watchAppointmentsForDoctor(doctorId);
+    });
+
+final _homeDoctorWithRatingProvider = StreamProvider.autoDispose
+    .family<DoctorWithRating, String>((ref, doctorId) {
+      return ref.read(doctorRepositoryProvider).watchDoctorWithRating(doctorId);
     });
 
 final AvailabilityEngine _availabilityEngine = AvailabilityEngine();
@@ -590,16 +596,26 @@ class DoctorListSection extends ConsumerWidget {
                     final appointmentsAsync = ref.watch(
                       _homeDoctorAppointmentsProvider(doctor.id),
                     );
+                    final withRatingAsync = ref.watch(
+                      _homeDoctorWithRatingProvider(doctor.id),
+                    );
                     final appointments =
                         appointmentsAsync.valueOrNull ?? const <Appointment>[];
+                    final withRating = withRatingAsync.valueOrNull;
+                    final doctorForCard = withRating?.doctor ?? doctor;
+                    final rating = withRating?.rating ?? doctor.rating;
+                    final reviewCount =
+                        withRating?.reviewCount ?? doctor.reviews;
                     final status = _resolveDoctorStatus(
-                      doctor: doctor,
+                      doctor: doctorForCard,
                       appointments: appointments,
                     );
                     return _doctorCart(
-                      doctor,
+                      doctorForCard,
                       context,
                       status,
+                      rating: rating,
+                      reviewCount: reviewCount,
                       topPadding: index == 0 ? 0 : 16,
                     );
                   },
@@ -667,6 +683,8 @@ Widget _doctorCart(
   Doctor doctor,
   BuildContext context,
   _DoctorStatusUi status, {
+  required double rating,
+  required int reviewCount,
   double topPadding = 16,
 }) {
   return Padding(
@@ -760,10 +778,10 @@ Widget _doctorCart(
                         const SizedBox(height: 8),
                         Row(
                           children: [
-                            buildRatingStars(doctor.rating),
+                            buildRatingStars(rating),
                             const SizedBox(width: 5),
                             Text(
-                              doctor.rating.toStringAsFixed(1),
+                              rating.toStringAsFixed(1),
                               style: TextStyle(fontWeight: .w500, fontSize: 14),
                             ),
                             const SizedBox(width: 10),
@@ -771,7 +789,9 @@ Widget _doctorCart(
                             const SizedBox(width: 10),
                             Expanded(
                               child: Text(
-                                '${doctor.reviews} Reviews',
+                                reviewCount == 0
+                                    ? 'No reviews'
+                                    : '$reviewCount Reviews',
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(

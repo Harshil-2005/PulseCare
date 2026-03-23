@@ -79,9 +79,10 @@ void showUploadReportBottomSheet(
                   } else {
                     showAppToast(context, 'No file selected');
                   }
-                } catch (_) {
+                } catch (error) {
                   if (!context.mounted) return;
-                  showAppToast(context, 'Upload failed. Please try again');
+                  final message = error.toString();
+                  showAppToast(context, 'Upload failed: $message');
                 }
               },
               child: _uploadOption(
@@ -126,10 +127,13 @@ void showUploadReportBottomSheet(
                     onReportUploaded?.call(report);
                     onReportAdded?.call();
                     Navigator.pop(context);
+                  } else {
+                    showAppToast(context, 'No image captured');
                   }
-                } catch (_) {
+                } catch (error) {
                   if (!context.mounted) return;
-                  showAppToast(context, 'Upload failed. Please try again');
+                  final message = error.toString();
+                  showAppToast(context, 'Upload failed: $message');
                 }
               },
               child: _uploadOption(

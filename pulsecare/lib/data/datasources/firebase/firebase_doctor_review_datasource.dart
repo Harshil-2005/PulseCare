@@ -60,6 +60,21 @@ class FirebaseDoctorReviewDataSource implements DoctorReviewDataSource {
         .toList(growable: false);
   }
 
+  @override
+  Stream<List<DoctorReview>> watchForDoctor(String doctorId) {
+    return _reviews.where('doctorId', isEqualTo: doctorId).snapshots().map((
+      snapshot,
+    ) {
+      return snapshot.docs
+          .map((doc) {
+            final data = _normalizeMap(doc.data());
+            data['id'] = doc.id;
+            return DoctorReview.fromJson(data);
+          })
+          .toList(growable: false);
+    });
+  }
+
   Future<bool> _reviewExistsForAppointment(String appointmentId) async {
     final byId = await _reviews.doc(appointmentId).get();
     if (byId.exists) {

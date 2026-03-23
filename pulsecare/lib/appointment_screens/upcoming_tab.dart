@@ -47,6 +47,8 @@ class UpcomingTab extends ConsumerStatefulWidget {
 }
 
 class _UpcomingTabState extends ConsumerState<UpcomingTab> {
+  String? _cancellingAppointmentId;
+
   @override
   Widget build(BuildContext context) {
     final dataAsync = ref.watch(_upcomingTabDataProvider);
@@ -112,23 +114,36 @@ class _UpcomingTabState extends ConsumerState<UpcomingTab> {
 
   Widget _upcomingActions(BuildContext context, Appointment appointment) {
     final canReschedule = appointment.status != AppointmentStatus.pending;
+    final isCancelling = _cancellingAppointmentId == appointment.id;
     return Row(
       children: [
         Expanded(
           child: _actionButton(
-            text: 'Cancel',
+            text: isCancelling ? 'Cancelling...' : 'Cancel',
             bg: Colors.grey.shade300,
             textColor: Colors.black,
-            onTap: () async {
-              await ref.read(appointmentRepositoryProvider).updateAppointmentStatus(
-                appointment.id,
-                AppointmentStatus.cancelled,
-              );
-              ref.invalidate(_upcomingTabDataProvider);
-              if (!context.mounted) return;
-
-              AppShell.of(context)?.switchToTab(1);
-            },
+            isLoading: isCancelling,
+            onTap: isCancelling
+                ? null
+                : () async {
+                    setState(() => _cancellingAppointmentId = appointment.id);
+                    try {
+                      await ref
+                          .read(appointmentRepositoryProvider)
+                          .updateAppointmentStatus(
+                            appointment.id,
+                            AppointmentStatus.cancelled,
+                          );
+                      ref.invalidate(_upcomingTabDataProvider);
+                      if (!context.mounted) return;
+                      AppShell.of(context)?.switchToTab(1);
+                    } finally {
+                      if (mounted &&
+                          _cancellingAppointmentId == appointment.id) {
+                        setState(() => _cancellingAppointmentId = null);
+                      }
+                    }
+                  },
           ),
         ),
         const SizedBox(width: 10),
@@ -167,14 +182,15 @@ class _UpcomingTabState extends ConsumerState<UpcomingTab> {
     required String text,
     required Color bg,
     required Color textColor,
+    bool isLoading = false,
     VoidCallback? onTap,
   }) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: (onTap == null || isLoading) ? null : onTap,
       child: Container(
         height: 50,
         decoration: BoxDecoration(
-          color: bg,
+          color: isLoading ? bg.withValues(alpha: 0.65) : bg,
           borderRadius: BorderRadius.circular(30),
         ),
         child: Center(

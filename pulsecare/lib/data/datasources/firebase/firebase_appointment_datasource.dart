@@ -79,7 +79,13 @@ class FirebaseAppointmentDataSource implements AppointmentDataSource {
     await _firestore.runTransaction((transaction) async {
       final existing = await transaction.get(docRef);
       if (existing.exists) {
-        throw StateError('duplicate_slot');
+        final existingData = existing.data();
+        final existingStatus = Appointment.parseStatus(
+          existingData?['status']?.toString(),
+        );
+        if (existingStatus != AppointmentStatus.cancelled) {
+          throw StateError('duplicate_slot');
+        }
       }
       transaction.set(docRef, toStore.toJson());
     });

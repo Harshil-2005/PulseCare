@@ -169,12 +169,19 @@ class LocalAppointmentDataSource implements AppointmentDataSource {
             appointment.doctorId,
             appointment.scheduledAt,
           );
-    if (_appointments.indexWhere((existing) => existing.id == resolvedId) !=
-        -1) {
+    final existingIndex = _appointments.indexWhere(
+      (existing) => existing.id == resolvedId,
+    );
+    if (existingIndex != -1 &&
+        _appointments[existingIndex].status != AppointmentStatus.cancelled) {
       throw StateError('duplicate_slot');
     }
     final generatedAppointment = appointment.copyWith(id: resolvedId);
-    _appointments.add(generatedAppointment);
+    if (existingIndex != -1) {
+      _appointments[existingIndex] = generatedAppointment;
+    } else {
+      _appointments.add(generatedAppointment);
+    }
   }
 
   @override

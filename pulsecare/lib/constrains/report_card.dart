@@ -1,8 +1,10 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:pulsecare/utils/keyboard_utils.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:pulsecare/model/report_model.dart';
-import 'package:pulsecare/user/medical_report_preview_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ReportCard extends StatelessWidget {
   final ReportModel report;
@@ -28,6 +30,34 @@ class ReportCard extends StatelessWidget {
     this.onShare,
   });
 
+  Future<void> _openReport(BuildContext context) async {
+    final localPath = report.pdfPath?.trim() ?? '';
+    final remoteUrl = report.storageUrl?.trim() ?? '';
+
+    Future<bool> tryLaunch(Uri uri) async {
+      try {
+        return await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } catch (_) {
+        return false;
+      }
+    }
+
+    if (localPath.isNotEmpty && File(localPath).existsSync()) {
+      final openedLocal = await tryLaunch(Uri.file(localPath));
+      if (openedLocal) return;
+    }
+
+    if (remoteUrl.startsWith('http://') || remoteUrl.startsWith('https://')) {
+      final openedRemote = await tryLaunch(Uri.parse(remoteUrl));
+      if (openedRemote) return;
+    }
+
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Unable to open PDF reader on this device')),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -35,17 +65,9 @@ class ReportCard extends StatelessWidget {
           outerPadding ??
           const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 16),
       child: InkWell(
-        onTap: () {
+        onTap: () async {
           KeyboardUtils.hideKeyboardKeepFocus();
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => MedicalReportPreviewScreen(
-                report: report,
-                isDoctorView: isDoctorView,
-              ),
-            ),
-          );
+          await _openReport(context);
         },
         child: Container(
           width: double.infinity,
@@ -94,7 +116,10 @@ class ReportCard extends StatelessWidget {
                         title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(fontWeight: FontWeight.w400, fontSize: 18),
+                        style: TextStyle(
+                          fontWeight: FontWeight.w400,
+                          fontSize: 18,
+                        ),
                       ),
                       Text(
                         date,
@@ -214,5 +239,3 @@ class ReportCard extends StatelessWidget {
     );
   }
 }
-
-

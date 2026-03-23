@@ -557,91 +557,93 @@ class _EditDoctorProfileContentState extends State<EditDoctorProfileContent> {
     final hasImage = _hasCustomImage(widget.imagePath);
     await showModalBottomSheet<void>(
       context: context,
-      isScrollControlled: false,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
       ),
       builder: (sheetContext) {
         return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 18),
-              Container(
-                width: 45,
-                height: 7,
-                decoration: BoxDecoration(
-                  color: Colors.grey,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              const SizedBox(height: 26),
-              const Text(
-                'Profile Photo',
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 12),
-              InkWell(
-                onTap: () async {
-                  Navigator.pop(sheetContext);
-                  await _pickAvatarImage(ImageSource.gallery);
-                },
-                child: _photoOption(
-                  icon: const Icon(
-                    Icons.photo_library_outlined,
-                    size: 24,
-                    color: Color(0xff3F67FD),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 18),
+                Container(
+                  width: 45,
+                  height: 7,
+                  decoration: BoxDecoration(
+                    color: Colors.grey,
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                  title: 'Upload from Gallery',
                 ),
-              ),
-              InkWell(
-                onTap: () async {
-                  Navigator.pop(sheetContext);
-                  await _pickAvatarImage(ImageSource.camera);
-                },
-                child: _photoOption(
-                  icon: const Icon(
-                    Icons.photo_camera_outlined,
-                    size: 24,
-                    color: Color(0xff3F67FD),
-                  ),
-                  title: 'Take with Camera',
+                const SizedBox(height: 26),
+                const Text(
+                  'Profile Photo',
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600),
                 ),
-              ),
-              if (hasImage)
+                const SizedBox(height: 12),
                 InkWell(
-                  child: _photoOption(
-                    icon: SvgPicture.asset(
-                      'assets/icons/delete.svg',
-                      width: 24,
-                      height: 24,
-                      colorFilter: const ColorFilter.mode(
-                        Color(0xff3F67FD),
-                        BlendMode.srcIn,
-                      ),
-                    ),
-                    title: 'Remove photo',
-                  ),
-                  onTap: () {
+                  onTap: () async {
                     Navigator.pop(sheetContext);
-                    widget.onImagePicked('');
+                    await _pickAvatarImage(ImageSource.gallery);
                   },
-                ),
-              const SizedBox(height: 12),
-              TextButton(
-                onPressed: () => Navigator.pop(sheetContext),
-                child: const Text(
-                  'Cancel',
-                  style: TextStyle(
-                    color: Color(0xff3F67FD),
-                    fontSize: 18,
-                    fontWeight: FontWeight.w500,
+                  child: _photoOption(
+                    icon: const Icon(
+                      Icons.photo_library_outlined,
+                      size: 24,
+                      color: Color(0xff3F67FD),
+                    ),
+                    title: 'Upload from Gallery',
                   ),
                 ),
-              ),
-              const SizedBox(height: 20),
-            ],
+                InkWell(
+                  onTap: () async {
+                    Navigator.pop(sheetContext);
+                    await _pickAvatarImage(ImageSource.camera);
+                  },
+                  child: _photoOption(
+                    icon: const Icon(
+                      Icons.photo_camera_outlined,
+                      size: 24,
+                      color: Color(0xff3F67FD),
+                    ),
+                    title: 'Take with Camera',
+                  ),
+                ),
+                if (hasImage)
+                  InkWell(
+                    child: _photoOption(
+                      icon: SvgPicture.asset(
+                        'assets/icons/delete.svg',
+                        width: 24,
+                        height: 24,
+                        colorFilter: const ColorFilter.mode(
+                          Color(0xff3F67FD),
+                          BlendMode.srcIn,
+                        ),
+                      ),
+                      title: 'Remove photo',
+                    ),
+                    onTap: () {
+                      Navigator.pop(sheetContext);
+                      widget.onImagePicked('');
+                    },
+                  ),
+                const SizedBox(height: 12),
+                TextButton(
+                  onPressed: () => Navigator.pop(sheetContext),
+                  child: const Text(
+                    'Cancel',
+                    style: TextStyle(
+                      color: Color(0xff3F67FD),
+                      fontSize: 18,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+              ],
+            ),
           ),
         );
       },
@@ -651,7 +653,7 @@ class _EditDoctorProfileContentState extends State<EditDoctorProfileContent> {
   Future<void> _pickAvatarImage(ImageSource source) async {
     final picked = await _imagePicker.pickImage(
       source: source,
-      imageQuality: 85,
+      imageQuality: 100,
     );
     final path = picked?.path;
     if (path == null || path.isEmpty) return;

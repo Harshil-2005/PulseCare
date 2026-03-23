@@ -1,14 +1,14 @@
 import 'dart:io';
 
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
+import 'package:pulsecare/services/supabase_storage_service.dart';
 
 class ProfileImageRepository {
-  ProfileImageRepository({FirebaseStorage? storage})
-    : _storage = storage ?? FirebaseStorage.instance;
+  ProfileImageRepository({SupabaseStorageService? storageService})
+    : _storageService = storageService ?? SupabaseStorageService();
 
-  final FirebaseStorage _storage;
+  final SupabaseStorageService _storageService;
 
   Future<String> saveUserProfileImage({
     required String userId,
@@ -48,12 +48,10 @@ class ProfileImageRepository {
     );
 
     try {
-      final extension = _safeExtension(sourcePath);
-      final ref = _storage.ref().child(
-        '$folder/$entityId/profile_${DateTime.now().millisecondsSinceEpoch}$extension',
+      final downloadUrl = await _storageService.uploadProfileImage(
+        File(localPath),
+        entityId,
       );
-      await ref.putFile(File(localPath));
-      final downloadUrl = await ref.getDownloadURL();
       return downloadUrl;
     } catch (_) {
       return localPath;

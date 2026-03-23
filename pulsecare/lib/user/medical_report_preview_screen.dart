@@ -7,6 +7,7 @@ import 'package:pulsecare/model/report_model.dart';
 import 'package:pulsecare/user/ai_chat_screen.dart';
 import 'package:pulsecare/utils/time_utils.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class MedicalReportPreviewScreen extends StatefulWidget {
   final ReportModel? report;
@@ -27,36 +28,45 @@ class _MedicalReportPreviewScreenState
     extends State<MedicalReportPreviewScreen> {
   static const String _reportPreviewImage = 'assets/images/report_img.png';
 
+  String? get _remotePdfUrl {
+    final url = widget.report?.storageUrl?.trim();
+    if (url == null || url.isEmpty) return null;
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+    return null;
+  }
+
   String _headerTitle() {
     final report = widget.report;
     if (report == null) return 'Medical Report: 10 Nov';
     return 'Medical Report: ${TimeUtils.formatDate(report.uploadedAt)}';
   }
 
-  void _openPdfViewer(int pageNumber) {
+  Future<void> _openPdfViewer(int pageNumber) async {
     final pdfPath = widget.report?.pdfPath;
-    if (pdfPath == null || !File(pdfPath).existsSync()) return;
+    final hasLocalPdf = pdfPath != null && File(pdfPath).existsSync();
+    final remoteUrl = _remotePdfUrl;
+    if (!hasLocalPdf && remoteUrl == null) return;
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => Scaffold(
-          appBar: AppBar(title: const Text('Report PDF')),
-          body: SfPdfViewer.file(
-            File(pdfPath),
-            initialPageNumber: pageNumber,
-            canShowScrollHead: true,
-            canShowPaginationDialog: true,
-            enableDoubleTapZooming: true,
-          ),
-        ),
-      ),
+    final targetUri = hasLocalPdf ? Uri.file(pdfPath) : Uri.parse(remoteUrl!);
+    bool opened = false;
+    try {
+      opened = await launchUrl(targetUri, mode: LaunchMode.externalApplication);
+    } catch (_) {
+      opened = false;
+    }
+    if (opened || !mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Unable to open PDF reader on this device')),
     );
   }
 
   Widget _buildSinglePreviewPanel(int pageNumber) {
     final pdfPath = widget.report?.pdfPath;
     final hasLocalPdf = pdfPath != null && File(pdfPath).existsSync();
+    final remoteUrl = _remotePdfUrl;
 
     return InkWell(
       onTap: () => _openPdfViewer(pageNumber),
@@ -66,6 +76,14 @@ class _MedicalReportPreviewScreenState
         child: hasLocalPdf
             ? SfPdfViewer.file(
                 File(pdfPath),
+                initialPageNumber: pageNumber,
+                canShowScrollHead: false,
+                canShowPaginationDialog: false,
+                enableDoubleTapZooming: true,
+              )
+            : remoteUrl != null
+            ? SfPdfViewer.network(
+                remoteUrl,
                 initialPageNumber: pageNumber,
                 canShowScrollHead: false,
                 canShowPaginationDialog: false,

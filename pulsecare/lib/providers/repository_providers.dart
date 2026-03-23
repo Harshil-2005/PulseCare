@@ -78,7 +78,10 @@ final authDatasourceProvider = Provider<AuthDatasource>(
 );
 
 final doctorRepositoryProvider = ChangeNotifierProvider<DoctorRepository>(
-  (ref) => DoctorRepository(ref.read(doctorDatasourceProvider)),
+  (ref) => DoctorRepository(
+    ref.read(doctorDatasourceProvider),
+    reviewDataSource: ref.read(doctorReviewDatasourceProvider),
+  ),
 );
 
 final doctorReviewRepositoryProvider = Provider<DoctorReviewRepository>(

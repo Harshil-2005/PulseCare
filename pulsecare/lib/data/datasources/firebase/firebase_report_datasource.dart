@@ -1,20 +1,23 @@
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/foundation.dart';
 import 'package:pulsecare/data/datasources/report_datasource.dart';
 import 'package:pulsecare/data/report_upload_service.dart';
 import 'package:pulsecare/model/report_model.dart';
+import 'package:pulsecare/services/supabase_storage_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class FirebaseReportDataSource implements ReportDataSource {
   FirebaseReportDataSource({
     FirebaseFirestore? firestore,
-    FirebaseStorage? storage,
+    SupabaseStorageService? supabaseStorageService,
   }) : _firestore = firestore ?? FirebaseFirestore.instance,
-       _storage = storage ?? FirebaseStorage.instance;
+       _supabaseStorageService =
+           supabaseStorageService ?? SupabaseStorageService();
 
   final FirebaseFirestore _firestore;
-  final FirebaseStorage _storage;
+  final SupabaseStorageService _supabaseStorageService;
 
   CollectionReference<Map<String, dynamic>> get _reports =>
       _firestore.collection('reports');
@@ -116,6 +119,10 @@ class FirebaseReportDataSource implements ReportDataSource {
       doctorId: doctorId,
     );
     final reportWithStorage = await _ensureStorageUpload(uploaded);
+    if (reportWithStorage.storageUrl == null ||
+        reportWithStorage.storageUrl!.trim().isEmpty) {
+      throw StateError('report_storage_upload_failed');
+    }
     final data = _toFirestoreMap(reportWithStorage);
     data['userId'] = userId;
     await _reports.doc(reportWithStorage.id).set(data);
@@ -137,6 +144,10 @@ class FirebaseReportDataSource implements ReportDataSource {
       doctorId: doctorId,
     );
     final reportWithStorage = await _ensureStorageUpload(uploaded);
+    if (reportWithStorage.storageUrl == null ||
+        reportWithStorage.storageUrl!.trim().isEmpty) {
+      throw StateError('report_storage_upload_failed');
+    }
     final data = _toFirestoreMap(reportWithStorage);
     data['userId'] = userId;
     await _reports.doc(reportWithStorage.id).set(data);
@@ -169,24 +180,43 @@ class FirebaseReportDataSource implements ReportDataSource {
 
   Future<ReportModel> _ensureStorageUpload(ReportModel report) async {
     if (report.storageUrl != null && report.storageUrl!.trim().isNotEmpty) {
+      debugPrint(
+        '[FirebaseReportDataSource] Skip upload, storageUrl already present for reportId=${report.id}',
+      );
       return report;
     }
 
     final localPath = report.pdfPath;
     if (localPath == null || localPath.trim().isEmpty) {
+      debugPrint(
+        '[FirebaseReportDataSource] Cannot upload, local pdfPath missing for reportId=${report.id}',
+      );
       return report;
     }
 
     final file = File(localPath);
     if (!await file.exists()) {
+      debugPrint(
+        '[FirebaseReportDataSource] Cannot upload, file does not exist path=$localPath reportId=${report.id}',
+      );
       return report;
     }
 
     try {
-      final storagePath = 'reports/${report.userId}/${report.id}.pdf';
-      final ref = _storage.ref().child(storagePath);
-      await ref.putFile(file);
-      final downloadUrl = await ref.getDownloadURL();
+      final storagePath = 'reports/${report.id}.pdf';
+      debugPrint(
+        '[FirebaseReportDataSource] Uploading reportId=${report.id} to storagePath=$storagePath',
+      );
+      final downloadUrl = await _supabaseStorageService.uploadReport(
+        file,
+        report.id,
+      );
+      if (downloadUrl.trim().isEmpty) {
+        throw StateError('empty_supabase_download_url');
+      }
+      debugPrint(
+        '[FirebaseReportDataSource] Upload completed reportId=${report.id}',
+      );
       return ReportModel(
         id: report.id,
         userId: report.userId,
@@ -201,8 +231,11 @@ class FirebaseReportDataSource implements ReportDataSource {
         storageUrl: downloadUrl,
         storagePath: storagePath,
       );
-    } catch (_) {
-      return report;
+    } catch (error) {
+      debugPrint(
+        '[FirebaseReportDataSource] Upload failed reportId=${report.id} error=$error',
+      );
+      throw StateError('failed_to_upload_report_to_supabase: $error');
     }
   }
 
@@ -210,28 +243,34 @@ class FirebaseReportDataSource implements ReportDataSource {
     String? storagePath,
     String? storageUrl,
   }) async {
-    final normalizedPath = storagePath?.trim();
-    if (normalizedPath != null && normalizedPath.isNotEmpty) {
-      try {
-        await _storage.ref().child(normalizedPath).delete();
-      } on FirebaseException catch (e) {
-        if (e.code != 'object-not-found') {
-          rethrow;
-        }
-      }
+    final normalizedPath = storagePath?.trim().isNotEmpty == true
+        ? storagePath!.trim()
+        : _extractSupabaseStoragePath(storageUrl);
+    if (normalizedPath == null || normalizedPath.isEmpty) {
       return;
     }
 
-    final normalizedUrl = storageUrl?.trim();
-    if (normalizedUrl != null && normalizedUrl.isNotEmpty) {
-      try {
-        await _storage.refFromURL(normalizedUrl).delete();
-      } on FirebaseException catch (e) {
-        if (e.code != 'object-not-found' && e.code != 'invalid-argument') {
-          rethrow;
-        }
-      }
+    try {
+      await Supabase.instance.client.storage
+          .from(SupabaseStorageService.reportsBucket)
+          .remove([normalizedPath]);
+    } catch (_) {
+      // Keep delete flow resilient if object is already missing.
     }
+  }
+
+  String? _extractSupabaseStoragePath(String? storageUrl) {
+    final normalizedUrl = storageUrl?.trim();
+    if (normalizedUrl == null || normalizedUrl.isEmpty) {
+      return null;
+    }
+    final marker =
+        '/storage/v1/object/public/${SupabaseStorageService.reportsBucket}/';
+    final markerIndex = normalizedUrl.indexOf(marker);
+    if (markerIndex == -1) {
+      return null;
+    }
+    return normalizedUrl.substring(markerIndex + marker.length);
   }
 
   Map<String, dynamic> _toFirestoreMap(ReportModel report) {

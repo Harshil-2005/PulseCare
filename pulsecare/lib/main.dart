@@ -2,21 +2,35 @@ import 'package:flutter/material.dart';
 import 'package:pulsecare/utils/keyboard_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'firebase_options.dart';
 import 'package:pulsecare/splash_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  await Supabase.initialize(
+    url: "https://nsncndzlkjlaxxvdylmq.supabase.co",
+    anonKey: 'sb_publishable_vTp9Fh0XfA7cb2Vp8JtyYA_WWQ8WzDP',
   );
 
-  runApp(
-    ProviderScope(
-      child: const MyApp(home: SplashScreen()),
-    ),
-  );
+  await _ensureSupabaseSession();
+
+  runApp(ProviderScope(child: const MyApp(home: SplashScreen())));
+}
+
+Future<void> _ensureSupabaseSession() async {
+  final client = Supabase.instance.client;
+  if (client.auth.currentSession != null) {
+    return;
+  }
+  try {
+    await client.auth.signInAnonymously();
+  } catch (error) {
+    debugPrint('[main] Supabase anonymous sign-in skipped: $error');
+  }
 }
 
 class MyApp extends StatelessWidget {
@@ -52,5 +66,3 @@ class MyApp extends StatelessWidget {
     );
   }
 }
-
-

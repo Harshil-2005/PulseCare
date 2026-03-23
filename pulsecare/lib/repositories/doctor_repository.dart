@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:pulsecare/data/datasources/doctor_datasource.dart';
+import 'package:pulsecare/data/datasources/doctor_review_datasource.dart';
 import 'package:pulsecare/model/day_schedule.dart';
 import 'package:pulsecare/model/date_override.dart';
 import 'package:pulsecare/model/doctor_model.dart';
+import 'package:pulsecare/model/doctor_review_model.dart';
+import 'package:pulsecare/model/doctor_with_rating.dart';
 
 class DoctorRepository extends ChangeNotifier {
-  DoctorRepository(this._dataSource);
+  DoctorRepository(this._dataSource, {DoctorReviewDataSource? reviewDataSource})
+    : _reviewDataSource = reviewDataSource;
 
   final DoctorDataSource _dataSource;
+  final DoctorReviewDataSource? _reviewDataSource;
 
   Future<Doctor?> getDoctorById(String id) async {
     return await _dataSource.getById(id);
@@ -44,6 +49,76 @@ class DoctorRepository extends ChangeNotifier {
 
   Stream<List<Doctor>> watchAllDoctors() {
     return _dataSource.watchAll();
+  }
+
+  Future<DoctorWithRating> getDoctorWithRating(String doctorId) async {
+    final doctor = await _dataSource.getById(doctorId);
+    if (doctor == null) {
+      throw StateError('doctor_not_found');
+    }
+
+    final reviews =
+        await _reviewDataSource?.getForDoctor(doctorId) ??
+        const <DoctorReview>[];
+    return _buildDoctorWithRating(doctor, reviews);
+  }
+
+  Stream<DoctorWithRating> watchDoctorWithRating(String doctorId) {
+    final reviewDataSource = _reviewDataSource;
+    if (reviewDataSource == null) {
+      return _dataSource
+          .watchById(doctorId)
+          .where((doctor) => doctor != null)
+          .map(
+            (doctor) =>
+                DoctorWithRating(doctor: doctor!, rating: 0, reviewCount: 0),
+          );
+    }
+
+    return Stream<DoctorWithRating>.multi((controller) {
+      Doctor? latestDoctor;
+      List<DoctorReview> latestReviews = const <DoctorReview>[];
+
+      void emitIfReady() {
+        final doctor = latestDoctor;
+        if (doctor == null) return;
+        controller.add(_buildDoctorWithRating(doctor, latestReviews));
+      }
+
+      final doctorSub = _dataSource.watchById(doctorId).listen((doctor) {
+        latestDoctor = doctor;
+        emitIfReady();
+      }, onError: controller.addError);
+
+      final reviewSub = reviewDataSource.watchForDoctor(doctorId).listen((
+        reviews,
+      ) {
+        latestReviews = reviews;
+        emitIfReady();
+      }, onError: controller.addError);
+
+      controller.onCancel = () async {
+        await doctorSub.cancel();
+        await reviewSub.cancel();
+      };
+    });
+  }
+
+  DoctorWithRating _buildDoctorWithRating(
+    Doctor doctor,
+    List<DoctorReview> reviews,
+  ) {
+    if (reviews.isEmpty) {
+      return DoctorWithRating(doctor: doctor, rating: 0, reviewCount: 0);
+    }
+
+    final total = reviews.fold<double>(0, (sum, item) => sum + item.rating);
+    final count = reviews.length;
+    return DoctorWithRating(
+      doctor: doctor,
+      rating: total / count,
+      reviewCount: count,
+    );
   }
 
   Future<Doctor> createDoctor(Doctor doctor) async {

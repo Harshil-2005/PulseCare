@@ -35,6 +35,9 @@ class CancelledTab extends ConsumerStatefulWidget {
 }
 
 class _CancelledTabState extends ConsumerState<CancelledTab> {
+  String? _removingAppointmentId;
+  String? _bookingAgainAppointmentId;
+
   AppointmentCardStatus mapToCardStatus(AppointmentStatus status) {
     switch (status) {
       case AppointmentStatus.pending:
@@ -99,36 +102,61 @@ class _CancelledTabState extends ConsumerState<CancelledTab> {
   }
 
   Widget _cancelledActions(BuildContext context, Appointment appointment) {
+    final isRemoving = _removingAppointmentId == appointment.id;
+    final isBookingAgain = _bookingAgainAppointmentId == appointment.id;
     return Row(
       children: [
         Expanded(
           child: _actionButton(
-            text: 'Remove',
+            text: isRemoving ? 'Removing...' : 'Remove',
             bg: Colors.grey.shade300,
             textColor: Colors.black,
-            onTap: () async {
-              await ref
-                  .read(appointmentRepositoryProvider)
-                  .removeAppointment(appointment);
-              ref.invalidate(_cancelledAppointmentsProvider);
-            },
+            isLoading: isRemoving,
+            onTap: isRemoving
+                ? null
+                : () async {
+                    setState(() => _removingAppointmentId = appointment.id);
+                    try {
+                      await ref
+                          .read(appointmentRepositoryProvider)
+                          .removeAppointment(appointment);
+                      ref.invalidate(_cancelledAppointmentsProvider);
+                    } finally {
+                      if (mounted &&
+                          _removingAppointmentId == appointment.id) {
+                        setState(() => _removingAppointmentId = null);
+                      }
+                    }
+                  },
           ),
         ),
         const SizedBox(width: 10),
         Expanded(
           child: _actionButton(
-            text: 'Book Again',
+            text: isBookingAgain ? 'Booking...' : 'Book Again',
             bg: const Color(0xff3F67FD),
             textColor: Colors.white,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) =>
-                      PatientDetailScreen(doctor: appointment.resolvedDoctor),
-                ),
-              );
-            },
+            isLoading: isBookingAgain,
+            onTap: isBookingAgain
+                ? null
+                : () async {
+                    setState(() => _bookingAgainAppointmentId = appointment.id);
+                    try {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => PatientDetailScreen(
+                            doctor: appointment.resolvedDoctor,
+                          ),
+                        ),
+                      );
+                    } finally {
+                      if (mounted &&
+                          _bookingAgainAppointmentId == appointment.id) {
+                        setState(() => _bookingAgainAppointmentId = null);
+                      }
+                    }
+                  },
           ),
         ),
       ],
@@ -139,14 +167,15 @@ class _CancelledTabState extends ConsumerState<CancelledTab> {
     required String text,
     required Color bg,
     required Color textColor,
-    required VoidCallback onTap,
+    bool isLoading = false,
+    VoidCallback? onTap,
   }) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: (onTap == null || isLoading) ? null : onTap,
       child: Container(
         height: 50,
         decoration: BoxDecoration(
-          color: bg,
+          color: isLoading ? bg.withValues(alpha: 0.65) : bg,
           borderRadius: BorderRadius.circular(30),
         ),
         child: Center(
