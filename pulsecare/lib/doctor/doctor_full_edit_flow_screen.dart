@@ -53,6 +53,7 @@ class _DoctorFullEditFlowScreenState
   late int _selectedDuration;
   int _currentStep = 0;
   String? _stepErrorMessage;
+  bool _isSaving = false;
 
   final List<String> _titles = [
     'Edit Profile',
@@ -117,6 +118,7 @@ class _DoctorFullEditFlowScreenState
 
   Future<void> _onNext() async {
     _clearStepError();
+    if (_isSaving) return;
     if (_currentStep == 2) {
       final parsedAge = parseAgeInput(_ageController.text.trim());
       if (parsedAge == null) {
@@ -129,28 +131,39 @@ class _DoctorFullEditFlowScreenState
       }
     }
 
-    await _saveDoctorUpdates();
-    if (!mounted) return;
+    setState(() {
+      _isSaving = true;
+    });
+    try {
+      await _saveDoctorUpdates();
+      if (!mounted) return;
 
-    if (widget.singleStepMode) {
-      Navigator.pop(context);
-      return;
-    }
+      if (widget.singleStepMode) {
+        Navigator.pop(context);
+        return;
+      }
 
-    // Full profile edit starts at step 0. Stop after Gender (step 3)
-    // so profile edits don't continue into professional fields.
-    if (widget.initialStep == 0 && _currentStep == 3) {
-      Navigator.pop(context);
-      return;
-    }
+      // Full profile edit starts at step 0. Stop after Gender (step 3)
+      // so profile edits don't continue into professional fields.
+      if (widget.initialStep == 0 && _currentStep == 3) {
+        Navigator.pop(context);
+        return;
+      }
 
-    if (_currentStep < 8) {
-      _pageController.nextPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
-    } else {
-      Navigator.pop(context);
+      if (_currentStep < 8) {
+        _pageController.nextPage(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      } else {
+        Navigator.pop(context);
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+        });
+      }
     }
   }
 
@@ -386,6 +399,8 @@ class _DoctorFullEditFlowScreenState
                 iconPath: 'assets/icons/save.svg',
                 onTap: () => _onNext(),
                 height: 60,
+                isLoading: _isSaving,
+                loadingText: 'Saving...',
               ),
             ),
           ],

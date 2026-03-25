@@ -16,149 +16,191 @@ void showUploadReportBottomSheet(
 }) {
   showModalBottomSheet(
     context: context,
+    useSafeArea: true,
     isScrollControlled: false,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
     ),
     builder: (_) {
-      return SizedBox(
-        height: 375,
-        child: Column(
-          children: [
-            const SizedBox(height: 18),
-            Container(
-              width: 45,
-              height: 7,
-              decoration: BoxDecoration(
-                color: Colors.grey,
-                borderRadius: BorderRadius.circular(10),
+      return _UploadReportSheet(
+        appointmentId: appointmentId,
+        userId: userId,
+        doctorId: doctorId,
+        onReportAdded: onReportAdded,
+        onReportUploaded: onReportUploaded,
+      );
+    },
+  );
+}
+
+class _UploadReportSheet extends StatefulWidget {
+  final String? appointmentId;
+  final String? userId;
+  final String? doctorId;
+  final VoidCallback? onReportAdded;
+  final ValueChanged<ReportModel>? onReportUploaded;
+
+  const _UploadReportSheet({
+    Key? key,
+    this.appointmentId,
+    this.userId,
+    this.doctorId,
+    this.onReportAdded,
+    this.onReportUploaded,
+  }) : super(key: key);
+
+  @override
+  State<_UploadReportSheet> createState() => _UploadReportSheetState();
+}
+
+class _UploadReportSheetState extends State<_UploadReportSheet> {
+  bool _isUploading = false;
+  String? _uploadingText;
+
+  Future<void> _handleUpload({required bool fromCamera}) async {
+    if (_isUploading) return;
+    setState(() {
+      _isUploading = true;
+      _uploadingText = fromCamera ? 'Uploading (Camera)...' : 'Uploading...';
+    });
+    final effectiveUserId = widget.userId != null && widget.userId!.trim().isNotEmpty
+        ? widget.userId!.trim()
+        : (() {
+            try {
+              return SessionRepository().getCurrentUserId();
+            } catch (_) {
+              return null;
+            }
+          })();
+    if (effectiveUserId == null || effectiveUserId.isEmpty) {
+      if (context.mounted) {
+        showAppToast(
+          context,
+          'Report upload requires user context.',
+        );
+      }
+      setState(() {
+        _isUploading = false;
+      });
+      return;
+    }
+    final reportRepository = ProviderScope.containerOf(
+      context,
+      listen: false,
+    ).read(reportRepositoryProvider);
+    try {
+      final report = fromCamera
+          ? await reportRepository.uploadFromCamera(
+              userId: effectiveUserId,
+              appointmentId: widget.appointmentId,
+              doctorId: widget.doctorId,
+            )
+          : await reportRepository.uploadFromFile(
+              userId: effectiveUserId,
+              appointmentId: widget.appointmentId,
+              doctorId: widget.doctorId,
+            );
+      if (!context.mounted) return;
+      if (report != null) {
+        widget.onReportUploaded?.call(report);
+        widget.onReportAdded?.call();
+        Navigator.pop(context);
+      } else {
+        showAppToast(context, fromCamera ? 'No image captured' : 'No file selected');
+      }
+    } catch (error) {
+      if (!context.mounted) return;
+      final message = error.toString();
+      showAppToast(context, 'Upload failed: $message');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUploading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 375,
+      child: Column(
+        children: [
+          const SizedBox(height: 18),
+          Container(
+            width: 45,
+            height: 7,
+            decoration: BoxDecoration(
+              color: Colors.grey,
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+          const SizedBox(height: 26),
+          const Text(
+            'Upload Report',
+            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 10),
+          if (_isUploading)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    _uploadingText ?? 'Uploading...',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xff3F67FD),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xff3F67FD)),
+                      strokeWidth: 2.2,
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 26),
-            const Text(
-              'Upload Report',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600),
-            ),
-
+          if (!_isUploading) ...[
             InkWell(
-              onTap: () async {
-                final effectiveUserId =
-                    userId != null && userId.trim().isNotEmpty
-                    ? userId.trim()
-                    : (() {
-                        try {
-                          return SessionRepository().getCurrentUserId();
-                        } catch (_) {
-                          return null;
-                        }
-                      })();
-                if (effectiveUserId == null || effectiveUserId.isEmpty) {
-                  if (context.mounted) {
-                    showAppToast(
-                      context,
-                      'Report upload requires user context.',
-                    );
-                  }
-                  return;
-                }
-                final reportRepository = ProviderScope.containerOf(
-                  context,
-                  listen: false,
-                ).read(reportRepositoryProvider);
-                try {
-                  final report = await reportRepository.uploadFromFile(
-                    userId: effectiveUserId,
-                    appointmentId: appointmentId,
-                    doctorId: doctorId,
-                  );
-                  if (!context.mounted) return;
-                  if (report != null) {
-                    onReportUploaded?.call(report);
-                    onReportAdded?.call();
-                    Navigator.pop(context);
-                  } else {
-                    showAppToast(context, 'No file selected');
-                  }
-                } catch (error) {
-                  if (!context.mounted) return;
-                  final message = error.toString();
-                  showAppToast(context, 'Upload failed: $message');
-                }
-              },
+              onTap: () => _handleUpload(fromCamera: false),
               child: _uploadOption(
                 icon: 'assets/icons/upload_report.svg',
                 title: 'Upload File',
               ),
             ),
-
             InkWell(
-              onTap: () async {
-                final effectiveUserId =
-                    userId != null && userId.trim().isNotEmpty
-                    ? userId.trim()
-                    : (() {
-                        try {
-                          return SessionRepository().getCurrentUserId();
-                        } catch (_) {
-                          return null;
-                        }
-                      })();
-                if (effectiveUserId == null || effectiveUserId.isEmpty) {
-                  if (context.mounted) {
-                    showAppToast(
-                      context,
-                      'Report upload requires user context.',
-                    );
-                  }
-                  return;
-                }
-                final reportRepository = ProviderScope.containerOf(
-                  context,
-                  listen: false,
-                ).read(reportRepositoryProvider);
-                try {
-                  final report = await reportRepository.uploadFromCamera(
-                    userId: effectiveUserId,
-                    appointmentId: appointmentId,
-                    doctorId: doctorId,
-                  );
-                  if (!context.mounted) return;
-                  if (report != null) {
-                    onReportUploaded?.call(report);
-                    onReportAdded?.call();
-                    Navigator.pop(context);
-                  } else {
-                    showAppToast(context, 'No image captured');
-                  }
-                } catch (error) {
-                  if (!context.mounted) return;
-                  final message = error.toString();
-                  showAppToast(context, 'Upload failed: $message');
-                }
-              },
+              onTap: () => _handleUpload(fromCamera: true),
               child: _uploadOption(
                 icon: 'assets/icons/camera.svg',
                 title: 'Scan with Camera',
               ),
             ),
-            const SizedBox(height: 30),
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text(
-                'Cancel',
-                style: TextStyle(
-                  color: Color(0xff3F67FD),
-                  fontSize: 18,
-                  fontWeight: FontWeight.w500,
-                ),
+          ],
+          const SizedBox(height: 30),
+          TextButton(
+            onPressed: _isUploading ? null : () => Navigator.pop(context),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(
+                color: Color(0xff3F67FD),
+                fontSize: 18,
+                fontWeight: FontWeight.w500,
               ),
             ),
-            const SizedBox(height: 20),
-          ],
-        ),
-      );
-    },
-  );
+          ),
+          const SizedBox(height: 20),
+        ],
+      ),
+    );
+  }
 }
 
 Widget _uploadOption({required String icon, required String title}) {

@@ -268,12 +268,20 @@ class DoctorAppShellState extends ConsumerState<DoctorAppShell> {
       return const SizedBox.shrink();
     }
     if (!_ready) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Scaffold(
+        body: SafeArea(
+          top: false,
+          child: Center(child: CircularProgressIndicator()),
+        ),
+      );
     }
     return PopScope(
       canPop: false,
       child: Scaffold(
-        body: IndexedStack(index: selectedIndex, children: screens),
+        body: SafeArea(
+          top: false,
+          child: IndexedStack(index: selectedIndex, children: screens),
+        ),
         bottomNavigationBar: BottomNavigationBar(
           currentIndex: selectedIndex,
           onTap: switchToTab,

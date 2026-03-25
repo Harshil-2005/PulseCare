@@ -122,7 +122,7 @@ class _DateTimeScreenState extends ConsumerState<DateTimeScreen> {
     final appointments = await appointmentRepository
         .watchAppointmentsForDoctor(widget.doctorId)
         .first;
-    return appointments
+    final bookedSlots = appointments
         .where(
           (appointment) =>
               appointment.scheduledAt.year == date.year &&
@@ -136,6 +136,15 @@ class _DateTimeScreenState extends ConsumerState<DateTimeScreen> {
           return appointment.scheduledAt;
         })
         .toList();
+
+    // If rescheduling, also block the current slot so it appears as booked
+    if (widget.existingAppointment != null &&
+        widget.existingAppointment!.scheduledAt.year == date.year &&
+        widget.existingAppointment!.scheduledAt.month == date.month &&
+        widget.existingAppointment!.scheduledAt.day == date.day) {
+      bookedSlots.add(widget.existingAppointment!.scheduledAt);
+    }
+    return bookedSlots;
   }
 
   Future<void> _loadSlotsForDate(
@@ -525,8 +534,10 @@ class _DateTimeScreenState extends ConsumerState<DateTimeScreen> {
           ),
         ),
       ),
-      body: SingleChildScrollView(
-        child: Column(
+      body: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
@@ -825,7 +836,9 @@ class _DateTimeScreenState extends ConsumerState<DateTimeScreen> {
                       ),
                       SizedBox(width: 10),
                       Text(
-                        _isBooking ? 'Booking...' : 'Book Appointment',
+                        _isBooking
+                            ? (widget.existingAppointment != null ? 'Rescheduling...' : 'Booking...')
+                            : (widget.existingAppointment != null ? 'Reschedule' : 'Book Appointment'),
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 18,
@@ -838,6 +851,7 @@ class _DateTimeScreenState extends ConsumerState<DateTimeScreen> {
               ),
             ),
           ],
+          ),
         ),
       ),
     );

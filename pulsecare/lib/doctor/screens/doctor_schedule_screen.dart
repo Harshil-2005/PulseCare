@@ -43,6 +43,7 @@ class _DoctorScheduleScreenState extends ConsumerState<DoctorScheduleScreen> {
 
     showModalBottomSheet(
       context: context,
+      useSafeArea: true,
       isScrollControlled: true,
       isDismissible: true,
       enableDrag: true,

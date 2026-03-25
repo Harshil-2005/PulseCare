@@ -86,18 +86,20 @@ class _OnboardingWrapperState extends State<OnboardingWrapper> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: OnboardingPage(
-        totalPages: data.length,
-        data: data,
-        controller: pageController,
-        currentPage: currentPage,
-        onImageChange: onImageChange,
-        onNext: () {
-          nextPage();
-        },
-        onSkip: () {
-          skip();
-        },
+      body: SafeArea(
+        child: OnboardingPage(
+          totalPages: data.length,
+          data: data,
+          controller: pageController,
+          currentPage: currentPage,
+          onImageChange: onImageChange,
+          onNext: () {
+            nextPage();
+          },
+          onSkip: () {
+            skip();
+          },
+        ),
       ),
     );
   }

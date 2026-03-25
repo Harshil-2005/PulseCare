@@ -49,8 +49,10 @@ class ProfileScreen extends ConsumerWidget {
           shadowColor: Colors.black,
           automaticallyImplyLeading: false,
         ),
-        body: SingleChildScrollView(
-          child: Column(
+        body: SafeArea(
+          top: false,
+          child: SingleChildScrollView(
+            child: Column(
             children: [
               Padding(
                 padding: const EdgeInsets.only(
@@ -614,6 +616,7 @@ class ProfileScreen extends ConsumerWidget {
                 ),
               ),
             ],
+            ),
           ),
         ),
       ),
@@ -640,9 +643,11 @@ class ProfileScreen extends ConsumerWidget {
             shadowColor: Colors.black,
             automaticallyImplyLeading: false,
           ),
-          body: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Center(
+          body: SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Center(
               child: Container(
                 width: double.infinity,
                 decoration: BoxDecoration(
@@ -728,6 +733,7 @@ class ProfileScreen extends ConsumerWidget {
                     ),
                   ],
                 ),
+              ),
               ),
             ),
           ),

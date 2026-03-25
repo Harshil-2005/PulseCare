@@ -70,8 +70,10 @@ class _MyReportScreenState extends ConsumerState<MyReportScreen> {
           automaticallyImplyLeading: false,
         ),
 
-        body: Column(
-          children: [
+        body: SafeArea(
+          top: false,
+          child: Column(
+            children: [
             Padding(
               padding: const EdgeInsets.only(
                 top: 24,
@@ -245,7 +247,8 @@ class _MyReportScreenState extends ConsumerState<MyReportScreen> {
                 },
               ),
             ),
-          ],
+            ],
+          ),
         ),
       ),
     );

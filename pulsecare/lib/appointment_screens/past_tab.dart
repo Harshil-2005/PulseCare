@@ -85,6 +85,7 @@ class _PastTabState extends ConsumerState<PastTab> {
                   text: 'Book Again',
                   iconPath: 'assets/images/chat.png',
                   height: 50,
+                  isLoading: false,
                   onTap: () {
                     Navigator.push(
                       context,

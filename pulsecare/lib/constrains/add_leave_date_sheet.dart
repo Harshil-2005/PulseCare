@@ -31,6 +31,7 @@ class AddLeaveDateSheet extends ConsumerWidget {
   ) {
     showModalBottomSheet(
       context: context,
+      useSafeArea: true,
       isScrollControlled: false,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
@@ -167,6 +168,7 @@ class AddLeaveDateSheet extends ConsumerWidget {
 
     showModalBottomSheet(
       context: context,
+      useSafeArea: true,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),

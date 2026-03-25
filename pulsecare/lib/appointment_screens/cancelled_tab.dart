@@ -36,7 +36,6 @@ class CancelledTab extends ConsumerStatefulWidget {
 
 class _CancelledTabState extends ConsumerState<CancelledTab> {
   String? _removingAppointmentId;
-  String? _bookingAgainAppointmentId;
 
   AppointmentCardStatus mapToCardStatus(AppointmentStatus status) {
     switch (status) {
@@ -103,7 +102,6 @@ class _CancelledTabState extends ConsumerState<CancelledTab> {
 
   Widget _cancelledActions(BuildContext context, Appointment appointment) {
     final isRemoving = _removingAppointmentId == appointment.id;
-    final isBookingAgain = _bookingAgainAppointmentId == appointment.id;
     return Row(
       children: [
         Expanded(
@@ -133,30 +131,20 @@ class _CancelledTabState extends ConsumerState<CancelledTab> {
         const SizedBox(width: 10),
         Expanded(
           child: _actionButton(
-            text: isBookingAgain ? 'Booking...' : 'Book Again',
+            text: 'Book Again',
             bg: const Color(0xff3F67FD),
             textColor: Colors.white,
-            isLoading: isBookingAgain,
-            onTap: isBookingAgain
-                ? null
-                : () async {
-                    setState(() => _bookingAgainAppointmentId = appointment.id);
-                    try {
-                      await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => PatientDetailScreen(
-                            doctor: appointment.resolvedDoctor,
-                          ),
-                        ),
-                      );
-                    } finally {
-                      if (mounted &&
-                          _bookingAgainAppointmentId == appointment.id) {
-                        setState(() => _bookingAgainAppointmentId = null);
-                      }
-                    }
-                  },
+            isLoading: false,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => PatientDetailScreen(
+                    doctor: appointment.resolvedDoctor,
+                  ),
+                ),
+              );
+            },
           ),
         ),
       ],

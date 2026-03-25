@@ -141,8 +141,10 @@ class _MedicalReportPreviewScreenState
           ),
         ),
       ),
-      body: SingleChildScrollView(
-        child: Column(
+      body: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          child: Column(
           children: [
             Padding(
               padding: const EdgeInsets.only(left: 16, right: 16, top: 24),
@@ -398,6 +400,7 @@ class _MedicalReportPreviewScreenState
                 ),
               ),
           ],
+          ),
         ),
       ),
     );

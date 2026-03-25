@@ -549,13 +549,15 @@ class _UserDetailScreenState extends ConsumerState<PatientDetailScreen> {
           ),
         ),
       ),
-      body: GestureDetector(
-        behavior: HitTestBehavior.translucent,
-        onTap: () {
-          KeyboardUtils.hideKeyboardKeepFocus();
-        },
-        child: SingleChildScrollView(
-          child: Column(
+      body: SafeArea(
+        top: false,
+        child: GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onTap: () {
+            KeyboardUtils.hideKeyboardKeepFocus();
+          },
+          child: SingleChildScrollView(
+            child: Column(
             children: [
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1126,6 +1128,7 @@ class _UserDetailScreenState extends ConsumerState<PatientDetailScreen> {
                 ),
               ),
             ],
+            ),
           ),
         ),
       ),

@@ -82,8 +82,10 @@ class DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen> {
         shadowColor: Colors.black,
         automaticallyImplyLeading: false,
       ),
-      body: Column(
-        children: [
+      body: SafeArea(
+        top: false,
+        child: Column(
+          children: [
           const SizedBox(height: 40),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -156,7 +158,8 @@ class DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen> {
               ],
             ),
           ),
-        ],
+          ],
+        ),
       ),
     );
   }

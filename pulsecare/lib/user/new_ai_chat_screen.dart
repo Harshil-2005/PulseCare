@@ -31,7 +31,7 @@ class _NewAiChatScreenState extends ConsumerState<NewAiChatScreen> {
         leading: IconButton(
           onPressed: () {
             KeyboardUtils.hideKeyboardKeepFocus();
-Navigator.pop(context);
+            Navigator.pop(context);
           },
           icon: SvgPicture.asset(
             'assets/icons/backarrow.svg',
@@ -65,7 +65,7 @@ Navigator.pop(context);
                   return;
                 }
                 KeyboardUtils.hideKeyboardKeepFocus();
-Navigator.pushReplacement(
+                Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(
                     builder: (context) => const NewAiChatScreen(),
@@ -78,7 +78,7 @@ Navigator.pushReplacement(
             InkWell(
               onTap: () {
                 KeyboardUtils.hideKeyboardKeepFocus();
-Navigator.push(
+                Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (context) => const ChatHistoryScreen(),
@@ -91,40 +91,43 @@ Navigator.push(
           ],
         ),
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: ConsultationChatWidget(
-              conversationId: '',
-              userId: '',
-              showDoctorRecommendations: true,
-              showDisclaimer: false,
-              hideSeedGreeting: true,
-              showIntroUntilConsultationStarts: true,
-              showIntro: !_hasStartedConsultation,
-              introBuilder: (_) => introContent(),
-              introBottomPadding: _introBottomPadding,
-              inputBottomPadding: 0,
-              trailingBottomSpacer: 30,
-              onConsultationStarted: () {
-                if (!_hasStartedConsultation) {
-                  setState(() {
-                    _hasStartedConsultation = true;
-                  });
-                }
-              },
-              onHasAnyUserMessageChanged: (hasAnyUserMessage) {
-                if (_hasAnyUserMessage != hasAnyUserMessage) {
-                  setState(() {
-                    _hasAnyUserMessage = hasAnyUserMessage;
-                    _hasStartedConsultation =
-                        _hasStartedConsultation || hasAnyUserMessage;
-                  });
-                }
-              },
+      body: SafeArea(
+        top: false,
+        child: Column(
+          children: [
+            Expanded(
+              child: ConsultationChatWidget(
+                conversationId: '',
+                userId: '',
+                showDoctorRecommendations: true,
+                showDisclaimer: false,
+                hideSeedGreeting: true,
+                showIntroUntilConsultationStarts: true,
+                showIntro: !_hasStartedConsultation,
+                introBuilder: (_) => introContent(),
+                introBottomPadding: _introBottomPadding,
+                inputBottomPadding: 0,
+                trailingBottomSpacer: 30,
+                onConsultationStarted: () {
+                  if (!_hasStartedConsultation) {
+                    setState(() {
+                      _hasStartedConsultation = true;
+                    });
+                  }
+                },
+                onHasAnyUserMessageChanged: (hasAnyUserMessage) {
+                  if (_hasAnyUserMessage != hasAnyUserMessage) {
+                    setState(() {
+                      _hasAnyUserMessage = hasAnyUserMessage;
+                      _hasStartedConsultation =
+                          _hasStartedConsultation || hasAnyUserMessage;
+                    });
+                  }
+                },
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -154,5 +157,3 @@ Navigator.push(
     );
   }
 }
-
-

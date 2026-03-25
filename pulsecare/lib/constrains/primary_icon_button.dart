@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:pulsecare/utils/app_responsive.dart';
+
 
 class PrimaryIconButton extends StatelessWidget {
   final String text;
@@ -12,6 +14,8 @@ class PrimaryIconButton extends StatelessWidget {
   final Color iconColor;
   final double borderRadius;
   final double iconSize;
+  final bool isLoading;
+  final String? loadingText;
 
   const PrimaryIconButton({
     super.key,
@@ -25,48 +29,65 @@ class PrimaryIconButton extends StatelessWidget {
     this.iconColor = Colors.white,
     this.borderRadius = 35,
     this.iconSize = 22,
+    this.isLoading = false,
+    this.loadingText,
   });
 
   bool get _isSvg => iconPath.toLowerCase().endsWith('.svg');
 
   @override
   Widget build(BuildContext context) {
+    final effectiveHeight = AppResponsive.compactPx(context, height);
+    final effectiveIconSize = AppResponsive.compactPx(context, iconSize);
+    final effectiveRadius = AppResponsive.compactPx(context, borderRadius);
+    final effectiveTextSize = AppResponsive.compactPx(context, 16);
     return InkWell(
-      borderRadius: BorderRadius.circular(borderRadius),
-      onTap: onTap,
+      borderRadius: BorderRadius.circular(effectiveRadius),
+      onTap: isLoading ? null : onTap,
       child: Container(
-        height: height,
+        height: effectiveHeight,
         width: width,
         decoration: BoxDecoration(
           color: backgroundColor,
-          borderRadius: BorderRadius.circular(borderRadius),
+          borderRadius: BorderRadius.circular(effectiveRadius),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _isSvg
-                ? SvgPicture.asset(
-                    iconPath,
-                    width: iconSize,
-                    height: iconSize,
-                    // ignore: deprecated_member_use
-                    color: iconColor,
-                  )
-                : Image.asset(
-                    iconPath,
-                    width: iconSize,
-                    height: iconSize,
-                    color: iconColor,
-                  ),
-            const SizedBox(width: 8),
+            if (!isLoading)
+              (_isSvg
+                  ? SvgPicture.asset(
+                      iconPath,
+                      width: effectiveIconSize,
+                      height: effectiveIconSize,
+                      color: iconColor,
+                    )
+                  : Image.asset(
+                      iconPath,
+                      width: effectiveIconSize,
+                      height: effectiveIconSize,
+                      color: iconColor,
+                    )),
+            if (!isLoading) const SizedBox(width: 8),
             Text(
-              text,
+              isLoading ? (loadingText ?? text) : text,
               style: TextStyle(
-                fontSize: 16,
+                fontSize: effectiveTextSize,
                 fontWeight: FontWeight.w500,
-                color: textColor,
+                color: textColor.withOpacity(isLoading ? 0.7 : 1),
               ),
             ),
+            if (isLoading) ...[
+              const SizedBox(width: 12),
+              SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(textColor.withOpacity(0.7)),
+                  strokeWidth: 2.2,
+                ),
+              ),
+            ],
           ],
         ),
       ),

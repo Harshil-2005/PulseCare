@@ -128,10 +128,13 @@ class _DoctorDetailScreenState extends ConsumerState<DoctorDetailScreen> {
             ),
           ),
         ),
-        body: const Center(
-          child: Text(
-            'Doctor details are unavailable right now.',
-            style: TextStyle(fontSize: 15, color: Colors.grey),
+        body: const SafeArea(
+          top: false,
+          child: Center(
+            child: Text(
+              'Doctor details are unavailable right now.',
+              style: TextStyle(fontSize: 15, color: Colors.grey),
+            ),
           ),
         ),
       );
@@ -173,8 +176,10 @@ class _DoctorDetailScreenState extends ConsumerState<DoctorDetailScreen> {
           ),
         ),
       ),
-      body: SingleChildScrollView(
-        child: Column(
+      body: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SizedBox(
@@ -677,6 +682,7 @@ class _DoctorDetailScreenState extends ConsumerState<DoctorDetailScreen> {
               ),
             ),
           ],
+          ),
         ),
       ),
     );

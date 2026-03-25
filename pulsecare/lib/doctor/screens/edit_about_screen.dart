@@ -74,103 +74,106 @@ class _EditAboutScreenState extends ConsumerState<EditAboutScreen> {
           ),
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.only(top: 30, left: 16, right: 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                keyboardDismissBehavior:
-                    ScrollViewKeyboardDismissBehavior.onDrag,
-                padding: EdgeInsets.only(
-                  bottom: MediaQuery.of(context).viewInsets.bottom,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 80),
-                    Center(
-                      child: Text(
-                        'Edit About',
-                        style: TextStyle(fontWeight: .w700, fontSize: 24),
+      body: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.only(top: 30, left: 16, right: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
+                  padding: EdgeInsets.only(
+                    bottom: MediaQuery.of(context).viewInsets.bottom,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 80),
+                      Center(
+                        child: Text(
+                          'Edit About',
+                          style: TextStyle(fontWeight: .w700, fontSize: 24),
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 20),
-                    Center(
-                      child: Text(
-                        'Tell patients about your experience and treatment approach.',
+                      const SizedBox(height: 20),
+                      Center(
+                        child: Text(
+                          'Tell patients about your experience and treatment approach.',
+                          style: TextStyle(
+                            fontWeight: .w400,
+                            fontSize: 18,
+                            color: Colors.grey,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                      const SizedBox(height: 50),
+                      const Text(
+                        'About',
                         style: TextStyle(
-                          fontWeight: .w400,
-                          fontSize: 18,
+                          fontWeight: FontWeight.w400,
+                          fontSize: 16,
                           color: Colors.grey,
                         ),
-                        textAlign: TextAlign.center,
                       ),
-                    ),
-                    const SizedBox(height: 50),
-                    const Text(
-                      'About',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w400,
-                        fontSize: 16,
-                        color: Colors.grey,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    TextField(
-                      controller: _aboutController,
-                      minLines: 3,
-                      maxLines: null,
-                      keyboardType: TextInputType.multiline,
-                      textInputAction: TextInputAction.newline,
-                      onTapOutside: (_) =>
-                          KeyboardUtils.hideKeyboardKeepFocus(),
-                      decoration: InputDecoration(
-                        hintText:
-                            'Tell patients about your experience, specialization, and approach to treatment.',
-                        hintStyle: TextStyle(color: Colors.grey.shade400),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(30),
-                          borderSide: BorderSide(color: Colors.grey.shade400),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(30),
-                          borderSide: BorderSide(color: Colors.grey.shade400),
+                      const SizedBox(height: 10),
+                      TextField(
+                        controller: _aboutController,
+                        minLines: 3,
+                        maxLines: null,
+                        keyboardType: TextInputType.multiline,
+                        textInputAction: TextInputAction.newline,
+                        onTapOutside: (_) =>
+                            KeyboardUtils.hideKeyboardKeepFocus(),
+                        decoration: InputDecoration(
+                          hintText:
+                              'Tell patients about your experience, specialization, and approach to treatment.',
+                          hintStyle: TextStyle(color: Colors.grey.shade400),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(30),
+                            borderSide: BorderSide(color: Colors.grey.shade400),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(30),
+                            borderSide: BorderSide(color: Colors.grey.shade400),
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(bottom: 50, top: 12),
-              child: PrimaryIconButton(
-                text: 'Save Changes',
-                iconPath: 'assets/icons/save.svg',
-                onTap: () async {
-                  final doctorId = SessionRepository().getCurrentDoctorId();
-                  final doctor = await ref
-                      .read(doctorRepositoryProvider)
-                      .getDoctorById(doctorId);
-                  if (!mounted) return;
-                  if (doctor != null) {
-                    final updatedDoctor = doctor.copyWith(
-                      about: _aboutController.text.trim(),
-                    );
-                    await ref
+              Padding(
+                padding: const EdgeInsets.only(bottom: 50, top: 12),
+                child: PrimaryIconButton(
+                  text: 'Save Changes',
+                  iconPath: 'assets/icons/save.svg',
+                  onTap: () async {
+                    final doctorId = SessionRepository().getCurrentDoctorId();
+                    final doctor = await ref
                         .read(doctorRepositoryProvider)
-                        .updateDoctor(updatedDoctor);
+                        .getDoctorById(doctorId);
+                    if (!mounted) return;
+                    if (doctor != null) {
+                      final updatedDoctor = doctor.copyWith(
+                        about: _aboutController.text.trim(),
+                      );
+                      await ref
+                          .read(doctorRepositoryProvider)
+                          .updateDoctor(updatedDoctor);
+                      if (!context.mounted) return;
+                    }
                     if (!context.mounted) return;
-                  }
-                  if (!context.mounted) return;
-                  Navigator.pop(context);
-                },
-                height: 60,
+                    Navigator.pop(context);
+                  },
+                  height: 60,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

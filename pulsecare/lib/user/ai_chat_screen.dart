@@ -84,23 +84,26 @@ class AiChatScreen extends StatelessWidget {
           ],
         ),
       ),
-      body: ConsultationChatWidget(
-        conversationId: '',
-        userId: '',
-        initialMessage: initialMessage,
-        showDoctorRecommendations: showDoctorRecommendations,
-        doctorId: doctorId,
-        onContinueBooking: (selectedDoctorId, summaryId) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => DoctorDetailScreen(
-                doctorId: selectedDoctorId,
-                aiSummaryId: summaryId,
+      body: SafeArea(
+        top: false,
+        child: ConsultationChatWidget(
+          conversationId: '',
+          userId: '',
+          initialMessage: initialMessage,
+          showDoctorRecommendations: showDoctorRecommendations,
+          doctorId: doctorId,
+          onContinueBooking: (selectedDoctorId, summaryId) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => DoctorDetailScreen(
+                  doctorId: selectedDoctorId,
+                  aiSummaryId: summaryId,
+                ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:pulsecare/utils/keyboard_utils.dart';
-import 'package:firebase_auth/firebase_auth.dart' show FirebaseAuthException;
+import 'package:firebase_auth/firebase_auth.dart'
+    show FirebaseAuth, FirebaseAuthException;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pulsecare/accountsetup/account_setup_flow_screen.dart';
 import 'package:pulsecare/constrains/app_toast.dart';
@@ -25,6 +26,138 @@ class AuthScreen extends ConsumerStatefulWidget {
 
 class _AuthScreenState extends ConsumerState<AuthScreen>
     with TickerProviderStateMixin {
+  Future<void> _showForgotPasswordDialog() async {
+    final emailController = TextEditingController(
+      text: loginemailController.text,
+    );
+    bool submitted = false;
+    String? errorText;
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              backgroundColor: Colors.white,
+              insetPadding: const EdgeInsets.symmetric(horizontal: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
+              contentPadding: const EdgeInsets.fromLTRB(24, 0, 24, 4),
+              actionsPadding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
+              title: const Text(
+                'Forgot Password',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.w500),
+              ),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    AppTextField(
+                      controller: emailController,
+                      hintText: 'Email',
+                      keyboardType: TextInputType.emailAddress,
+                      textInputAction: TextInputAction.done,
+                      autovalidateMode: AutovalidateMode.always,
+                      validator: (_) {
+                        if (!submitted) return null;
+                        if (emailController.text.trim().isEmpty) {
+                          return 'Email is required';
+                        }
+                        return errorText;
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => Navigator.of(context).pop(),
+                        child: Container(
+                          height: 50,
+                          decoration: BoxDecoration(
+                            color: const Color(0xffD9D9D9),
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                          child: const Center(
+                            child: Text(
+                              'Cancel',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () async {
+                          setState(() {
+                            submitted = true;
+                            errorText = null;
+                          });
+                          final email = emailController.text.trim();
+                          if (email.isEmpty) return;
+                          try {
+                            await FirebaseAuth.instance.sendPasswordResetEmail(
+                              email: email,
+                            );
+                            if (context.mounted) {
+                              Navigator.of(context).pop();
+                              showAppToast(
+                                context,
+                                'Reset link sent to your email',
+                                position: AppToastPosition.top,
+                              );
+                            }
+                          } on FirebaseAuthException catch (_) {
+                            setState(() {
+                              errorText = 'Failed to send reset email';
+                            });
+                          } catch (_) {
+                            setState(() {
+                              errorText = 'Failed to send reset email';
+                            });
+                          }
+                        },
+                        child: Container(
+                          height: 50,
+                          decoration: BoxDecoration(
+                            color: const Color(0xff3F67FD),
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                          child: const Center(
+                            child: Text(
+                              'Submit',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   static const String _busyActionRegister = 'register';
   static const String _busyActionLogin = 'login';
   static const String _busyActionGoogle = 'google';
@@ -351,7 +484,6 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
           AppTextField(
             controller: loginpasswordController,
             hintText: 'Password',
-
             textInputAction: TextInputAction.done,
             autofillHints: const [AutofillHints.password],
             validator: _validateLoginPassword,
@@ -371,10 +503,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
           const SizedBox(height: 8),
           Align(
             alignment: Alignment.centerRight,
-            child: Text(
-              "Forgot password?",
-              style: TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
-            ),
+            child: _ForgotPasswordText(onTap: _showForgotPasswordDialog),
           ),
         ],
       ),
@@ -722,326 +851,27 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
   }
 }
 
+class _ForgotPasswordText extends StatelessWidget {
+  const _ForgotPasswordText({required this.onTap});
 
+  final VoidCallback onTap;
 
-//  body: Column(
-//         children: [
-//           /// 🔵 HEADER
-//           Container(
-//             height: 260,
-//             width: double.infinity,
-//             padding: const EdgeInsets.only(left: 20, top: 90),
-//             decoration: const BoxDecoration(
-//               gradient: LinearGradient(
-//                 colors: [Color(0xFF7DA2FF), Color(0xFF3F67FD)],
-//                 begin: Alignment.topCenter,
-//                 end: Alignment.bottomCenter,
-//               ),
-//             ),
-//             child: Column(
-//               crossAxisAlignment: CrossAxisAlignment.start,
-//               children: [
-//                 Text(
-//                   isRegister ? "You're almost there!" : "Go ahead and",
-//                   style: const TextStyle(
-//                     color: Colors.white,
-//                     fontSize: 24,
-//                     fontWeight: FontWeight.w700,
-//                   ),
-//                 ),
-//                 Text(
-//                   isRegister
-//                       ? "Let’s set up your account."
-//                       : "Log in your account",
-//                   style: const TextStyle(
-//                     color: Colors.white,
-//                     fontSize: 24,
-//                     fontWeight: FontWeight.w700,
-//                   ),
-//                 ),
-//               ],
-//             ),
-//           ),
-//           /// 🧾 CARD AREA
-//           Expanded(
-//             child: ClipRRect(
-//               borderRadius: BorderRadius.only(
-//                 topLeft: Radius.circular(40),
-//                 topRight: Radius.circular(40),
-//               ),
-//               child: Container(
-//                 decoration: BoxDecoration(color: Colors.white),
-//                 child: Stack(
-//                   children: [
-//                     Positioned(
-//                       bottom: 0,
-//                       right: 0,
-//                       child: Image.asset(
-//                         'assets/images/lines_bg.png',
-//                         height: 200,
-//                       ),
-//                     ),
-//                     /// 🔹 Main Content
-//                     Padding(
-//                       padding: const EdgeInsets.symmetric(
-//                         horizontal: 20,
-//                         vertical: 50,
-//                       ),
-//                       child: Column(
-//                         children: [
-//                           RegisterLoginToggleButton(
-//                             isRegisterSelected: isRegister,
-//                             onRegisterTap: goToRegister,
-//                             onLoginTap: goToLogin,
-//                           ),
-//                           const SizedBox(height: 24),
-//                           Expanded(
-//                             child: PageView(
-//                               controller: _pageController,
-//                               physics: const NeverScrollableScrollPhysics(),
-//                               onPageChanged: (index) {
-//                                 setState(() {
-//                                   currentPage = index;
-//                                 });
-//                               },
-//                               children: [_loginForm(), _registerForm()],
-//                             ),
-//                           ),
-//                           SizedBox(height: 20),
-//                           NextActionButton(
-//                             text: isRegister ? "Sign Up" : "Login",
-//                             onTap: () {
-//                               if (isRegister) {
-//                                 if (passwordController.text !=
-//                                     confirmPasswordController.text) {
-//                                   return;
-//                                 }
-//                                 goToLogin();
-//                               }
-//                             },
-//                           ),
-//                           const SizedBox(height: 20),
-//                           const Text("OR"),
-//                           const SizedBox(height: 20),
-//                           Container(
-//                             height: 55,
-//                             width: double.infinity,
-//                             alignment: Alignment.center,
-//                             decoration: BoxDecoration(
-//                               color: Colors.white,
-//                               border: Border.all(width: 1.5),
-//                               borderRadius: BorderRadius.circular(30),
-//                             ),
-//                             child: Row(
-//                               mainAxisAlignment: MainAxisAlignment.center,
-//                               children: [
-//                                 SizedBox(
-//                                   height: 30,
-//                                   child: Center(
-//                                     child: Image.asset(
-//                                       'assets/images/google.png',
-//                                     ),
-//                                   ),
-//                                 ),
-//                                 SizedBox(width: 20),
-//                                 Text("Continue With Google"),
-//                               ],
-//                             ),
-//                           ),
-//                         ],
-//                       ),
-//                     ),
-//                   ],
-//                 ),
-//               ),
-//             ),
-//           ),
-//         ],
-//       ),
-
-  // body: Stack(
-      //   children: [
-      //     /// 🔵 HEADER
-      //     Container(
-      //       height: double.infinity,
-      //       width: double.infinity,
-      //       padding: const EdgeInsets.only(left: 20, top: 90),
-      //       decoration: const BoxDecoration(
-      //         gradient: LinearGradient(
-      //           colors: [Color(0xFF7DA2FF), Color(0xFF3F67FD)],
-      //           begin: Alignment.topCenter,
-      //           end: Alignment.bottomCenter,
-      //         ),
-      //       ),
-      //       child: Column(
-      //         crossAxisAlignment: CrossAxisAlignment.start,
-      //         children: [
-      //           Text(
-      //             isRegister ? "You're almost there!" : "Go ahead and",
-      //             style: const TextStyle(
-      //               color: Colors.white,
-      //               fontSize: 24,
-      //               fontWeight: FontWeight.w700,
-      //             ),
-      //           ),
-      //           Text(
-      //             isRegister
-      //                 ? "Let’s set up your account."
-      //                 : "Log in your account",
-      //             style: const TextStyle(
-      //               color: Colors.white,
-      //               fontSize: 24,
-      //               fontWeight: FontWeight.w700,
-      //             ),
-      //           ),
-      //         ],
-      //       ),
-      //     ),
-      //     /// 🧾 CARD
-      //     Positioned(
-      //       top: 240, // 🔥 this creates overlap
-      //       left: 0,
-      //       right: 0,
-      //       bottom: 0,
-      //       child: Container(
-      //         decoration: BoxDecoration(
-      //           color: Colors.white,
-      //           borderRadius: const BorderRadius.only(
-      //             topLeft: Radius.circular(40),
-      //             topRight: Radius.circular(40),
-      //           ),
-      //         ),
-      //         child: Stack(
-      //           children: [
-      //             Positioned(
-      //               bottom: 0,
-      //               right: 0,
-      //               child: Image.asset(
-      //                 'assets/images/lines_bg.png',
-      //                 height: 200,
-      //               ),
-      //             ),
-      //             Padding(
-      //               padding: const EdgeInsets.symmetric(
-      //                 horizontal: 20,
-      //                 vertical: 50,
-      //               ),
-      //               child: Column(
-      //                 children: [
-      //                   RegisterLoginToggleButton(
-      //                     isRegisterSelected: isRegister,
-      //                     onRegisterTap: goToRegister,
-      //                     onLoginTap: goToLogin,
-      //                   ),
-      //                   const SizedBox(height: 24),
-      //                   Expanded(
-      //                     child: PageView(
-      //                       controller: _pageController,
-      //                       physics: const NeverScrollableScrollPhysics(),
-      //                       onPageChanged: (index) {
-      //                         setState(() {
-      //                           currentPage = index;
-      //                         });
-      //                       },
-      //                       children: [_loginForm(), _registerForm()],
-      //                     ),
-      //                   ),
-      //                   const SizedBox(height: 20),
-      //                   NextActionButton(
-      //                     text: isRegister ? "Sign Up" : "Login",
-      //                     onTap: () {},
-      //                   ),
-      //                   const SizedBox(height: 20),
-      //                   const Text("OR"),
-      //                   const SizedBox(height: 20),
-      //                   Container(
-      //                     height: 55,
-      //                     width: double.infinity,
-      //                     alignment: Alignment.center,
-      //                     decoration: BoxDecoration(
-      //                       border: Border.all(width: 1.5),
-      //                       borderRadius: BorderRadius.circular(30),
-      //                     ),
-      //                     child: Row(mainAxisAlignment: MainAxisAlignment.center,
-      //                       children: [
-      //                         SizedBox(height: 30, child: Center(child: Image.asset('assets/images/google.png'))),
-      //                          SizedBox(width: 20,),
-      //                          Text("Continue With Google"),
-      //                       ],
-      //                     ),
-      //                   ),
-      //                 ],
-      //               ),
-      //             ),
-      //           ],
-      //         ),
-      //       ),
-      //     ),
-      //   ],
-      // ),   
-// import 'package:flutter/material.dart';
-// import 'package:pulsecare/utils/keyboard_utils.dart';
-// import 'package:pulsecare/auth/loginpage.dart';
-// import 'package:pulsecare/auth/registerpage.dart';
-// class AuthScreen extends StatefulWidget {
-//   final bool startWithRegister;
-//   const AuthScreen({super.key, this.startWithRegister = false});
-//   @override
-//   State<AuthScreen> createState() => _AuthScreenState();
-// }
-// class _AuthScreenState extends State<AuthScreen> {
-//   late final PageController _pageController;
-//   late bool isRegisterSelected;
-//   @override
-//   void initState() {
-//     super.initState();
-//     isRegisterSelected = widget.startWithRegister;
-//     _pageController = PageController(
-//       initialPage: widget.startWithRegister ? 1 : 0,
-//     );
-//   }
-//   void goToRegister() {
-//     setState(() => isRegisterSelected = true);
-//     _pageController.animateToPage(
-//       1,
-//       duration: const Duration(milliseconds: 300),
-//       curve: Curves.easeInOut,
-//     );
-//   }
-//   void goToLogin() {
-//     setState(() => isRegisterSelected = false);
-//     _pageController.animateToPage(
-//       0,
-//       duration: const Duration(milliseconds: 300),
-//       curve: Curves.easeInOut,
-//     );
-//   }
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       backgroundColor: Colors.white,
-//       body: PageView(
-//         controller: _pageController,
-//         physics: const NeverScrollableScrollPhysics(),
-//         onPageChanged: (index) {
-//           setState(() {
-//             isRegisterSelected = index == 1;
-//           });
-//         },
-//         children: [
-//           LoginPage(
-//             isRegisterSelected: isRegisterSelected,
-//             onRegisterTap: goToRegister,
-//           ),
-//           RegisterPage(
-//             isRegisterSelected: isRegisterSelected,
-//             onLoginTap: goToLogin,
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-// }
-
-
-
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(6),
+      child: const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+        child: Text(
+          'Forgot Password?',
+          style: TextStyle(
+            color: Colors.black,
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ),
+    );
+  }
+}

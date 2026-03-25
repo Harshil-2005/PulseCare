@@ -86,8 +86,10 @@ class _AllReportsScreenState extends ConsumerState<AllReportsScreen> {
           ),
         ),
 
-        body: Column(
-          children: [
+        body: SafeArea(
+          top: false,
+          child: Column(
+            children: [
             Padding(
               padding: const EdgeInsets.only(top: 24, left: 16, right: 16),
               child: TextField(
@@ -210,7 +212,8 @@ class _AllReportsScreenState extends ConsumerState<AllReportsScreen> {
                 },
               ),
             ),
-          ],
+            ],
+          ),
         ),
       ),
     );

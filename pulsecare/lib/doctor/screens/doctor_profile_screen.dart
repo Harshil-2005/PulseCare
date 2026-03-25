@@ -173,8 +173,10 @@ class _DoctorProfileScreenState extends ConsumerState<DoctorProfileScreen> {
             shadowColor: Colors.black,
             automaticallyImplyLeading: false,
           ),
-          body: SingleChildScrollView(
-            child: Column(
+          body: SafeArea(
+            top: false,
+            child: SingleChildScrollView(
+              child: Column(
               children: [
                 Padding(
                   padding: const EdgeInsets.only(
@@ -683,6 +685,7 @@ class _DoctorProfileScreenState extends ConsumerState<DoctorProfileScreen> {
                   ),
                 ),
               ],
+              ),
             ),
           ),
         );

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pulsecare/utils/app_responsive.dart';
 
 class RegisterLoginToggleButton extends StatelessWidget {
   final bool isRegisterSelected;
@@ -14,12 +15,15 @@ class RegisterLoginToggleButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final effectiveHeight = AppResponsive.compactPx(context, 60);
+    final effectiveRadius = AppResponsive.compactPx(context, 30);
+    final effectiveFontSize = AppResponsive.compactPx(context, 20);
     return Container(
-      height: 60,
+      height: effectiveHeight,
       width: double.infinity,
       decoration: BoxDecoration(
         color: const Color.fromARGB(255, 227, 231, 246),
-        borderRadius: BorderRadius.circular(30),
+        borderRadius: BorderRadius.circular(effectiveRadius),
       ),
       child: Row(
         children: [
@@ -32,7 +36,7 @@ class RegisterLoginToggleButton extends StatelessWidget {
                   color: isRegisterSelected
                       ? const Color(0xFF3F67FD)
                       : Colors.transparent,
-                  borderRadius: BorderRadius.circular(30),
+                  borderRadius: BorderRadius.circular(effectiveRadius),
                 ),
                 child: Text(
                   'Register',
@@ -40,7 +44,7 @@ class RegisterLoginToggleButton extends StatelessWidget {
                     color: isRegisterSelected
                         ? Colors.white
                         : Colors.black,
-                    fontSize: 20,
+                    fontSize: effectiveFontSize,
                   ),
                 ),
               ),
@@ -55,7 +59,7 @@ class RegisterLoginToggleButton extends StatelessWidget {
                   color: !isRegisterSelected
                       ? const Color(0xFF3F67FD)
                       : Colors.transparent,
-                  borderRadius: BorderRadius.circular(30),
+                  borderRadius: BorderRadius.circular(effectiveRadius),
                 ),
                 child: Text(
                   'Login',
@@ -63,7 +67,7 @@ class RegisterLoginToggleButton extends StatelessWidget {
                     color: !isRegisterSelected
                         ? Colors.white
                         : Colors.black,
-                    fontSize: 20,
+                    fontSize: effectiveFontSize,
                   ),
                 ),
               ),

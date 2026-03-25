@@ -33,8 +33,10 @@ class _AppointmentScreenState extends State<AppointmentScreen> {
         automaticallyImplyLeading: false,
       ),
 
-      body: Column(
-        children: [
+      body: SafeArea(
+        top: false,
+        child: Column(
+          children: [
            SizedBox(height: 40),
 
           Row(
@@ -97,7 +99,8 @@ class _AppointmentScreenState extends State<AppointmentScreen> {
               ],
             ),
           ),
-        ],
+          ],
+        ),
       ),
     );
   }

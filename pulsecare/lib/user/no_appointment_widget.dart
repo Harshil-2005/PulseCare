@@ -15,24 +15,26 @@ class _NoAppointmentScreenState extends State<NoAppointmentScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       
-      body: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Center(
-            child: Image.asset(
-              'assets/images/phone.png',
-              width: 110,
-              height: 110,
+      body: SafeArea(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Center(
+              child: Image.asset(
+                'assets/images/phone.png',
+                width: 110,
+                height: 110,
+              ),
             ),
-          ),
-          Center(
-            child: Text(
-              'No appointments scheduled at the moment',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 20, fontWeight: .w500),
+            Center(
+              child: Text(
+                'No appointments scheduled at the moment',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 20, fontWeight: .w500),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
 
        bottomNavigationBar: BottomNavigationBar(

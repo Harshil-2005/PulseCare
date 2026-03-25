@@ -42,6 +42,7 @@ class _EditProfileState extends ConsumerState<EditProfile> {
   User? user;
   String? _selectedAvatarPath;
   String? _stepErrorMessage;
+  bool _isSaving = false;
 
   static const List<String> _titles = [
     'Edit Profile',
@@ -183,6 +184,7 @@ class _EditProfileState extends ConsumerState<EditProfile> {
 
   Future<void> _onNext() async {
     _clearStepError();
+    if (_isSaving) return;
     if (_currentStep == 2) {
       final parsedAge = parseAgeInput(ageController.text.trim());
       if (parsedAge == null) {
@@ -195,28 +197,39 @@ class _EditProfileState extends ConsumerState<EditProfile> {
       }
     }
 
-    await _saveCurrentStep();
-    if (!mounted) return;
+    setState(() {
+      _isSaving = true;
+    });
+    try {
+      await _saveCurrentStep();
+      if (!mounted) return;
 
-    FocusManager.instance.primaryFocus?.unfocus(
-      disposition: UnfocusDisposition.scope,
-    );
-    SystemChannels.textInput.invokeMethod('TextInput.hide');
-
-    if (widget.singleStepMode) {
-      Navigator.pop(context);
-      return;
-    }
-
-    if (_currentStep < 3) {
-      _pageController.nextPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
+      FocusManager.instance.primaryFocus?.unfocus(
+        disposition: UnfocusDisposition.scope,
       );
-      return;
-    }
+      SystemChannels.textInput.invokeMethod('TextInput.hide');
 
-    Navigator.pop(context);
+      if (widget.singleStepMode) {
+        Navigator.pop(context);
+        return;
+      }
+
+      if (_currentStep < 3) {
+        _pageController.nextPage(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+        return;
+      }
+
+      Navigator.pop(context);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+        });
+      }
+    }
   }
 
   void _onBack() {
@@ -905,6 +918,8 @@ class _EditProfileState extends ConsumerState<EditProfile> {
                 iconPath: 'assets/icons/save.svg',
                 onTap: () => _onNext(),
                 height: 60,
+                isLoading: _isSaving,
+                loadingText: 'Saving...',
               ),
             ),
           ],

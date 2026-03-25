@@ -70,9 +70,12 @@ void initState() {
     return PopScope(
       canPop: false,
       child: Scaffold(
-        body: IndexedStack(
-          index: selectedIndex,
-          children: screens,
+        body: SafeArea(
+          top: false,
+          child: IndexedStack(
+            index: selectedIndex,
+            children: screens,
+          ),
         ),
         bottomNavigationBar: BottomNavigationBar(
           currentIndex: selectedIndex,

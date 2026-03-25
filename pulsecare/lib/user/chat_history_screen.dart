@@ -240,132 +240,107 @@ class _ChatHistoryScreenState extends ConsumerState<ChatHistoryScreen> {
           ],
         ),
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _entries.isEmpty
-          ? Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 32),
-                child: Text(
-                  'No chat history yet. Start a chat and your summaries will appear here.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.grey.shade600),
-                ),
-              ),
-            )
-          : Column(
-              children: [
-                if (_selectedDate != null)
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 10, 16, 2),
-                    child: Row(
-                      children: [
-                        Text(
-                          'Showing ${DateFormat('dd MMM yyyy').format(_selectedDate!)}',
-                          style: TextStyle(
-                            color: Colors.grey.shade700,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const Spacer(),
-                        TextButton(
-                          onPressed: () {
-                            setState(() {
-                              _selectedDate = null;
-                            });
-                          },
-                          child: const Text('Clear'),
-                        ),
-                      ],
-                    ),
+      body: SafeArea(
+        top: false,
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : _entries.isEmpty
+            ? Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 32),
+                  child: Text(
+                    'No chat history yet. Start a chat and your summaries will appear here.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.grey.shade600),
                   ),
-                Expanded(
-                  child: rows.isEmpty
-                      ? Center(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 32),
-                            child: Text(
-                              'No chats found for ${DateFormat('dd MMM yyyy').format(_selectedDate!)}.',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.grey.shade600),
+                ),
+              )
+            : Column(
+                children: [
+                  if (_selectedDate != null)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 10, 16, 2),
+                      child: Row(
+                        children: [
+                          Text(
+                            'Showing ${DateFormat('dd MMM yyyy').format(_selectedDate!)}',
+                            style: TextStyle(
+                              color: Colors.grey.shade700,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
-                        )
-                      : ListView.builder(
-                          itemCount: rows.length,
-                          itemBuilder: (context, index) {
-                            final row = rows[index];
-                            if (row.header != null) {
-                              return dataHeader(row.header!);
-                            }
-
-                            final entry = row.entry!;
-                            return Padding(
+                          const Spacer(),
+                          TextButton(
+                            onPressed: () {
+                              setState(() {
+                                _selectedDate = null;
+                              });
+                            },
+                            child: const Text('Clear'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  Expanded(
+                    child: rows.isEmpty
+                        ? Center(
+                            child: Padding(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 8,
+                                horizontal: 32,
                               ),
-                              child: Dismissible(
-                                key: ValueKey(entry.id),
-                                direction: DismissDirection.endToStart,
-                                background: Container(
-                                  padding: const EdgeInsets.only(right: 20),
-                                  alignment: Alignment.centerRight,
-                                  decoration: BoxDecoration(
-                                    color: Colors.red.withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(
-                                      kChatCardRadius,
-                                    ),
-                                  ),
-                                  child: const Text(
-                                    'Delete',
-                                    style: TextStyle(
-                                      color: Colors.red,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
+                              child: Text(
+                                'No chats found for ${DateFormat('dd MMM yyyy').format(_selectedDate!)}.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(color: Colors.grey.shade600),
+                              ),
+                            ),
+                          )
+                        : ListView.builder(
+                            itemCount: rows.length,
+                            itemBuilder: (context, index) {
+                              final row = rows[index];
+                              if (row.header != null) {
+                                return dataHeader(row.header!);
+                              }
+
+                              final entry = row.entry!;
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 8,
                                 ),
-                                onDismissed: (_) => _deleteEntry(entry),
-                                child: ChatHistoryCard(
-                                  entry: entry,
-                                  onDelete: () => _deleteEntry(entry),
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => PopScope(
-                                          canPop: false,
-                                          onPopInvokedWithResult:
-                                              (didPop, result) {
-                                                Navigator.pushAndRemoveUntil(
-                                                  context,
-                                                  MaterialPageRoute(
-                                                    builder: (_) =>
-                                                        const AppShell(
-                                                          initialTab: 0,
-                                                        ),
-                                                  ),
-                                                  (route) => false,
-                                                );
-                                              },
-                                          child: Scaffold(
-                                            appBar: AppBar(
-                                              leadingWidth: 40,
-                                              titleSpacing: 0,
-                                              toolbarHeight: 85,
-                                              shape:
-                                                  const RoundedRectangleBorder(
-                                                    borderRadius:
-                                                        BorderRadius.vertical(
-                                                          bottom:
-                                                              Radius.circular(
-                                                                20,
-                                                              ),
-                                                        ),
-                                                  ),
-                                              elevation: 0.3,
-                                              leading: IconButton(
-                                                onPressed: () {
+                                child: Dismissible(
+                                  key: ValueKey(entry.id),
+                                  direction: DismissDirection.endToStart,
+                                  background: Container(
+                                    padding: const EdgeInsets.only(right: 20),
+                                    alignment: Alignment.centerRight,
+                                    decoration: BoxDecoration(
+                                      color: Colors.red.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(
+                                        kChatCardRadius,
+                                      ),
+                                    ),
+                                    child: const Text(
+                                      'Delete',
+                                      style: TextStyle(
+                                        color: Colors.red,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                  onDismissed: (_) => _deleteEntry(entry),
+                                  child: ChatHistoryCard(
+                                    entry: entry,
+                                    onDelete: () => _deleteEntry(entry),
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => PopScope(
+                                            canPop: false,
+                                            onPopInvokedWithResult:
+                                                (didPop, result) {
                                                   Navigator.pushAndRemoveUntil(
                                                     context,
                                                     MaterialPageRoute(
@@ -377,99 +352,129 @@ class _ChatHistoryScreenState extends ConsumerState<ChatHistoryScreen> {
                                                     (route) => false,
                                                   );
                                                 },
-                                                icon: SvgPicture.asset(
-                                                  'assets/icons/backarrow.svg',
-                                                  width: 24,
-                                                  height: 20,
+                                            child: Scaffold(
+                                              appBar: AppBar(
+                                                leadingWidth: 40,
+                                                titleSpacing: 0,
+                                                toolbarHeight: 85,
+                                                shape:
+                                                    const RoundedRectangleBorder(
+                                                      borderRadius:
+                                                          BorderRadius.vertical(
+                                                            bottom:
+                                                                Radius.circular(
+                                                                  20,
+                                                                ),
+                                                          ),
+                                                    ),
+                                                elevation: 0.3,
+                                                leading: IconButton(
+                                                  onPressed: () {
+                                                    Navigator.pushAndRemoveUntil(
+                                                      context,
+                                                      MaterialPageRoute(
+                                                        builder: (_) =>
+                                                            const AppShell(
+                                                              initialTab: 0,
+                                                            ),
+                                                      ),
+                                                      (route) => false,
+                                                    );
+                                                  },
+                                                  icon: SvgPicture.asset(
+                                                    'assets/icons/backarrow.svg',
+                                                    width: 24,
+                                                    height: 20,
+                                                  ),
+                                                ),
+                                                title: Row(
+                                                  children: [
+                                                    const CircleAvatar(
+                                                      backgroundImage: AssetImage(
+                                                        'assets/images/drLara.png',
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 15),
+                                                    Column(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .start,
+                                                      children: [
+                                                        const Text(
+                                                          'Dr. Elara',
+                                                          style: TextStyle(
+                                                            fontSize: 16,
+                                                            fontWeight:
+                                                                FontWeight.w600,
+                                                          ),
+                                                        ),
+                                                        Text(
+                                                          'Your AI Medical Assistant',
+                                                          style: TextStyle(
+                                                            color: Colors
+                                                                .grey
+                                                                .shade500,
+                                                            fontSize: 12,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                    const Spacer(),
+                                                    InkWell(
+                                                      onTap: () {
+                                                        Navigator.pushReplacement(
+                                                          context,
+                                                          MaterialPageRoute(
+                                                            builder: (context) =>
+                                                                const NewAiChatScreen(),
+                                                          ),
+                                                        );
+                                                      },
+                                                      child: SvgPicture.asset(
+                                                        'assets/icons/new_chat.svg',
+                                                        height: 20,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 13),
+                                                    InkWell(
+                                                      onTap: () {
+                                                        Navigator.push(
+                                                          context,
+                                                          MaterialPageRoute(
+                                                            builder: (context) =>
+                                                                const ChatHistoryScreen(),
+                                                          ),
+                                                        );
+                                                      },
+                                                      child: SvgPicture.asset(
+                                                        'assets/icons/history.svg',
+                                                        height: 18,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 10),
+                                                  ],
                                                 ),
                                               ),
-                                              title: Row(
-                                                children: [
-                                                  const CircleAvatar(
-                                                    backgroundImage: AssetImage(
-                                                      'assets/images/drLara.png',
-                                                    ),
-                                                  ),
-                                                  const SizedBox(width: 15),
-                                                  Column(
-                                                    crossAxisAlignment:
-                                                        CrossAxisAlignment
-                                                            .start,
-                                                    children: [
-                                                      const Text(
-                                                        'Dr. Elara',
-                                                        style: TextStyle(
-                                                          fontSize: 16,
-                                                          fontWeight:
-                                                              FontWeight.w600,
-                                                        ),
-                                                      ),
-                                                      Text(
-                                                        'Your AI Medical Assistant',
-                                                        style: TextStyle(
-                                                          color: Colors
-                                                              .grey
-                                                              .shade500,
-                                                          fontSize: 12,
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                  const Spacer(),
-                                                  InkWell(
-                                                    onTap: () {
-                                                      Navigator.pushReplacement(
-                                                        context,
-                                                        MaterialPageRoute(
-                                                          builder: (context) =>
-                                                              const NewAiChatScreen(),
-                                                        ),
-                                                      );
-                                                    },
-                                                    child: SvgPicture.asset(
-                                                      'assets/icons/new_chat.svg',
-                                                      height: 20,
-                                                    ),
-                                                  ),
-                                                  const SizedBox(width: 13),
-                                                  InkWell(
-                                                    onTap: () {
-                                                      Navigator.push(
-                                                        context,
-                                                        MaterialPageRoute(
-                                                          builder: (context) =>
-                                                              const ChatHistoryScreen(),
-                                                        ),
-                                                      );
-                                                    },
-                                                    child: SvgPicture.asset(
-                                                      'assets/icons/history.svg',
-                                                      height: 18,
-                                                    ),
-                                                  ),
-                                                  const SizedBox(width: 10),
-                                                ],
+                                              body: ConsultationChatWidget(
+                                                conversationId:
+                                                    entry.conversationId,
+                                                userId: _userId,
+                                                showDoctorRecommendations: true,
                                               ),
-                                            ),
-                                            body: ConsultationChatWidget(
-                                              conversationId:
-                                                  entry.conversationId,
-                                              userId: _userId,
-                                              showDoctorRecommendations: true,
                                             ),
                                           ),
                                         ),
-                                      ),
-                                    );
-                                  },
+                                      );
+                                    },
+                                  ),
                                 ),
-                              ),
-                            );
-                          },
-                        ),
-                ),
-              ],
-            ),
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              ),
+      ),
     );
   }
 }

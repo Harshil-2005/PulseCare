@@ -216,34 +216,42 @@ class ProfileScreenSkeleton extends StatelessWidget {
         shadowColor: Colors.black,
         automaticallyImplyLeading: false,
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            const Padding(
-              padding: EdgeInsets.only(top: 34, left: 16, right: 16, bottom: 24),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SkeletonBox(width: 100, height: 100, radius: 50),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        SkeletonBox(height: 22, radius: 8),
-                        SizedBox(height: 8),
-                        SkeletonBox(width: 180, height: 14, radius: 8),
-                        SizedBox(height: 12),
-                        SkeletonBox(width: 100, height: 30, radius: 15),
-                      ],
+      body: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              const Padding(
+                padding: EdgeInsets.only(
+                  top: 34,
+                  left: 16,
+                  right: 16,
+                  bottom: 24,
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SkeletonBox(width: 100, height: 100, radius: 50),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          SkeletonBox(height: 22, radius: 8),
+                          SizedBox(height: 8),
+                          SkeletonBox(width: 180, height: 14, radius: 8),
+                          SizedBox(height: 12),
+                          SkeletonBox(width: 100, height: 30, radius: 15),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            _profileSkeletonCard(),
-            _profileSkeletonCard(),
-          ],
+              _profileSkeletonCard(),
+              _profileSkeletonCard(),
+            ],
+          ),
         ),
       ),
     );

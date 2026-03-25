@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:pulsecare/utils/app_responsive.dart';
 
 class AppTextField extends StatelessWidget {
   final String hintText;
@@ -51,11 +52,7 @@ class AppTextField extends StatelessWidget {
 
   bool _isSvg(String path) => path.toLowerCase().endsWith('.svg');
 
-  Widget? _buildIcon(
-    String? path,
-    Color? color, {
-    VoidCallback? onTap,
-  }) {
+  Widget? _buildIcon(String? path, Color? color, {VoidCallback? onTap}) {
     if (path == null) return null;
 
     final icon = _isSvg(path)
@@ -65,15 +62,9 @@ class AppTextField extends StatelessWidget {
                 ? null
                 : ColorFilter.mode(color, BlendMode.srcIn),
           )
-        : Image.asset(
-            path,
-            color: color,
-          );
+        : Image.asset(path, color: color);
 
-    final widget = SizedBox(
-      width: 48,
-      child: Center(child: icon),
-    );
+    final widget = SizedBox(width: 48, child: Center(child: icon));
 
     return onTap != null
         ? GestureDetector(onTap: onTap, child: widget)
@@ -82,6 +73,8 @@ class AppTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final effectiveTextSize = AppResponsive.compactPx(context, textSize);
+    final effectiveRadius = AppResponsive.compactPx(context, 30);
     return TextFormField(
       controller: controller,
       focusNode: focusNode,
@@ -94,39 +87,36 @@ class AppTextField extends StatelessWidget {
       onFieldSubmitted: onSubmitted,
       onChanged: onChanged,
       style: TextStyle(
-        fontSize: textSize,
+        fontSize: effectiveTextSize,
         color: textColor ?? Colors.black,
       ),
       cursorColor: cursorColor ?? textColor ?? Colors.black,
       decoration: InputDecoration(
         hintText: hintText,
         hintStyle: TextStyle(
-          fontSize: textSize,
+          fontSize: effectiveTextSize,
           color: Colors.grey.shade400,
         ),
-        prefixIcon: _buildIcon(
-          prefixIconPath,
-          prefixIconColor,
-        ),
+        prefixIcon: _buildIcon(prefixIconPath, prefixIconColor),
         suffixIcon: _buildIcon(
           suffixIconPath,
           suffixIconColor,
           onTap: onSuffixTap,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(30),
+          borderRadius: BorderRadius.circular(effectiveRadius),
           borderSide: BorderSide(color: Colors.grey.shade400),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(30),
+          borderRadius: BorderRadius.circular(effectiveRadius),
           borderSide: BorderSide(color: Colors.grey.shade300),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(30),
+          borderRadius: BorderRadius.circular(effectiveRadius),
           borderSide: const BorderSide(color: Colors.redAccent),
         ),
         focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(30),
+          borderRadius: BorderRadius.circular(effectiveRadius),
           borderSide: const BorderSide(color: Colors.redAccent, width: 1.4),
         ),
       ),
