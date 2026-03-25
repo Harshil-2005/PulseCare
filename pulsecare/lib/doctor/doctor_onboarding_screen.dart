@@ -23,6 +23,7 @@ class DoctorAccountSetupFlowScreen extends ConsumerStatefulWidget {
 
 class _DoctorAccountSetupFlowScreenState
     extends ConsumerState<DoctorAccountSetupFlowScreen> {
+  bool _isFinishing = false;
   final PageController _pageController = PageController();
   final TextEditingController _experienceController = TextEditingController();
   final TextEditingController _specializationController =
@@ -150,53 +151,58 @@ class _DoctorAccountSetupFlowScreenState
       return;
     }
 
-    for (final day in _selectedDays) {
-      _ensureDefaultsForDayIfNeeded(day);
-    }
+    setState(() => _isFinishing = true);
+    try {
+      for (final day in _selectedDays) {
+        _ensureDefaultsForDayIfNeeded(day);
+      }
 
-    final schedule = _normalizedWeeklySchedule(weeklySchedule);
-    final userId = SessionRepository().getCurrentUserId();
-    final userRepository = ref.read(userRepositoryProvider);
-    final currentUser = await userRepository.getUserById(userId);
-    if (!mounted) return;
-    if (currentUser == null) {
-      throw StateError('User not found for active onboarding session');
-    }
-    final doctorRepository = ref.read(doctorRepositoryProvider);
-    final createdDoctor = await doctorRepository.createDoctor(
-      Doctor(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        userId: userId,
-        name: currentUser.fullName,
-        speciality: _specializationController.text.trim(),
-        address: _hospitalNameController.text.trim(),
-        experience: int.tryParse(_experienceController.text.trim()) ?? 0,
-        rating: 0,
-        reviews: 0,
-        patients: 0,
-        image: 'assets/images/Dr1.png',
-        email: currentUser.email,
-        phone: currentUser.phone,
-        about: _aboutController.text.trim(),
-        consultationFee: double.parse(_consultationFeeController.text.trim()),
-        slotDuration: _slotDuration,
-        isAvailableForBooking: true,
-        schedule: schedule,
-      ),
-    );
-    if (!mounted) return;
-    await SessionRepository().setCurrentDoctor(createdDoctor.id);
-    if (!mounted) return;
-
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (_) => DoctorAppShell(
-          doctorId: createdDoctor.id,
-          initialSchedule: schedule,
+      final schedule = _normalizedWeeklySchedule(weeklySchedule);
+      final userId = SessionRepository().getCurrentUserId();
+      final userRepository = ref.read(userRepositoryProvider);
+      final currentUser = await userRepository.getUserById(userId);
+      if (!mounted) return;
+      if (currentUser == null) {
+        throw StateError('User not found for active onboarding session');
+      }
+      final doctorRepository = ref.read(doctorRepositoryProvider);
+      final createdDoctor = await doctorRepository.createDoctor(
+        Doctor(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          userId: userId,
+          name: currentUser.fullName,
+          speciality: _specializationController.text.trim(),
+          address: _hospitalNameController.text.trim(),
+          experience: int.tryParse(_experienceController.text.trim()) ?? 0,
+          rating: 0,
+          reviews: 0,
+          patients: 0,
+          image: 'assets/images/Dr1.png',
+          email: currentUser.email,
+          phone: currentUser.phone,
+          about: _aboutController.text.trim(),
+          consultationFee: double.parse(_consultationFeeController.text.trim()),
+          slotDuration: _slotDuration,
+          isAvailableForBooking: true,
+          schedule: schedule,
         ),
-      ),
-    );
+      );
+      if (!mounted) return;
+      await SessionRepository().setCurrentDoctor(createdDoctor.id);
+      if (!mounted) return;
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => DoctorAppShell(
+            doctorId: createdDoctor.id,
+            initialSchedule: schedule,
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isFinishing = false);
+    }
   }
 
   void _onBack() {
@@ -935,45 +941,84 @@ class _DoctorAccountSetupFlowScreenState
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
         );
       case 1:
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _textFieldStep(
-              label: 'Specialization',
-              hintText: 'Enter specialization',
-              controller: _specializationController,
-              keyboardType: TextInputType.text,
-              onChanged: _onSpecializationChanged,
-            ),
-            if (_filteredSpecializations.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Container(
-                width: double.infinity,
-                constraints: const BoxConstraints(maxHeight: 150),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(30),
-                ),
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: _filteredSpecializations.length,
-                  itemBuilder: (context, index) {
-                    final item = _filteredSpecializations[index];
-                    return InkWell(
-                      onTap: () => _selectSpecialization(item),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 18,
-                          vertical: 12,
-                        ),
-                        child: Text(item),
+        return Builder(
+          builder: (context) {
+            final media = MediaQuery.of(context);
+            final keyboardInset = media.viewInsets.bottom;
+            final safeVertical = media.padding.top + media.padding.bottom;
+            final availableHeight =
+                media.size.height - keyboardInset - safeVertical;
+            final suggestionMaxHeight = keyboardInset > 0
+                ? 110.0
+                : (availableHeight * 0.28).clamp(110.0, 200.0);
+
+            return SingleChildScrollView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              padding: EdgeInsets.only(bottom: keyboardInset + 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _textFieldStep(
+                    label: 'Specialization',
+                    hintText: 'Enter specialization',
+                    controller: _specializationController,
+                    keyboardType: TextInputType.text,
+                    onChanged: _onSpecializationChanged,
+                  ),
+                  if (_filteredSpecializations.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      width: double.infinity,
+                      constraints: BoxConstraints(
+                        maxHeight: suggestionMaxHeight,
                       ),
-                    );
-                  },
-                ),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(color: Colors.grey.shade300),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.08),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(18),
+                        child: ListView.separated(
+                          shrinkWrap: true,
+                          itemCount: _filteredSpecializations.length,
+                          separatorBuilder: (context, _) => Divider(
+                            height: 1,
+                            thickness: 0.6,
+                            color: Colors.grey.shade200,
+                          ),
+                          itemBuilder: (context, index) {
+                            final item = _filteredSpecializations[index];
+                            return InkWell(
+                              onTap: () => _selectSpecialization(item),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 12,
+                                ),
+                                child: Text(
+                                  item,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
               ),
-            ],
-          ],
+            );
+          },
         );
       case 2:
         return _textFieldStep(
@@ -1256,96 +1301,120 @@ class _DoctorAccountSetupFlowScreenState
             ),
             Positioned.fill(
               child: SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
-                  child: Column(
-                    children: [
-                      SizedBox(
-                        height: 44,
-                        child: Align(
-                          alignment: Alignment.centerLeft,
-                          child: _currentPage == 0
-                              ? const SizedBox.shrink()
-                              : IconButton(
-                                  onPressed: _onBack,
-                                  padding: EdgeInsets.zero,
-                                  constraints: const BoxConstraints(),
-                                  icon: SvgPicture.asset(
-                                    'assets/icons/backarrow.svg',
-                                    width: 24,
-                                    height: 24,
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    return SingleChildScrollView(
+                      padding: EdgeInsets.only(
+                        bottom: MediaQuery.of(context).viewInsets.bottom,
+                      ),
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          minHeight: constraints.maxHeight,
+                          maxHeight: constraints.maxHeight,
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
+                          child: Column(
+                            children: [
+                              SizedBox(
+                                height: 44,
+                                child: Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: _currentPage == 0
+                                      ? const SizedBox.shrink()
+                                      : IconButton(
+                                          onPressed: _onBack,
+                                          padding: EdgeInsets.zero,
+                                          constraints: const BoxConstraints(),
+                                          icon: SvgPicture.asset(
+                                            'assets/icons/backarrow.svg',
+                                            width: 24,
+                                            height: 24,
+                                          ),
+                                        ),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              LinearProgressIndicator(
+                                value: progress,
+                                color: const Color(0xFF3F67FD),
+                                minHeight: 8,
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                              const SizedBox(height: 20),
+                              SizedBox(
+                                height: headerHeight,
+                                child: Column(
+                                  children: [
+                                    Text(
+                                      _titles[_currentPage],
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(
+                                        fontFamily: 'Kodchasan',
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 10),
+                                    Text(
+                                      _subtitles[_currentPage],
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w400,
+                                        color: Colors.grey.shade400,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 40),
+                              Expanded(
+                                child: PageView.builder(
+                                  controller: _pageController,
+                                  itemCount: 8,
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  onPageChanged: (index) {
+                                    setState(() {
+                                      _currentPage = index;
+                                      _stepErrorMessage = null;
+                                    });
+                                  },
+                                  itemBuilder: (context, index) {
+                                    final content = _stepContent(index);
+                                    if (index == 1) {
+                                      return content;
+                                    }
+                                    return SingleChildScrollView(
+                                      child: content,
+                                    );
+                                  },
+                                ),
+                              ),
+                              if (_stepErrorMessage != null) ...[
+                                const SizedBox(height: 8),
+                                Text(
+                                  _stepErrorMessage!,
+                                  style: const TextStyle(
+                                    color: Color(0xFFD32F2F),
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
                                   ),
                                 ),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      LinearProgressIndicator(
-                        value: progress,
-                        color: const Color(0xFF3F67FD),
-                        minHeight: 8,
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                      const SizedBox(height: 20),
-                      SizedBox(
-                        height: headerHeight,
-                        child: Column(
-                          children: [
-                            Text(
-                              _titles[_currentPage],
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                fontFamily: 'Kodchasan',
-                                fontSize: 24,
-                                fontWeight: FontWeight.w700,
+                              ],
+                              const SizedBox(height: 16),
+                              NextActionButton(
+                                text: _currentPage == 7 ? 'Finish' : 'Next',
+                                isLoading: _currentPage == 7 && _isFinishing,
+                                loadingText: 'Finishing...',
+                                onTap: () => _onNext(),
                               ),
-                            ),
-                            const SizedBox(height: 10),
-                            Text(
-                              _subtitles[_currentPage],
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w400,
-                                color: Colors.grey.shade400,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 40),
-                      Expanded(
-                        child: PageView.builder(
-                          controller: _pageController,
-                          itemCount: 8,
-                          physics: const NeverScrollableScrollPhysics(),
-                          onPageChanged: (index) {
-                            setState(() {
-                              _currentPage = index;
-                              _stepErrorMessage = null;
-                            });
-                          },
-                          itemBuilder: (context, index) =>
-                              SingleChildScrollView(child: _stepContent(index)),
-                        ),
-                      ),
-                      if (_stepErrorMessage != null) ...[
-                        const SizedBox(height: 8),
-                        Text(
-                          _stepErrorMessage!,
-                          style: const TextStyle(
-                            color: Color(0xFFD32F2F),
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
+                            ],
                           ),
                         ),
-                      ],
-                      const SizedBox(height: 16),
-                      NextActionButton(
-                        text: _currentPage == 7 ? 'Finish' : 'Next',
-                        onTap: () => _onNext(),
                       ),
-                    ],
-                  ),
+                    );
+                  },
                 ),
               ),
             ),

@@ -25,6 +25,10 @@ class AuthScreen extends ConsumerStatefulWidget {
 
 class _AuthScreenState extends ConsumerState<AuthScreen>
     with TickerProviderStateMixin {
+  static const String _busyActionRegister = 'register';
+  static const String _busyActionLogin = 'login';
+  static const String _busyActionGoogle = 'google';
+
   late PageController _pageController;
   final _loginFormKey = GlobalKey<FormState>();
   final _registerFormKey = GlobalKey<FormState>();
@@ -48,6 +52,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
   bool _loginEmailTouched = false;
   bool _registerEmailTouched = false;
   bool _authBusy = false;
+  String? _busyAction;
 
   @override
   void initState() {
@@ -109,6 +114,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
     if (mounted) {
       setState(() {
         _authBusy = true;
+        _busyAction = _busyActionRegister;
       });
     }
 
@@ -147,6 +153,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
       if (mounted) {
         setState(() {
           _authBusy = false;
+          _busyAction = null;
         });
       }
     }
@@ -165,6 +172,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
     if (mounted) {
       setState(() {
         _authBusy = true;
+        _busyAction = _busyActionLogin;
       });
     }
 
@@ -190,6 +198,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
       if (mounted) {
         setState(() {
           _authBusy = false;
+          _busyAction = null;
         });
       }
     }
@@ -594,7 +603,19 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                                       const SizedBox(height: 20),
                                       NextActionButton(
                                         text: isRegister ? "Sign Up" : "Login",
+                                        isLoading:
+                                            _authBusy &&
+                                            ((isRegister &&
+                                                    _busyAction ==
+                                                        _busyActionRegister) ||
+                                                (!isRegister &&
+                                                    _busyAction ==
+                                                        _busyActionLogin)),
+                                        loadingText: isRegister
+                                            ? 'Signing up...'
+                                            : 'Logging in...',
                                         onTap: () {
+                                          if (_authBusy) return;
                                           if (isRegister) {
                                             _handleRegisterSubmit();
                                           } else {
@@ -608,9 +629,11 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                                         const SizedBox(height: 20),
                                         GestureDetector(
                                           onTap: () async {
+                                            if (_authBusy) return;
                                             if (mounted) {
                                               setState(() {
                                                 _authBusy = true;
+                                                _busyAction = _busyActionGoogle;
                                               });
                                             }
                                             try {
@@ -645,6 +668,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                                               if (mounted) {
                                                 setState(() {
                                                   _authBusy = false;
+                                                  _busyAction = null;
                                                 });
                                               }
                                             }
@@ -688,18 +712,6 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                       ),
                     ),
                   ),
-                  if (_authBusy)
-                    Positioned.fill(
-                      child: AbsorbPointer(
-                        absorbing: true,
-                        child: Container(
-                          color: Colors.black.withValues(alpha: 0.18),
-                          child: const Center(
-                            child: CircularProgressIndicator(),
-                          ),
-                        ),
-                      ),
-                    ),
                 ],
               ),
             ),

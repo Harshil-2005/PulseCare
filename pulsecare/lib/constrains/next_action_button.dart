@@ -4,6 +4,7 @@ class NextActionButton extends StatelessWidget {
   final String text;
   final VoidCallback onTap;
   final bool isLoading;
+  final String? loadingText;
 
   final double height;
   final double arrowWidth;
@@ -17,6 +18,7 @@ class NextActionButton extends StatelessWidget {
     required this.text,
     required this.onTap,
     this.isLoading = false,
+    this.loadingText,
     this.height = 60,
     this.arrowWidth = 88,
     this.backgroundColor = const Color(0xFF3F67FD),
@@ -47,23 +49,14 @@ class NextActionButton extends StatelessWidget {
               /// TEXT OR LOADER
               Expanded(
                 child: Center(
-                  child: isLoading
-                      ? const SizedBox(
-                          height: 22,
-                          width: 22,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : Text(
-                          text,
-                          style: TextStyle(
-                            fontSize: 18,
-                            color: textColor,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
+                  child: Text(
+                    isLoading ? (loadingText ?? '$text...') : text,
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: textColor,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                 ),
               ),
 
@@ -79,23 +72,14 @@ class NextActionButton extends StatelessWidget {
                     borderRadius: BorderRadius.circular(30),
                   ),
                   child: Center(
-                    child: isLoading
-                        ? const SizedBox(
-                            height: 18,
-                            width: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Color(0xFF3F67FD),
-                            ),
-                          )
-                        : Text(
-                            '>>>',
-                            style: TextStyle(
-                              fontSize: 25,
-                              fontWeight: FontWeight.w400,
-                              color: arrowTextColor,
-                            ),
-                          ),
+                    child: Text(
+                      isLoading ? '...' : '>>>',
+                      style: TextStyle(
+                        fontSize: 25,
+                        fontWeight: FontWeight.w400,
+                        color: arrowTextColor,
+                      ),
+                    ),
                   ),
                 ),
               ),

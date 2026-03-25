@@ -86,13 +86,50 @@ _DoctorStatusUi _resolveDoctorStatus({
   final now = DateTime.now();
   final today = DateTime(now.year, now.month, now.day);
 
+  int? parseSlotMinutes(String raw) {
+    final match = RegExp(
+      r'^(0?[1-9]|1[0-2]):([0-5][0-9])\s?(AM|PM)$',
+      caseSensitive: false,
+    ).firstMatch(raw.trim());
+    if (match == null) return null;
+
+    final hour12 = int.parse(match.group(1)!);
+    final minute = int.parse(match.group(2)!);
+    final period = match.group(3)!.toUpperCase();
+
+    final baseHour = hour12 == 12 ? 0 : hour12;
+    final hour24 = period == 'PM' ? baseHour + 12 : baseHour;
+    return hour24 * 60 + minute;
+  }
+
   bool hasAvailableSlots(DateTime date) {
     final slots = _availabilityEngine.generateSlots(
       doctor: doctor,
       date: date,
       appointments: appointments,
     );
-    return slots.any((slot) => slot['status'] == SlotStatus.available);
+    return slots.any((slot) {
+      if (slot['status'] != SlotStatus.available) {
+        return false;
+      }
+
+      final isToday =
+          date.year == today.year &&
+          date.month == today.month &&
+          date.day == today.day;
+      if (!isToday) {
+        return true;
+      }
+
+      final rawTime = (slot['time'] ?? '').toString();
+      final slotMinutes = parseSlotMinutes(rawTime);
+      if (slotMinutes == null) {
+        return false;
+      }
+
+      final nowMinutes = now.hour * 60 + now.minute;
+      return slotMinutes >= nowMinutes;
+    });
   }
 
   DateTime? nextAvailableDate;
@@ -367,28 +404,31 @@ class HomeHeader extends ConsumerWidget {
 
     return Row(
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Hi, ${user?.fullName ?? ''}!',
-                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 24),
-              ),
-              Text(
-                'How are you feeling today?',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w400,
-                  color: Colors.grey,
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Hi, ${user?.fullName ?? ''}!',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 24),
                 ),
-              ),
-            ],
+                Text(
+                  'How are you feeling today?',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w400,
+                    color: Colors.grey,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
-        Spacer(),
         Padding(
           padding: const EdgeInsets.only(right: 16.0),
           child: InkWell(

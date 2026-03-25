@@ -3,10 +3,12 @@ import 'package:pulsecare/utils/keyboard_utils.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:pulsecare/constrains/app_avatar.dart';
 import 'package:pulsecare/model/chat_message.dart';
 import 'package:pulsecare/model/doctor_model.dart';
 import 'package:pulsecare/model/intake_session_model.dart';
 import 'package:pulsecare/repositories/chat_repository.dart';
+import 'package:pulsecare/repositories/session_repository.dart';
 import 'package:pulsecare/user/doctor_detail_screen.dart';
 import 'package:pulsecare/utils/time_utils.dart';
 import 'package:pulsecare/data/triage/triage_data.dart';
@@ -14,7 +16,11 @@ import 'package:pulsecare/data/triage/triage_data.dart';
 import '../../providers/repository_providers.dart';
 import '../../providers/session_provider.dart';
 
-final _consultationDoctorsProvider = StreamProvider<List<Doctor>>((ref) {
+final _consultationDoctorsProvider = StreamProvider.autoDispose<List<Doctor>>((
+  ref,
+) {
+  // Recreate the stream when account/session changes to avoid stale cache.
+  ref.watch(sessionUserIdProvider);
   return ref.read(doctorRepositoryProvider).watchAllDoctors();
 });
 
@@ -86,6 +92,8 @@ class _ConsultationChatWidgetState extends ConsumerState<ConsultationChatWidget>
 
   String _userId = '';
   String _conversationId = '';
+  String _currentUserName = '';
+  String? _currentUserAvatarPath;
   String? _pendingInitialMessage;
   String? _completedSummaryId;
   String? _recommendedSpecialty;
@@ -111,66 +119,121 @@ class _ConsultationChatWidgetState extends ConsumerState<ConsultationChatWidget>
   }
 
   Future<void> _initializeConversation() async {
-    var resolvedUserId = widget.userId.trim();
+    try {
+      var resolvedUserId = widget.userId.trim();
 
-    if (resolvedUserId.isEmpty) {
-      final sessionUserId = ref.read(sessionUserIdProvider);
-      final currentUser = sessionUserId == null
-          ? null
-          : await ref.read(userRepositoryProvider).getUserById(sessionUserId);
-      resolvedUserId = currentUser?.id ?? sessionUserId ?? '';
-    }
-
-    final resolvedConversationId = widget.conversationId.trim().isEmpty
-        ? _chatRepository.ensureConversationStarted(resolvedUserId)
-        : widget.conversationId.trim();
-
-    final initialMessages = await _chatRepository.getMessages(
-      resolvedConversationId,
-    );
-
-    if (!mounted) return;
-
-    final hasAnyUserMessage = initialMessages.any((message) => message.isUser);
-    final summaryMessage = initialMessages.lastWhere(
-      (message) => (message.summarySymptoms?.isNotEmpty ?? false),
-      orElse: () => ChatMessage(
-        id: '',
-        isUser: false,
-        message: '',
-        sentAt: DateTime.fromMillisecondsSinceEpoch(0),
-      ),
-    );
-    final hasSummary = summaryMessage.summarySymptoms?.isNotEmpty ?? false;
-    final inferredSpecialty = hasSummary
-        ? _inferSpecialtyFromSymptoms(summaryMessage.summarySymptoms!)
-        : null;
-    setState(() {
-      _userId = resolvedUserId;
-      _conversationId = resolvedConversationId;
-      _messages = initialMessages;
-      _hasStartedConsultation = hasAnyUserMessage;
-      _latestIntakeCompleted = _latestIntakeCompleted || hasSummary;
-      if (_recommendedSpecialty == null && inferredSpecialty != null) {
-        _recommendedSpecialty = inferredSpecialty;
+      if (resolvedUserId.isEmpty) {
+        String? sessionUserId = ref.read(sessionUserIdProvider);
+        if (sessionUserId == null || sessionUserId.isEmpty) {
+          try {
+            sessionUserId = SessionRepository().getCurrentUserId();
+          } catch (_) {
+            sessionUserId = null;
+          }
+        }
+        if (sessionUserId != null && sessionUserId.isNotEmpty) {
+          try {
+            final currentUser = await ref
+                .read(userRepositoryProvider)
+                .getUserById(sessionUserId);
+            resolvedUserId = currentUser?.id ?? sessionUserId;
+          } catch (_) {
+            resolvedUserId = sessionUserId;
+          }
+        }
       }
-      _isInitialized = true;
-    });
 
-    widget.onHasAnyUserMessageChanged?.call(hasAnyUserMessage);
-    if (hasAnyUserMessage) {
-      widget.onConsultationStarted?.call();
+      if (resolvedUserId.isEmpty) {
+        if (!mounted) return;
+        setState(() {
+          _isInitialized = true;
+          _userId = '';
+          _conversationId = '';
+          _currentUserName = '';
+          _currentUserAvatarPath = null;
+          _messages = const <ChatMessage>[];
+        });
+        return;
+      }
+
+      String resolvedUserName = '';
+      String? resolvedUserAvatarPath;
+      try {
+        final resolvedUser = await ref
+            .read(userRepositoryProvider)
+            .getUserById(resolvedUserId);
+        resolvedUserName = resolvedUser?.fullName.trim() ?? '';
+        resolvedUserAvatarPath = resolvedUser?.avatarPath;
+      } catch (_) {
+        resolvedUserName = '';
+        resolvedUserAvatarPath = null;
+      }
+
+      final resolvedConversationId = widget.conversationId.trim().isEmpty
+          ? _chatRepository.ensureConversationStarted(resolvedUserId)
+          : widget.conversationId.trim();
+
+      List<ChatMessage> initialMessages;
+      try {
+        initialMessages = await _chatRepository.getMessages(
+          resolvedConversationId,
+        );
+      } catch (_) {
+        initialMessages = const <ChatMessage>[];
+      }
+
+      if (!mounted) return;
+
+      final hasAnyUserMessage = initialMessages.any(
+        (message) => message.isUser,
+      );
+      final summaryMessage = initialMessages.lastWhere(
+        (message) => (message.summarySymptoms?.isNotEmpty ?? false),
+        orElse: () => ChatMessage(
+          id: '',
+          isUser: false,
+          message: '',
+          sentAt: DateTime.fromMillisecondsSinceEpoch(0),
+        ),
+      );
+      final hasSummary = summaryMessage.summarySymptoms?.isNotEmpty ?? false;
+      final inferredSpecialty = hasSummary
+          ? _inferSpecialtyFromSymptoms(summaryMessage.summarySymptoms!)
+          : null;
+      setState(() {
+        _userId = resolvedUserId;
+        _conversationId = resolvedConversationId;
+        _currentUserName = resolvedUserName;
+        _currentUserAvatarPath = resolvedUserAvatarPath;
+        _messages = initialMessages;
+        _hasStartedConsultation = hasAnyUserMessage;
+        _latestIntakeCompleted = _latestIntakeCompleted || hasSummary;
+        if (_recommendedSpecialty == null && inferredSpecialty != null) {
+          _recommendedSpecialty = inferredSpecialty;
+        }
+        _isInitialized = true;
+      });
+
+      widget.onHasAnyUserMessageChanged?.call(hasAnyUserMessage);
+      if (hasAnyUserMessage) {
+        widget.onConsultationStarted?.call();
+      }
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollToBottom(animated: false);
+      });
+      if (hasSummary && !_didAutoScrollToBottom) {
+        _didAutoScrollToBottom = true;
+        _scrollToBottomAfterBuild();
+      }
+
+      _triggerInitialMessageIfNeeded();
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _isInitialized = true;
+      });
     }
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _scrollToBottom(animated: false);
-    });
-    if (hasSummary && !_didAutoScrollToBottom) {
-      _didAutoScrollToBottom = true;
-      _scrollToBottomAfterBuild();
-    }
-
-    _triggerInitialMessageIfNeeded();
   }
 
   Future<void> _refreshMessages() async {
@@ -557,7 +620,9 @@ class _ConsultationChatWidgetState extends ConsumerState<ConsultationChatWidget>
             const SizedBox(width: 8),
             Container(
               padding: const EdgeInsets.all(14),
-              constraints: const BoxConstraints(maxWidth: 260),
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.of(context).size.width * 0.7,
+              ),
               decoration: BoxDecoration(
                 color: isUser ? const Color(0xff3F67FD) : Colors.grey.shade200,
                 borderRadius: isUser
@@ -589,9 +654,10 @@ class _ConsultationChatWidgetState extends ConsumerState<ConsultationChatWidget>
             ),
             const SizedBox(width: 8),
             if (isUser)
-              const CircleAvatar(
+              AppAvatar(
                 radius: 18,
-                backgroundImage: AssetImage('assets/images/user.png'),
+                name: _currentUserName,
+                imagePath: _currentUserAvatarPath,
               ),
           ],
         ),
@@ -662,7 +728,7 @@ class _ConsultationChatWidgetState extends ConsumerState<ConsultationChatWidget>
     return InkWell(
       onTap: () {
         KeyboardUtils.hideKeyboardKeepFocus();
-Navigator.push(
+        Navigator.push(
           context,
           MaterialPageRoute(
             builder: (_) => DoctorDetailScreen(
@@ -807,7 +873,7 @@ Navigator.push(
             return;
           }
           KeyboardUtils.hideKeyboardKeepFocus();
-final onContinueBooking = widget.onContinueBooking;
+          final onContinueBooking = widget.onContinueBooking;
           if (onContinueBooking != null) {
             onContinueBooking(selectedDoctorId, _completedSummaryId);
             return;
@@ -1284,5 +1350,3 @@ class _ChatInputField extends StatelessWidget {
     );
   }
 }
-
-

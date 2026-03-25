@@ -45,7 +45,7 @@ class DoctorDashboardScreen extends ConsumerStatefulWidget {
   });
 
   final List<Appointment> appointments;
-  final void Function(Appointment, AppointmentStatus)? onStatusChanged;
+  final Future<void> Function(Appointment, AppointmentStatus)? onStatusChanged;
   final VoidCallback? onViewAppointments;
   final void Function(int filterIndex)? onStatTap;
 
@@ -261,8 +261,11 @@ class _DoctorDashboardScreenState extends ConsumerState<DoctorDashboardScreen> {
                 delegate: SliverChildBuilderDelegate((context, index) {
                   return _DoctorAppointmentPreviewCard(
                     item: _sortedAppointments[index],
-                    onStatusUpdated: (appointment, updatedStatus) {
-                      widget.onStatusChanged?.call(appointment, updatedStatus);
+                    onStatusUpdated: (appointment, updatedStatus) async {
+                      await widget.onStatusChanged?.call(
+                        appointment,
+                        updatedStatus,
+                      );
                     },
                   );
                 }, childCount: _sortedAppointments.length),
@@ -728,7 +731,10 @@ class _DoctorAppointmentPreviewCard extends StatelessWidget {
   });
 
   final Appointment item;
-  final void Function(Appointment appointment, AppointmentStatus updatedStatus)
+  final Future<void> Function(
+    Appointment appointment,
+    AppointmentStatus updatedStatus,
+  )
   onStatusUpdated;
 
   @override
@@ -748,7 +754,7 @@ class _DoctorAppointmentPreviewCard extends StatelessWidget {
             ),
           );
           if (updatedStatus != null) {
-            onStatusUpdated(item, updatedStatus);
+            await onStatusUpdated(item, updatedStatus);
           }
         },
         child: Container(

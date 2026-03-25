@@ -9,7 +9,6 @@ import 'package:pulsecare/config/app_environment.dart';
 import '../data/datasources/appointment_datasource.dart';
 import '../data/datasources/availability_datasource.dart';
 import '../data/datasources/auth_datasource.dart';
-import '../data/datasources/api/api_chat_datasource.dart';
 import '../data/datasources/chat_datasource.dart';
 import '../data/datasources/doctor_datasource.dart';
 import '../data/datasources/doctor_review_datasource.dart';
@@ -70,7 +69,8 @@ final availabilityDatasourceProvider = Provider<AvailabilityDataSource>(
 );
 
 final chatDatasourceProvider = Provider<ChatDataSource>(
-  (ref) => isDev ? LocalChatDataSource() : ApiChatDataSource(),
+  // Keep chat stable across emulator/device builds until API datasource is implemented.
+  (ref) => LocalChatDataSource(),
 );
 
 final authDatasourceProvider = Provider<AuthDatasource>(
@@ -125,7 +125,9 @@ final aiSummaryRepositoryProvider = Provider<AISummaryRepository>(
 );
 
 final aiServiceProvider = Provider<AIService>(
-  (ref) => isDev ? MockAIService() : ProductionAIService(),
+  // ProductionAIService is still a fallback stub that completes immediately.
+  // Keep interactive intake consistent across emulator and real devices.
+  (ref) => MockAIService(),
 );
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {

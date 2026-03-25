@@ -232,8 +232,8 @@ class DoctorAppShellState extends ConsumerState<DoctorAppShell> {
   List<Widget> get screens => [
     DoctorDashboardScreen(
       appointments: appointments,
-      onStatusChanged: (appointment, status) {
-        updateAppointmentStatus(appointment, status);
+      onStatusChanged: (appointment, status) async {
+        await updateAppointmentStatus(appointment, status);
       },
       onViewAppointments: () => switchToTab(1),
       onStatTap: (filterIndex) {
@@ -243,8 +243,8 @@ class DoctorAppShellState extends ConsumerState<DoctorAppShell> {
     DoctorAppointmentsScreen(
       key: doctorAppointmentsKey,
       appointments: appointments,
-      onStatusChanged: (appointment, status) {
-        updateAppointmentStatus(appointment, status);
+      onStatusChanged: (appointment, status) async {
+        await updateAppointmentStatus(appointment, status);
       },
     ),
     DoctorScheduleScreen(doctorId: currentDoctor.id, leaveDates: leaveDates),

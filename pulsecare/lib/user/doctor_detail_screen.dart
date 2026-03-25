@@ -605,7 +605,7 @@ class _DoctorDetailScreenState extends ConsumerState<DoctorDetailScreen> {
                                                   maxLines: 1,
                                                   softWrap: false,
                                                   overflow:
-                                                      TextOverflow.visible,
+                                                      TextOverflow.ellipsis,
                                                   textAlign: TextAlign.left,
                                                   style: const TextStyle(
                                                     fontSize: 16,
@@ -622,7 +622,7 @@ class _DoctorDetailScreenState extends ConsumerState<DoctorDetailScreen> {
                                             singleLineText,
                                             maxLines: 1,
                                             softWrap: false,
-                                            overflow: TextOverflow.visible,
+                                            overflow: TextOverflow.ellipsis,
                                             textAlign: TextAlign.left,
                                             style: TextStyle(
                                               fontSize: 16,

@@ -9,15 +9,58 @@ import 'package:pulsecare/providers/repository_providers.dart';
 import 'package:pulsecare/utils/time_utils.dart';
 import 'package:pulsecare/data/triage/triage_data.dart';
 
-class DoctorAppointmentDetailScreen extends StatelessWidget {
+class DoctorAppointmentDetailScreen extends ConsumerStatefulWidget {
   const DoctorAppointmentDetailScreen({super.key, required this.appointment});
 
   final Appointment appointment;
 
   @override
+  ConsumerState<DoctorAppointmentDetailScreen> createState() =>
+      _DoctorAppointmentDetailScreenState();
+}
+
+class _DoctorAppointmentDetailScreenState
+    extends ConsumerState<DoctorAppointmentDetailScreen> {
+  late AppointmentStatus _status;
+  bool _isUpdatingStatus = false;
+  AppointmentStatus? _updatingTargetStatus;
+
+  @override
+  void initState() {
+    super.initState();
+    _status = widget.appointment.status;
+  }
+
+  Future<void> _updateStatus(AppointmentStatus targetStatus) async {
+    if (_isUpdatingStatus || _status == targetStatus) {
+      return;
+    }
+    setState(() {
+      _isUpdatingStatus = true;
+      _updatingTargetStatus = targetStatus;
+    });
+
+    try {
+      await ref
+          .read(appointmentRepositoryProvider)
+          .updateAppointmentStatus(widget.appointment.id, targetStatus);
+      if (!mounted) return;
+      setState(() {
+        _status = targetStatus;
+      });
+    } finally {
+      if (!mounted) return;
+      setState(() {
+        _isUpdatingStatus = false;
+        _updatingTargetStatus = null;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final statusUi = _statusUi(appointment.status);
-    final reports = appointment.reports;
+    final statusUi = _statusUi(_status);
+    final reports = widget.appointment.reports;
 
     return Scaffold(
       appBar: AppBar(
@@ -51,7 +94,7 @@ class DoctorAppointmentDetailScreen extends StatelessWidget {
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
                 child: _ContentSection(
-                  appointment: appointment,
+                  appointment: widget.appointment,
                   statusUi: statusUi,
                   reports: reports,
                 ),
@@ -59,7 +102,12 @@ class DoctorAppointmentDetailScreen extends StatelessWidget {
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-              child: _ActionSection(status: appointment.status),
+              child: _ActionSection(
+                status: _status,
+                isUpdating: _isUpdatingStatus,
+                updatingTargetStatus: _updatingTargetStatus,
+                onStatusSelected: _updateStatus,
+              ),
             ),
           ],
         ),
@@ -257,10 +305,7 @@ class _ContentSection extends ConsumerWidget {
                       summary.symptoms,
                       summary.frequency,
                     ))
-                      _buildSummaryRow(
-                        'Frequency',
-                        summary.frequency!.trim(),
-                      ),
+                      _buildSummaryRow('Frequency', summary.frequency!.trim()),
                     _buildSummaryRow(
                       'Medications',
                       summary.medications ?? 'N/A',
@@ -343,9 +388,17 @@ class _ContentSection extends ConsumerWidget {
 }
 
 class _ActionSection extends StatelessWidget {
-  const _ActionSection({required this.status});
+  const _ActionSection({
+    required this.status,
+    required this.isUpdating,
+    required this.updatingTargetStatus,
+    required this.onStatusSelected,
+  });
 
   final AppointmentStatus status;
+  final bool isUpdating;
+  final AppointmentStatus? updatingTargetStatus;
+  final ValueChanged<AppointmentStatus> onStatusSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -354,8 +407,14 @@ class _ActionSection extends StatelessWidget {
         children: [
           Expanded(
             child: _ActionButton(
-              text: 'Reject',
-              onTap: () => Navigator.pop(context, AppointmentStatus.cancelled),
+              text:
+                  isUpdating &&
+                      updatingTargetStatus == AppointmentStatus.cancelled
+                  ? 'Rejecting...'
+                  : 'Reject',
+              onTap: isUpdating
+                  ? null
+                  : () => onStatusSelected(AppointmentStatus.cancelled),
               textColor: Colors.black,
               backgroundColor: Colors.grey.shade300,
             ),
@@ -363,8 +422,14 @@ class _ActionSection extends StatelessWidget {
           const SizedBox(width: 16),
           Expanded(
             child: _GradientActionButton(
-              text: 'Accept',
-              onTap: () => Navigator.pop(context, AppointmentStatus.confirmed),
+              text:
+                  isUpdating &&
+                      updatingTargetStatus == AppointmentStatus.confirmed
+                  ? 'Accepting...'
+                  : 'Accept',
+              onTap: isUpdating
+                  ? null
+                  : () => onStatusSelected(AppointmentStatus.confirmed),
             ),
           ),
         ],
@@ -373,8 +438,12 @@ class _ActionSection extends StatelessWidget {
 
     if (status == AppointmentStatus.confirmed) {
       return _GradientActionButton(
-        text: 'Mark as Completed',
-        onTap: () => Navigator.pop(context, AppointmentStatus.completed),
+        text: isUpdating && updatingTargetStatus == AppointmentStatus.completed
+            ? 'Mark as Completing...'
+            : 'Mark as Completed',
+        onTap: isUpdating
+            ? null
+            : () => onStatusSelected(AppointmentStatus.completed),
       );
     }
 
@@ -474,7 +543,7 @@ class _GradientActionButton extends StatelessWidget {
   const _GradientActionButton({required this.text, required this.onTap});
 
   final String text;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -646,7 +715,8 @@ String _followUpLabelFromId(String id) {
       break;
     }
   }
-  return _labelOverride(id) ?? _capitalize(fallback.replaceAll('_', ' ').trim());
+  return _labelOverride(id) ??
+      _capitalize(fallback.replaceAll('_', ' ').trim());
 }
 
 String _capitalize(String value) {
@@ -660,7 +730,9 @@ String _formatSymptomLabel(String symptom) {
   final words = normalized
       .split(' ')
       .where((word) => word.isNotEmpty)
-      .map((word) => '${word[0].toUpperCase()}${word.substring(1).toLowerCase()}')
+      .map(
+        (word) => '${word[0].toUpperCase()}${word.substring(1).toLowerCase()}',
+      )
       .toList(growable: false);
   return words.join(' ');
 }
@@ -766,7 +838,8 @@ String? _labelOverride(String id) {
     'chest_pain_spread_to_arm': 'Pain radiates to arm',
     'chest_pain_worsen_with_exertion': 'Worse with exertion',
     'shortness_of_breath_start_suddenly': 'Sudden onset',
-    'shortness_of_breath_short_of_breath_at_rest': 'Shortness of breath at rest',
+    'shortness_of_breath_short_of_breath_at_rest':
+        'Shortness of breath at rest',
     'shortness_of_breath_chest_pain': 'Chest pain',
     'rash_rash': 'Rash location',
     'rash_itchy': 'Itching',
@@ -824,7 +897,8 @@ String? _labelOverride(String id) {
     'itching_itching_most': 'Itching location',
     'itching_a_rash_with_itching': 'Rash with itching',
     'itching_recently_use_a_new_soap': 'New soap exposure',
-    'neck_pain_neck_pain_start_after_poor_posture': 'Started after poor posture',
+    'neck_pain_neck_pain_start_after_poor_posture':
+        'Started after poor posture',
     'neck_pain_pain_spread_to_shoulder': 'Radiates to shoulder',
     'neck_pain_feel_numbness_in_arms': 'Arm numbness',
     'muscle_pain_painful': 'Painful muscles',

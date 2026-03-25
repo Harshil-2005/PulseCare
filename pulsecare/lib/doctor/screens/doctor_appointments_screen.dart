@@ -13,14 +13,27 @@ class DoctorAppointmentsScreen extends StatefulWidget {
   });
 
   final List<Appointment> appointments;
-  final void Function(Appointment, AppointmentStatus)? onStatusChanged;
+  final Future<void> Function(Appointment, AppointmentStatus)? onStatusChanged;
 
   @override
-  State<DoctorAppointmentsScreen> createState() => DoctorAppointmentsScreenState();
+  State<DoctorAppointmentsScreen> createState() =>
+      DoctorAppointmentsScreenState();
 }
 
 class DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen> {
   int selectedTab = 0;
+
+  int _tabIndexForStatus(AppointmentStatus status) {
+    switch (status) {
+      case AppointmentStatus.completed:
+        return 1;
+      case AppointmentStatus.cancelled:
+        return 2;
+      case AppointmentStatus.pending:
+      case AppointmentStatus.confirmed:
+        return 0;
+    }
+  }
 
   void setTab(int index) {
     setState(() {
@@ -28,24 +41,27 @@ class DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen> {
     });
   }
 
-  List<Appointment> get upcomingAppointments => widget.appointments
-      .where(
-        (a) =>
-            a.status == AppointmentStatus.pending ||
-            a.status == AppointmentStatus.confirmed,
-      )
-      .toList()
-    ..sort((a, b) => a.scheduledAt.compareTo(b.scheduledAt));
+  List<Appointment> get upcomingAppointments =>
+      widget.appointments
+          .where(
+            (a) =>
+                a.status == AppointmentStatus.pending ||
+                a.status == AppointmentStatus.confirmed,
+          )
+          .toList()
+        ..sort((a, b) => a.scheduledAt.compareTo(b.scheduledAt));
 
-  List<Appointment> get pastAppointments => widget.appointments
-      .where((a) => a.status == AppointmentStatus.completed)
-      .toList()
-    ..sort((a, b) => b.scheduledAt.compareTo(a.scheduledAt));
+  List<Appointment> get pastAppointments =>
+      widget.appointments
+          .where((a) => a.status == AppointmentStatus.completed)
+          .toList()
+        ..sort((a, b) => b.scheduledAt.compareTo(a.scheduledAt));
 
-  List<Appointment> get cancelledAppointments => widget.appointments
-      .where((a) => a.status == AppointmentStatus.cancelled)
-      .toList()
-    ..sort((a, b) => b.scheduledAt.compareTo(a.scheduledAt));
+  List<Appointment> get cancelledAppointments =>
+      widget.appointments
+          .where((a) => a.status == AppointmentStatus.cancelled)
+          .toList()
+        ..sort((a, b) => b.scheduledAt.compareTo(a.scheduledAt));
 
   @override
   Widget build(BuildContext context) {
@@ -96,8 +112,8 @@ class DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen> {
                   selectedTab == 0
                       ? -1
                       : selectedTab == 1
-                          ? 0
-                          : 1,
+                      ? 0
+                      : 1,
                   0,
                 ),
                 child: Padding(
@@ -122,14 +138,20 @@ class DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen> {
                 _AppointmentList(
                   items: upcomingAppointments,
                   onStatusChanged: widget.onStatusChanged,
+                  onStatusHandled: (status) =>
+                      setTab(_tabIndexForStatus(status)),
                 ),
                 _AppointmentList(
                   items: pastAppointments,
                   onStatusChanged: widget.onStatusChanged,
+                  onStatusHandled: (status) =>
+                      setTab(_tabIndexForStatus(status)),
                 ),
                 _AppointmentList(
                   items: cancelledAppointments,
                   onStatusChanged: widget.onStatusChanged,
+                  onStatusHandled: (status) =>
+                      setTab(_tabIndexForStatus(status)),
                 ),
               ],
             ),
@@ -162,11 +184,16 @@ class _AppointmentList extends StatelessWidget {
   const _AppointmentList({
     required this.items,
     required this.onStatusChanged,
+    required this.onStatusHandled,
   });
 
   final List<Appointment> items;
-  final void Function(Appointment appointment, AppointmentStatus status)?
-      onStatusChanged;
+  final Future<void> Function(
+    Appointment appointment,
+    AppointmentStatus status,
+  )?
+  onStatusChanged;
+  final ValueChanged<AppointmentStatus> onStatusHandled;
 
   @override
   Widget build(BuildContext context) {
@@ -182,38 +209,77 @@ class _AppointmentList extends StatelessWidget {
         return _DoctorAppointmentPreviewCard(
           item: item,
           onStatusChanged: onStatusChanged,
+          onStatusHandled: onStatusHandled,
         );
       },
     );
   }
 }
 
-class _DoctorAppointmentPreviewCard extends StatelessWidget {
+class _DoctorAppointmentPreviewCard extends StatefulWidget {
   const _DoctorAppointmentPreviewCard({
     required this.item,
     required this.onStatusChanged,
+    required this.onStatusHandled,
   });
 
   final Appointment item;
-  final void Function(Appointment appointment, AppointmentStatus status)?
-      onStatusChanged;
+  final Future<void> Function(
+    Appointment appointment,
+    AppointmentStatus status,
+  )?
+  onStatusChanged;
+  final ValueChanged<AppointmentStatus> onStatusHandled;
+
+  @override
+  State<_DoctorAppointmentPreviewCard> createState() =>
+      _DoctorAppointmentPreviewCardState();
+}
+
+class _DoctorAppointmentPreviewCardState
+    extends State<_DoctorAppointmentPreviewCard> {
+  AppointmentStatus? _pendingStatus;
+
+  Future<void> _applyStatus(AppointmentStatus status) async {
+    if (_pendingStatus != null) return;
+    setState(() {
+      _pendingStatus = status;
+    });
+    try {
+      await widget.onStatusChanged?.call(widget.item, status);
+      widget.onStatusHandled(status);
+    } finally {
+      if (!mounted) return;
+      setState(() {
+        _pendingStatus = null;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final item = widget.item;
     final status = _statusUi(item.status);
+    final isBusy = _pendingStatus != null;
 
     return Padding(
       padding: const EdgeInsets.only(top: 16, left: 16, right: 16),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => DoctorAppointmentDetailScreen(appointment: item),
-            ),
-          );
-        },
+        onTap: isBusy
+            ? null
+            : () async {
+                final updatedStatus = await Navigator.push<AppointmentStatus>(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        DoctorAppointmentDetailScreen(appointment: item),
+                  ),
+                );
+                if (updatedStatus != null) {
+                  await _applyStatus(updatedStatus);
+                }
+              },
         child: Container(
           decoration: BoxDecoration(
             color: Colors.white,
@@ -281,7 +347,10 @@ class _DoctorAppointmentPreviewCard extends StatelessWidget {
                   item.patientName,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 const SizedBox(height: 6),
                 Text(
@@ -327,12 +396,11 @@ class _DoctorAppointmentPreviewCard extends StatelessWidget {
                       Expanded(
                         child: _ActionButton(
                           text: 'Reject',
-                          onTap: () {
-                            onStatusChanged?.call(
-                              item,
-                              AppointmentStatus.cancelled,
-                            );
-                          },
+                          onTap: isBusy
+                              ? null
+                              : () => _applyStatus(AppointmentStatus.cancelled),
+                          isLoading:
+                              _pendingStatus == AppointmentStatus.cancelled,
                           textColor: Colors.black,
                           backgroundColor: Colors.grey.shade300,
                         ),
@@ -341,12 +409,11 @@ class _DoctorAppointmentPreviewCard extends StatelessWidget {
                       Expanded(
                         child: _GradientActionButton(
                           text: 'Accept',
-                          onTap: () {
-                            onStatusChanged?.call(
-                              item,
-                              AppointmentStatus.confirmed,
-                            );
-                          },
+                          onTap: isBusy
+                              ? null
+                              : () => _applyStatus(AppointmentStatus.confirmed),
+                          isLoading:
+                              _pendingStatus == AppointmentStatus.confirmed,
                         ),
                       ),
                     ],
@@ -356,12 +423,10 @@ class _DoctorAppointmentPreviewCard extends StatelessWidget {
                   const SizedBox(height: 12),
                   _GradientActionButton(
                     text: 'Mark Completed',
-                    onTap: () {
-                      onStatusChanged?.call(
-                        item,
-                        AppointmentStatus.completed,
-                      );
-                    },
+                    onTap: isBusy
+                        ? null
+                        : () => _applyStatus(AppointmentStatus.completed),
+                    isLoading: _pendingStatus == AppointmentStatus.completed,
                   ),
                 ],
               ],
@@ -460,12 +525,14 @@ class _ActionButton extends StatelessWidget {
   const _ActionButton({
     required this.text,
     this.onTap,
+    this.isLoading = false,
     required this.textColor,
     this.backgroundColor = Colors.white,
   });
 
   final String text;
   final VoidCallback? onTap;
+  final bool isLoading;
   final Color textColor;
   final Color backgroundColor;
 
@@ -480,15 +547,36 @@ class _ActionButton extends StatelessWidget {
           color: backgroundColor,
           borderRadius: BorderRadius.circular(30),
         ),
-        child: Center(
-          child: Text(
-            text,
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w500,
-              color: textColor,
+        child: Stack(
+          children: [
+            Center(
+              child: isLoading
+                  ? SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: textColor,
+                      ),
+                    )
+                  : Text(
+                      text,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                        color: textColor,
+                      ),
+                    ),
             ),
-          ),
+            if (isLoading)
+              const Align(
+                alignment: Alignment.bottomCenter,
+                child: SizedBox(
+                  height: 2,
+                  child: LinearProgressIndicator(minHeight: 2),
+                ),
+              ),
+          ],
         ),
       ),
     );
@@ -499,10 +587,12 @@ class _GradientActionButton extends StatelessWidget {
   const _GradientActionButton({
     required this.text,
     required this.onTap,
+    this.isLoading = false,
   });
 
   final String text;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
+  final bool isLoading;
 
   @override
   Widget build(BuildContext context) {
@@ -515,15 +605,40 @@ class _GradientActionButton extends StatelessWidget {
           color: const Color(0xff3F67FD),
           borderRadius: BorderRadius.circular(30),
         ),
-        child: Center(
-          child: Text(
-            text,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w500,
-              fontSize: 15,
+        child: Stack(
+          children: [
+            Center(
+              child: isLoading
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : Text(
+                      text,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 15,
+                      ),
+                    ),
             ),
-          ),
+            if (isLoading)
+              const Align(
+                alignment: Alignment.bottomCenter,
+                child: SizedBox(
+                  height: 2,
+                  child: LinearProgressIndicator(
+                    minHeight: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    backgroundColor: Colors.white24,
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
     );
