@@ -60,7 +60,7 @@ class PrimaryIconButton extends StatelessWidget {
                       iconPath,
                       width: effectiveIconSize,
                       height: effectiveIconSize,
-                      color: iconColor,
+                      colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
                     )
                   : Image.asset(
                       iconPath,
@@ -74,7 +74,7 @@ class PrimaryIconButton extends StatelessWidget {
               style: TextStyle(
                 fontSize: effectiveTextSize,
                 fontWeight: FontWeight.w500,
-                color: textColor.withOpacity(isLoading ? 0.7 : 1),
+                color: textColor.withValues(alpha: isLoading ? 0.7 : 1),
               ),
             ),
             if (isLoading) ...[
@@ -83,7 +83,9 @@ class PrimaryIconButton extends StatelessWidget {
                 width: 18,
                 height: 18,
                 child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(textColor.withOpacity(0.7)),
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    textColor.withValues(alpha: 0.7),
+                  ),
                   strokeWidth: 2.2,
                 ),
               ),

@@ -41,13 +41,12 @@ class _UploadReportSheet extends StatefulWidget {
   final ValueChanged<ReportModel>? onReportUploaded;
 
   const _UploadReportSheet({
-    Key? key,
     this.appointmentId,
     this.userId,
     this.doctorId,
     this.onReportAdded,
     this.onReportUploaded,
-  }) : super(key: key);
+  });
 
   @override
   State<_UploadReportSheet> createState() => _UploadReportSheetState();

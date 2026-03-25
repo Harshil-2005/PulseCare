@@ -252,10 +252,11 @@ class _DoctorAppointmentPreviewCardState
       await widget.onStatusChanged?.call(widget.item, status);
       widget.onStatusHandled(status);
     } finally {
-      if (!mounted) return;
-      setState(() {
-        _pendingStatus = null;
-      });
+      if (mounted) {
+        setState(() {
+          _pendingStatus = null;
+        });
+      }
     }
   }
 

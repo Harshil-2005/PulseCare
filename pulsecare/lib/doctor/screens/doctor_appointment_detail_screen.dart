@@ -49,11 +49,12 @@ class _DoctorAppointmentDetailScreenState
         _status = targetStatus;
       });
     } finally {
-      if (!mounted) return;
-      setState(() {
-        _isUpdatingStatus = false;
-        _updatingTargetStatus = null;
-      });
+      if (mounted) {
+        setState(() {
+          _isUpdatingStatus = false;
+          _updatingTargetStatus = null;
+        });
+      }
     }
   }
 
