@@ -566,104 +566,180 @@ class DoctorListSection extends ConsumerWidget {
           return matchesSearch && matchesFilter;
         }).toList();
 
-        return SliverMainAxisGroup(
-          slivers: [
-            SliverAppBar(
-              pinned: true,
-              primary: false,
-              automaticallyImplyLeading: false,
-              backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-              surfaceTintColor: Theme.of(context).scaffoldBackgroundColor,
-              elevation: 0,
-              scrolledUnderElevation: 0,
-              toolbarHeight: 58,
-              titleSpacing: 0,
-              title: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-                child: TextField(
-                  decoration: InputDecoration(
-                    hintText: 'Search doctors or specialization',
-                    prefixIcon: Icon(Icons.search),
-                    filled: true,
-                    fillColor: Colors.grey.shade300,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(30),
-                      borderSide: BorderSide.none,
-                    ),
+        if (doctors.isEmpty) {
+          return SliverMainAxisGroup(
+            slivers: [
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 16, bottom: 8, top: 12),
+                  child: Text(
+                    'Doctors coming soon',
+                    style: TextStyle(fontSize: 20, fontWeight: .w600),
                   ),
-                  onChanged: onSearchChanged,
                 ),
               ),
-              bottom: PreferredSize(
-                preferredSize: const Size.fromHeight(58),
+              SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.only(top: 8, bottom: 8),
-                  child: SizedBox(
-                    height: 42,
-                    child: ListView(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.08),
+                          blurRadius: 12,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        for (final label in chipLabels)
-                          Padding(
-                            padding: const EdgeInsets.only(right: 8),
-                            child: _HomeFilterChip(
-                              label: label,
-                              activeSpecialization: activeSpecialization,
-                              onSelected: onSpecializationChanged,
-                            ),
+                        Text(
+                          'No doctors available yet',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: .w600,
+                            color: Colors.grey.shade900,
                           ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          "We're onboarding doctors. Try AI assistant for help.",
+                          style: TextStyle(
+                            fontSize: 13.5,
+                            height: 1.35,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        Center(
+                          child: PrimaryIconButton(
+                            text: 'Start AI Chat',
+                            iconPath: 'assets/icons/s_msg.svg',
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const AiChatScreen(
+                                    showDoctorRecommendations: true,
+                                  ),
+                                ),
+                              );
+                            },
+                            width: 200,
+                            height: 46,
+                          ),
+                        ),
                       ],
                     ),
                   ),
                 ),
               ),
+            ],
+          );
+        }
+
+        final slivers = <Widget>[
+          SliverAppBar(
+            pinned: true,
+            primary: false,
+            automaticallyImplyLeading: false,
+            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+            surfaceTintColor: Theme.of(context).scaffoldBackgroundColor,
+            elevation: 0,
+            scrolledUnderElevation: 0,
+            toolbarHeight: 58,
+            titleSpacing: 0,
+            title: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+              child: TextField(
+                decoration: InputDecoration(
+                  hintText: 'Search doctors or specialization',
+                  prefixIcon: Icon(Icons.search),
+                  filled: true,
+                  fillColor: Colors.grey.shade300,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(30),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+                onChanged: onSearchChanged,
+              ),
             ),
-            SliverToBoxAdapter(
+            bottom: PreferredSize(
+              preferredSize: const Size.fromHeight(58),
               child: Padding(
-                padding: const EdgeInsets.only(left: 16, bottom: 8, top: 12),
-                child: Text(
-                  'Recommended Doctors',
-                  style: TextStyle(fontSize: 20, fontWeight: .w600),
+                padding: const EdgeInsets.only(top: 8, bottom: 8),
+                child: SizedBox(
+                  height: 42,
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    children: [
+                      for (final label in chipLabels)
+                        Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: _HomeFilterChip(
+                            label: label,
+                            activeSpecialization: activeSpecialization,
+                            onSelected: onSpecializationChanged,
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
               ),
             ),
-            SliverList(
-              delegate: SliverChildBuilderDelegate((context, index) {
-                final doctor = filteredDoctors[index];
-                return Consumer(
-                  builder: (context, ref, _) {
-                    final appointmentsAsync = ref.watch(
-                      _homeDoctorAppointmentsProvider(doctor.id),
-                    );
-                    final withRatingAsync = ref.watch(
-                      _homeDoctorWithRatingProvider(doctor.id),
-                    );
-                    final appointments =
-                        appointmentsAsync.valueOrNull ?? const <Appointment>[];
-                    final withRating = withRatingAsync.valueOrNull;
-                    final doctorForCard = withRating?.doctor ?? doctor;
-                    final rating = withRating?.rating ?? doctor.rating;
-                    final reviewCount =
-                        withRating?.reviewCount ?? doctor.reviews;
-                    final status = _resolveDoctorStatus(
-                      doctor: doctorForCard,
-                      appointments: appointments,
-                    );
-                    return _doctorCart(
-                      doctorForCard,
-                      context,
-                      status,
-                      rating: rating,
-                      reviewCount: reviewCount,
-                      topPadding: index == 0 ? 0 : 16,
-                    );
-                  },
-                );
-              }, childCount: filteredDoctors.length),
+          ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.only(left: 16, bottom: 8, top: 12),
+              child: Text(
+                'Recommended Doctors',
+                style: TextStyle(fontSize: 20, fontWeight: .w600),
+              ),
             ),
-          ],
-        );
+          ),
+          SliverList(
+            delegate: SliverChildBuilderDelegate((context, index) {
+              final doctor = filteredDoctors[index];
+              return Consumer(
+                builder: (context, ref, _) {
+                  final appointmentsAsync = ref.watch(
+                    _homeDoctorAppointmentsProvider(doctor.id),
+                  );
+                  final withRatingAsync = ref.watch(
+                    _homeDoctorWithRatingProvider(doctor.id),
+                  );
+                  final appointments =
+                      appointmentsAsync.valueOrNull ?? const <Appointment>[];
+                  final withRating = withRatingAsync.valueOrNull;
+                  final doctorForCard = withRating?.doctor ?? doctor;
+                  final rating = withRating?.rating ?? doctor.rating;
+                  final reviewCount = withRating?.reviewCount ?? doctor.reviews;
+                  final status = _resolveDoctorStatus(
+                    doctor: doctorForCard,
+                    appointments: appointments,
+                  );
+                  return _doctorCart(
+                    doctorForCard,
+                    context,
+                    status,
+                    rating: rating,
+                    reviewCount: reviewCount,
+                    topPadding: index == 0 ? 0 : 16,
+                  );
+                },
+              );
+            }, childCount: filteredDoctors.length),
+          ),
+        ];
+
+        return SliverMainAxisGroup(slivers: slivers);
       },
       loading: () => const _DoctorListSectionSkeleton(),
       error: (e, _) => SliverToBoxAdapter(

@@ -330,7 +330,6 @@ class LocalDoctorDataSource implements DoctorDataSource {
 
   @override
   Future<void> incrementPatients(String doctorId) async {
-    // TODO: Move aggregation to Cloud Function or backend
   }
 
   @override

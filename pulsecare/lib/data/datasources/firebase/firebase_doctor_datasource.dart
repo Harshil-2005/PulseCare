@@ -104,9 +104,7 @@ class FirebaseDoctorDataSource implements DoctorDataSource {
   }
 
   @override
-  Future<void> incrementPatients(String doctorId) async {
-    // TODO: Move aggregation to Cloud Function or backend
-  }
+  Future<void> incrementPatients(String doctorId) async {}
 
   @override
   Future<void> deleteDoctorProfileForUser(String userId) async {

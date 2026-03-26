@@ -62,7 +62,8 @@ class _UploadReportSheetState extends State<_UploadReportSheet> {
       _isUploading = true;
       _uploadingText = fromCamera ? 'Uploading (Camera)...' : 'Uploading...';
     });
-    final effectiveUserId = widget.userId != null && widget.userId!.trim().isNotEmpty
+    final effectiveUserId =
+        widget.userId != null && widget.userId!.trim().isNotEmpty
         ? widget.userId!.trim()
         : (() {
             try {
@@ -73,10 +74,7 @@ class _UploadReportSheetState extends State<_UploadReportSheet> {
           })();
     if (effectiveUserId == null || effectiveUserId.isEmpty) {
       if (context.mounted) {
-        showAppToast(
-          context,
-          'Report upload requires user context.',
-        );
+        showAppToast(context, 'Report upload requires user context.');
       }
       setState(() {
         _isUploading = false;
@@ -105,7 +103,10 @@ class _UploadReportSheetState extends State<_UploadReportSheet> {
         widget.onReportAdded?.call();
         Navigator.pop(context);
       } else {
-        showAppToast(context, fromCamera ? 'No image captured' : 'No file selected');
+        showAppToast(
+          context,
+          fromCamera ? 'No image captured' : 'No file selected',
+        );
       }
     } catch (error) {
       if (!context.mounted) return;
@@ -160,7 +161,9 @@ class _UploadReportSheetState extends State<_UploadReportSheet> {
                     width: 18,
                     height: 18,
                     child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xff3F67FD)),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        Color(0xff3F67FD),
+                      ),
                       strokeWidth: 2.2,
                     ),
                   ),

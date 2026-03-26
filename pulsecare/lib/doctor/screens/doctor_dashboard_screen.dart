@@ -78,21 +78,39 @@ class _DoctorDashboardScreenState extends ConsumerState<DoctorDashboardScreen> {
     super.dispose();
   }
 
-  int get totalAppointments => widget.appointments.length;
+  bool _isSameDay(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
 
-  int get pendingCount => widget.appointments
+  List<Appointment> get _todayAppointments {
+    final today = DateTime.now();
+    return _sortedAppointments
+        .where((appointment) => _isSameDay(appointment.scheduledAt, today))
+        .toList(growable: false);
+  }
+
+  List<Appointment> get _tomorrowAppointments {
+    final tomorrow = DateTime.now().add(const Duration(days: 1));
+    return _sortedAppointments
+        .where((appointment) => _isSameDay(appointment.scheduledAt, tomorrow))
+        .toList(growable: false);
+  }
+
+  int get totalAppointments => _todayAppointments.length;
+
+  int get pendingCount => _todayAppointments
       .where((a) => a.status == AppointmentStatus.pending)
       .length;
 
-  int get confirmedCount => widget.appointments
+  int get confirmedCount => _todayAppointments
       .where((a) => a.status == AppointmentStatus.confirmed)
       .length;
 
-  int get completedCount => widget.appointments
+  int get completedCount => _todayAppointments
       .where((a) => a.status == AppointmentStatus.completed)
       .length;
 
-  int get cancelledCount => widget.appointments
+  int get cancelledCount => _todayAppointments
       .where((a) => a.status == AppointmentStatus.cancelled)
       .length;
 
@@ -161,6 +179,28 @@ class _DoctorDashboardScreenState extends ConsumerState<DoctorDashboardScreen> {
     final horizontalPadding = isCompact ? 14.0 : 16.0;
     final topSpacing = isCompact ? 6.0 : 8.0;
     final sectionGap = isCompact ? 14.0 : 16.0;
+    final now = DateTime.now();
+    final hasUpcomingToday = _todayAppointments.any(
+      (appointment) => appointment.scheduledAt.isAfter(now),
+    );
+    final futureAppointments =
+        _sortedAppointments
+            .where((appointment) => appointment.scheduledAt.isAfter(now))
+            .toList()
+          ..sort((a, b) => a.scheduledAt.compareTo(b.scheduledAt));
+    final hasTomorrow = _tomorrowAppointments.isNotEmpty;
+    final hasFuture = futureAppointments.isNotEmpty;
+    final displayedAppointments = hasUpcomingToday
+        ? _todayAppointments
+        : (hasTomorrow ? _tomorrowAppointments : futureAppointments);
+    final hasAppointments = displayedAppointments.isNotEmpty;
+    final sectionTitle = hasUpcomingToday
+        ? "Today's Appointments"
+        : (hasTomorrow
+              ? "Tomorrow's Appointments"
+              : (hasFuture
+                    ? "Upcoming Appointments"
+                    : 'Start receiving bookings'));
 
     return Scaffold(
       body: SafeArea(
@@ -251,25 +291,44 @@ class _DoctorDashboardScreenState extends ConsumerState<DoctorDashboardScreen> {
                 child: Padding(
                   padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
                   child: Text(
-                    "Today's Appointments",
+                    sectionTitle,
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
                   ),
                 ),
               ),
               SliverToBoxAdapter(child: SizedBox(height: isCompact ? 4 : 2)),
-              SliverList(
-                delegate: SliverChildBuilderDelegate((context, index) {
-                  return _DoctorAppointmentPreviewCard(
-                    item: _sortedAppointments[index],
-                    onStatusUpdated: (appointment, updatedStatus) async {
-                      await widget.onStatusChanged?.call(
-                        appointment,
-                        updatedStatus,
-                      );
-                    },
-                  );
-                }, childCount: _sortedAppointments.length),
-              ),
+              if (!hasAppointments)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      horizontalPadding,
+                      10,
+                      horizontalPadding,
+                      0,
+                    ),
+                    child: _DoctorEmptyAppointmentsCard(
+                      isCompact: isCompact,
+                      onSetAvailability: () =>
+                          DoctorAppShell.of(context)?.switchToTab(2),
+                      onOpenProfile: () =>
+                          DoctorAppShell.of(context)?.switchToTab(3),
+                    ),
+                  ),
+                )
+              else
+                SliverList(
+                  delegate: SliverChildBuilderDelegate((context, index) {
+                    return _DoctorAppointmentPreviewCard(
+                      item: displayedAppointments[index],
+                      onStatusUpdated: (appointment, updatedStatus) async {
+                        await widget.onStatusChanged?.call(
+                          appointment,
+                          updatedStatus,
+                        );
+                      },
+                    );
+                  }, childCount: displayedAppointments.length),
+                ),
               SliverToBoxAdapter(child: SizedBox(height: isCompact ? 20 : 24)),
             ],
           ],
@@ -719,6 +778,140 @@ class _DoctorAppointmentPreviewSkeleton extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _DoctorEmptyAppointmentsCard extends StatelessWidget {
+  const _DoctorEmptyAppointmentsCard({
+    required this.isCompact,
+    required this.onSetAvailability,
+    required this.onOpenProfile,
+  });
+
+  final bool isCompact;
+  final VoidCallback onSetAvailability;
+  final VoidCallback onOpenProfile;
+
+  @override
+  Widget build(BuildContext context) {
+    final titleSize = isCompact ? 18.0 : 19.0;
+    final bodySize = isCompact ? 13.5 : 14.0;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(16, 18, 16, 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEEF2FF),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.event_available_rounded,
+                  color: Color(0xFF3F67FD),
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'No appointments yet',
+                      style: TextStyle(
+                        fontSize: titleSize,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF171717),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Your profile is ready. Set availability to start receiving bookings.',
+                      style: TextStyle(
+                        fontSize: bodySize,
+                        height: 1.35,
+                        color: Colors.grey.shade700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: InkWell(
+                  onTap: onSetAvailability,
+                  borderRadius: BorderRadius.circular(15),
+                  child: Container(
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF3F67FD),
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    child: Center(
+                      child: Text(
+                        'Set Availability',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: InkWell(
+                  onTap: onOpenProfile,
+                  borderRadius: BorderRadius.circular(15),
+                  child: Container(
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: const Color.fromARGB(255, 210, 220, 255),
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    child: Center(
+                      child: Text(
+                        'View Profile',
+                        style: const TextStyle(
+                          color: Color(0xFF3F67FD),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

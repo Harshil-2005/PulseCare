@@ -150,7 +150,6 @@ class DoctorRepository extends ChangeNotifier {
   }
 
   Future<void> incrementPatients(String doctorId) async {
-    // TODO: Move aggregation to Cloud Function or backend
   }
 
   Future<void> deleteDoctorProfileForUser(String userId) async {

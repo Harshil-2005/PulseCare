@@ -69,7 +69,6 @@ class AppointmentRepository extends ChangeNotifier {
           appointment.id,
           appointmentStatusCompletedAuto,
         );
-        // TODO: Move aggregation to Cloud Function or backend
         return appointment.copyWith(status: AppointmentStatus.completed);
       }
     }
@@ -367,7 +366,6 @@ class AppointmentRepository extends ChangeNotifier {
     await _dataSource.update(appointment.copyWith(status: newStatus));
     if (currentStatus != AppointmentStatus.completed &&
         newStatus == AppointmentStatus.completed) {
-      // TODO: Move aggregation to Cloud Function or backend
     }
     notifyListeners();
   }
