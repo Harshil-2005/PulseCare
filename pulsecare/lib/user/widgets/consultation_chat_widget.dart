@@ -78,13 +78,15 @@ class ConsultationChatWidget extends ConsumerStatefulWidget {
 }
 
 class _ConsultationChatWidgetState extends ConsumerState<ConsultationChatWidget>
-    with WidgetsBindingObserver {
+    with WidgetsBindingObserver, TickerProviderStateMixin {
   final TextEditingController _controller = TextEditingController();
   final ScrollController _chatScrollController = ScrollController();
   late final FocusNode _inputFocusNode;
   late final ChatRepository _chatRepository;
   final Map<String, GlobalKey> _messageKeys = {};
   final stt.SpeechToText _speech = stt.SpeechToText();
+  late final AnimationController _micPulseController;
+  late final Animation<double> _micPulseAnimation;
 
   bool _ownsFocusNode = false;
   bool _isInitialized = false;
@@ -104,31 +106,6 @@ class _ConsultationChatWidgetState extends ConsumerState<ConsultationChatWidget>
   String? _completedSummaryId;
   String? _recommendedSpecialty;
   String _speechBaseText = '';
-  String _micLocaleLabel = '';
-
-  bool _micDialogOpen = false;
-  bool _micDialogClosing = false;
-  bool _autoRestartListening = false;
-  bool _manualStopRequested = false;
-  bool _heardSpeech = false;
-  bool _wakeWordDetected = false;
-
-  Timer? _micRestartTimer;
-  final ValueNotifier<_MicUiState> _micUiState =
-      ValueNotifier<_MicUiState>(_MicUiState.initial());
-
-  static const List<String> _wakeWords = <String>[
-    'hey pulsecare',
-    'hey pulse care',
-    'hi pulsecare',
-    'hi pulse care',
-    'ok pulsecare',
-    'ok pulse care',
-    'hello pulsecare',
-    'hello pulse care',
-    'pulsecare',
-    'pulse care',
-  ];
 
   List<ChatMessage> _messages = const <ChatMessage>[];
   double _lastKeyboardInset = 0;
@@ -141,6 +118,14 @@ class _ConsultationChatWidgetState extends ConsumerState<ConsultationChatWidget>
     _inputFocusNode = widget.inputFocusNode ?? FocusNode();
     _ownsFocusNode = widget.inputFocusNode == null;
     _inputFocusNode.addListener(_handleInputFocusChanged);
+    _micPulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    );
+    _micPulseAnimation = CurvedAnimation(
+      parent: _micPulseController,
+      curve: Curves.easeInOut,
+    );
 
     final initial = widget.initialMessage?.trim();
     _pendingInitialMessage = (initial == null || initial.isEmpty)
@@ -171,12 +156,23 @@ class _ConsultationChatWidgetState extends ConsumerState<ConsultationChatWidget>
 
   void _handleSpeechStatus(String status) {
     if (!mounted) return;
+    if (status == 'listening') {
+      if (!_isListening) {
+        setState(() {
+          _isListening = true;
+        });
+      }
+      _startMicPulse();
+      return;
+    }
+
     if (status == 'done' || status == 'notListening') {
       if (_isListening) {
         setState(() {
           _isListening = false;
         });
       }
+      _stopMicPulse();
     }
   }
 
@@ -187,6 +183,7 @@ class _ConsultationChatWidgetState extends ConsumerState<ConsultationChatWidget>
         _isListening = false;
       });
     }
+    _stopMicPulse();
   }
 
   Future<bool> _ensureSpeechAvailable() async {
@@ -204,6 +201,18 @@ class _ConsultationChatWidgetState extends ConsumerState<ConsultationChatWidget>
     } catch (_) {
       return false;
     }
+  }
+
+  void _startMicPulse() {
+    if (_micPulseController.isAnimating) return;
+    _micPulseController.repeat(reverse: true);
+  }
+
+  void _stopMicPulse() {
+    if (_micPulseController.isAnimating) {
+      _micPulseController.stop();
+    }
+    _micPulseController.value = 0;
   }
 
   Future<void> _handleMicTap() async {
@@ -227,6 +236,7 @@ class _ConsultationChatWidgetState extends ConsumerState<ConsultationChatWidget>
         _isListening = true;
       });
     }
+    _startMicPulse();
 
     try {
       await _speech.listen(
@@ -241,6 +251,7 @@ class _ConsultationChatWidgetState extends ConsumerState<ConsultationChatWidget>
           );
           if (result.finalResult) {
             _speechBaseText = updated;
+            unawaited(_stopListening());
           }
         },
         listenOptions: stt.SpeechListenOptions(
@@ -254,6 +265,7 @@ class _ConsultationChatWidgetState extends ConsumerState<ConsultationChatWidget>
       setState(() {
         _isListening = false;
       });
+      _stopMicPulse();
     }
   }
 
@@ -264,6 +276,7 @@ class _ConsultationChatWidgetState extends ConsumerState<ConsultationChatWidget>
           _isListening = false;
         });
       }
+      _stopMicPulse();
       return;
     }
     await _speech.stop();
@@ -271,6 +284,7 @@ class _ConsultationChatWidgetState extends ConsumerState<ConsultationChatWidget>
     setState(() {
       _isListening = false;
     });
+    _stopMicPulse();
   }
 
   void _showSpeechUnavailable() {
@@ -453,10 +467,9 @@ class _ConsultationChatWidgetState extends ConsumerState<ConsultationChatWidget>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _inputFocusNode.removeListener(_handleInputFocusChanged);
+    _micPulseController.dispose();
     unawaited(_speech.stop());
     unawaited(_speech.cancel());
-    _micRestartTimer?.cancel();
-    _micUiState.dispose();
     _controller.dispose();
     _chatScrollController.dispose();
     if (_ownsFocusNode) {
@@ -581,6 +594,7 @@ class _ConsultationChatWidgetState extends ConsumerState<ConsultationChatWidget>
           isListening: _isListening,
           isSpeechAvailable: _speechAvailable,
           onMicTap: _handleMicTap,
+          micPulseAnimation: _micPulseAnimation,
           onSend: sendMessage,
           bottomPadding: widget.inputBottomPadding,
           onTapOutside: _hideKeyboardKeepFocus,
@@ -1447,6 +1461,7 @@ class _ChatInputField extends StatelessWidget {
     required this.isListening,
     required this.isSpeechAvailable,
     required this.onMicTap,
+    required this.micPulseAnimation,
     required this.onSend,
     required this.bottomPadding,
     required this.onTapOutside,
@@ -1459,6 +1474,7 @@ class _ChatInputField extends StatelessWidget {
   final bool isListening;
   final bool isSpeechAvailable;
   final VoidCallback onMicTap;
+  final Animation<double> micPulseAnimation;
   final void Function([String? initialMessage]) onSend;
   final double bottomPadding;
   final VoidCallback onTapOutside;
@@ -1497,28 +1513,51 @@ class _ChatInputField extends StatelessWidget {
                     ),
                     suffixIcon: GestureDetector(
                       onTap: onMicTap,
-                      child: Container(
-                        width: 36,
-                        height: 36,
-                        margin: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: isListening
-                              ? const Color(0xffE6EEFF)
-                              : Colors.transparent,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Center(
-                          child: SvgPicture.asset(
-                            'assets/icons/mick.svg',
-                            height: 18,
-                            colorFilter: ColorFilter.mode(
-                              isListening
-                                  ? const Color(0xff3F67FD)
-                                  : (isSpeechAvailable
-                                        ? Colors.grey.shade700
-                                        : Colors.grey.shade400),
-                              BlendMode.srcIn,
+                      child: AnimatedBuilder(
+                        animation: micPulseAnimation,
+                        builder: (context, child) {
+                          final pulse = isListening
+                              ? micPulseAnimation.value
+                              : 0.0;
+                          final scale = 1 + (pulse * 0.12);
+                          final glow = 6 + (pulse * 6);
+                          final accent = const Color(0xff3F67FD);
+
+                          return Transform.scale(
+                            scale: scale,
+                            child: Container(
+                              width: 36,
+                              height: 36,
+                              margin: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: isListening
+                                    ? accent.withValues(alpha: 0.12)
+                                    : Colors.transparent,
+                                shape: BoxShape.circle,
+                                boxShadow: isListening
+                                    ? [
+                                        BoxShadow(
+                                          color: accent.withValues(alpha: 0.35),
+                                          blurRadius: glow,
+                                          spreadRadius: 1,
+                                        ),
+                                      ]
+                                    : [],
+                              ),
+                              child: Center(child: child),
                             ),
+                          );
+                        },
+                        child: SvgPicture.asset(
+                          'assets/icons/mick.svg',
+                          height: 18,
+                          colorFilter: ColorFilter.mode(
+                            isListening
+                                ? const Color(0xff3F67FD)
+                                : (isSpeechAvailable
+                                      ? Colors.grey.shade700
+                                      : Colors.grey.shade400),
+                            BlendMode.srcIn,
                           ),
                         ),
                       ),

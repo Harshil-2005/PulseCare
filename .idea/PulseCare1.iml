@@ -6,6 +6,9 @@
       <excludeFolder url="file://$MODULE_DIR$/pulsecare/.dart_tool" />
       <excludeFolder url="file://$MODULE_DIR$/pulsecare/.pub" />
       <excludeFolder url="file://$MODULE_DIR$/pulsecare/build" />
+      <excludeFolder url="file://$MODULE_DIR$/pulsecare/packages/speech_to_text/.dart_tool" />
+      <excludeFolder url="file://$MODULE_DIR$/pulsecare/packages/speech_to_text/.pub" />
+      <excludeFolder url="file://$MODULE_DIR$/pulsecare/packages/speech_to_text/build" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />

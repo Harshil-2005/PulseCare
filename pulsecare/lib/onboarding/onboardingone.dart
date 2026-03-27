@@ -25,6 +25,7 @@ class OnboardingPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final topInset = MediaQuery.of(context).padding.top;
     final screenWidth = MediaQuery.sizeOf(context).width;
     final heroWidth = (screenWidth - 32).clamp(280.0, 350.0);
 
@@ -48,7 +49,7 @@ class OnboardingPage extends StatelessWidget {
           ),
 
           Positioned(
-            top: 25,
+            top: topInset + 8,
             right: 10,
             child: TextButton(
               onPressed: onSkip,
@@ -135,7 +136,10 @@ class OnboardingPage extends StatelessWidget {
                               data[currentPage].desc!,
                               textAlign: TextAlign.center,
                               maxLines: 3,
-                              style: const TextStyle(fontSize: 18, height: 1.25),
+                              style: const TextStyle(
+                                fontSize: 18,
+                                height: 1.25,
+                              ),
                             ),
                           ),
                         ],

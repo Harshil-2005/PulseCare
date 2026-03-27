@@ -177,7 +177,6 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
   final _registerEmailFocus = FocusNode();
 
   bool isConfirmPasswordVisible = false;
-  bool isRegisterPasswordVisible = false;
 
   bool isLoginPasswordVisible = false;
   bool _loginSubmitted = false;
@@ -543,19 +542,12 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
           AppTextField(
             controller: registerpasswordController,
             hintText: 'Password',
-            obscureText: !isRegisterPasswordVisible,
+            obscureText: true,
             textInputAction: TextInputAction.next,
             autofillHints: const [AutofillHints.newPassword],
             validator: _validateRegisterPassword,
             prefixIconPath: 'assets/icons/lock.svg',
             prefixIconColor: Colors.grey.shade400,
-            suffixIconPath: 'assets/icons/eye.svg',
-            suffixIconColor: Colors.grey.shade400,
-            onSuffixTap: () {
-              setState(() {
-                isRegisterPasswordVisible = !isRegisterPasswordVisible;
-              });
-            },
           ),
           const SizedBox(height: 12),
           AppTextField(
@@ -600,6 +592,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
   Widget build(BuildContext context) {
     bool isRegister = currentPage == 1;
     final media = MediaQuery.of(context);
+    final bottomSafePadding = media.padding.bottom;
+    final keyboardInset = media.viewInsets.bottom;
+    final bottomPadding = keyboardInset + bottomSafePadding + 16;
 
     return Scaffold(
       backgroundColor: const Color(0xFFEFEFEF),
@@ -613,7 +608,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
         child: SingleChildScrollView(
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           child: Padding(
-            padding: EdgeInsets.only(bottom: media.viewInsets.bottom),
+            padding: EdgeInsets.only(bottom: bottomPadding),
             child: SizedBox(
               height: media.size.height,
               child: Stack(
@@ -697,7 +692,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                                   left: 20,
                                   right: 20,
                                   top: 40,
-                                  bottom: media.viewInsets.bottom + 20,
+                                  bottom: bottomPadding + 4,
                                 ),
                                 child: ConstrainedBox(
                                   constraints: BoxConstraints(

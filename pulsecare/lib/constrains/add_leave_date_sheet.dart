@@ -37,73 +37,71 @@ class AddLeaveDateSheet extends ConsumerWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
       ),
       builder: (modalContext) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 18),
-              Container(
-                width: 45,
-                height: 7,
-                decoration: BoxDecoration(
-                  color: Colors.grey,
-                  borderRadius: BorderRadius.circular(10),
-                ),
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 18),
+            Container(
+              width: 45,
+              height: 7,
+              decoration: BoxDecoration(
+                color: Colors.grey,
+                borderRadius: BorderRadius.circular(10),
               ),
-              const SizedBox(height: 26),
-              const Text(
-                'Add Leave',
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600),
-              ),
-              InkWell(
-                onTap: () async {
-                  final doctorId = SessionRepository().getCurrentDoctorId();
+            ),
+            const SizedBox(height: 26),
+            const Text(
+              'Add Leave',
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600),
+            ),
+            InkWell(
+              onTap: () async {
+                final doctorId = SessionRepository().getCurrentDoctorId();
 
-                  await doctorRepository.addOverride(
-                    doctorId: doctorId,
-                    override: DateOverride(
-                      startDate: start,
-                      endDate: end,
-                      customSchedule: null,
-                    ),
-                  );
-
-                  if (modalContext.mounted) {
-                    Navigator.pop(modalContext);
-                  }
-
-                  onUpdated();
-                },
-                child: _leaveTypeOption(
-                  icon: Icons.event_busy,
-                  title: 'Full Day Leave',
-                ),
-              ),
-              InkWell(
-                onTap: () {
-                  Navigator.pop(modalContext);
-                  _openCustomLeaveEditor(context, start, end, doctorRepository);
-                },
-                child: _leaveTypeOption(
-                  icon: Icons.schedule,
-                  title: 'Custom Hours',
-                ),
-              ),
-              const SizedBox(height: 30),
-              TextButton(
-                onPressed: () => Navigator.pop(modalContext),
-                child: const Text(
-                  'Cancel',
-                  style: TextStyle(
-                    color: Color(0xff3F67FD),
-                    fontSize: 18,
-                    fontWeight: FontWeight.w500,
+                await doctorRepository.addOverride(
+                  doctorId: doctorId,
+                  override: DateOverride(
+                    startDate: start,
+                    endDate: end,
+                    customSchedule: null,
                   ),
+                );
+
+                if (modalContext.mounted) {
+                  Navigator.pop(modalContext);
+                }
+
+                onUpdated();
+              },
+              child: _leaveTypeOption(
+                icon: Icons.event_busy,
+                title: 'Full Day Leave',
+              ),
+            ),
+            InkWell(
+              onTap: () {
+                Navigator.pop(modalContext);
+                _openCustomLeaveEditor(context, start, end, doctorRepository);
+              },
+              child: _leaveTypeOption(
+                icon: Icons.schedule,
+                title: 'Custom Hours',
+              ),
+            ),
+            const SizedBox(height: 30),
+            TextButton(
+              onPressed: () => Navigator.pop(modalContext),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(
+                  color: Color(0xff3F67FD),
+                  fontSize: 18,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
-              const SizedBox(height: 20),
-            ],
-          ),
+            ),
+            const SizedBox(height: 20),
+          ],
         );
       },
     );

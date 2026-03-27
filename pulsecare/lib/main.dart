@@ -16,6 +16,14 @@ Future<void> main() async {
     DeviceOrientation.portraitDown,
   ]);
 
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.dark,
+      statusBarBrightness: Brightness.light,
+    ),
+  );
+
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   await Supabase.initialize(
@@ -23,7 +31,7 @@ Future<void> main() async {
     anonKey: 'sb_publishable_vTp9Fh0XfA7cb2Vp8JtyYA_WWQ8WzDP',
   );
 
-  await _ensureSupabaseSession();
+  _ensureSupabaseSession();
 
   runApp(ProviderScope(child: const MyApp(home: SplashScreen())));
 }

@@ -21,81 +21,93 @@ class SplashScreen extends ConsumerStatefulWidget {
 
 class _SplashScreenState extends ConsumerState<SplashScreen> {
   Future<void> _navigate() async {
-    final user = FirebaseAuth.instance.currentUser;
-    final sessionRepository = SessionRepository();
-    final userRepository = ref.read(userRepositoryProvider);
-    final doctorRepository = ref.read(doctorRepositoryProvider);
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      final sessionRepository = SessionRepository();
+      final userRepository = ref.read(userRepositoryProvider);
+      final doctorRepository = ref.read(doctorRepositoryProvider);
 
-    final prefs = await SharedPreferences.getInstance();
-    final isOnboardingDone = prefs.getBool('onboarding_done') ?? false;
+      final prefs = await SharedPreferences.getInstance();
+      final isOnboardingDone = prefs.getBool('onboarding_done') ?? false;
 
-    if (!mounted) return;
-
-    if (user != null) {
-      final uid = user.uid;
-      await sessionRepository.clearSession();
-      await sessionRepository.setCurrentUser(uid);
-
-      final userProfile = await userRepository.getUserById(uid);
       if (!mounted) return;
 
-      if (userProfile == null) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const AccountSetupFlowScreen()),
-        );
-        return;
-      }
+      if (user != null) {
+        final uid = user.uid;
+        await sessionRepository.clearSession();
+        await sessionRepository.setCurrentUser(uid);
 
-      final role = userProfile.role.toLowerCase();
-      if (role == 'doctor') {
-        await sessionRepository.setRole('doctor');
-        final doctorProfile = await doctorRepository.getDoctorByUserId(uid);
+        final userProfile = await userRepository
+            .getUserById(uid)
+            .timeout(const Duration(seconds: 5));
         if (!mounted) return;
 
-        if (doctorProfile == null) {
+        if (userProfile == null) {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (_) => const DoctorOnboardingScreen()),
+            MaterialPageRoute(builder: (_) => const AccountSetupFlowScreen()),
           );
           return;
         }
 
-        final doctorId = doctorProfile.id;
-        await sessionRepository.setCurrentDoctor(doctorId);
+        final role = userProfile.role.toLowerCase();
+        if (role == 'doctor') {
+          await sessionRepository.setRole('doctor');
+          final doctorProfile = await doctorRepository
+              .getDoctorByUserId(uid)
+              .timeout(const Duration(seconds: 5));
+          if (!mounted) return;
+
+          if (doctorProfile == null) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => const DoctorOnboardingScreen()),
+            );
+            return;
+          }
+
+          final doctorId = doctorProfile.id;
+          await sessionRepository.setCurrentDoctor(doctorId);
+          if (!mounted) return;
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => DoctorAppShell(
+                doctorId: doctorId,
+                initialSchedule: const <DaySchedule>[],
+              ),
+            ),
+          );
+          return;
+        }
+
+        await sessionRepository.setRole('patient');
         if (!mounted) return;
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(
-            builder: (_) => DoctorAppShell(
-              doctorId: doctorId,
-              initialSchedule: const <DaySchedule>[],
-            ),
-          ),
+          MaterialPageRoute(builder: (_) => const AppShell()),
         );
-        return;
+      } else {
+        if (isOnboardingDone) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const AuthScreen(startWithRegister: false),
+            ),
+          );
+        } else {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const OnboardingWrapper()),
+          );
+        }
       }
-
-      await sessionRepository.setRole('patient');
+    } catch (_) {
       if (!mounted) return;
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const AppShell()),
       );
-    } else {
-      if (isOnboardingDone) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => const AuthScreen(startWithRegister: false),
-          ),
-        );
-      } else {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const OnboardingWrapper()),
-        );
-      }
     }
   }
 
