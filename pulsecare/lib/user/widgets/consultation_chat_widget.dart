@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:pulsecare/utils/keyboard_utils.dart';
 import 'package:flutter/services.dart';
@@ -12,6 +14,7 @@ import 'package:pulsecare/repositories/session_repository.dart';
 import 'package:pulsecare/user/doctor_detail_screen.dart';
 import 'package:pulsecare/utils/time_utils.dart';
 import 'package:pulsecare/data/triage/triage_data.dart';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 import '../../providers/repository_providers.dart';
 import '../../providers/session_provider.dart';
@@ -81,10 +84,13 @@ class _ConsultationChatWidgetState extends ConsumerState<ConsultationChatWidget>
   late final FocusNode _inputFocusNode;
   late final ChatRepository _chatRepository;
   final Map<String, GlobalKey> _messageKeys = {};
+  final stt.SpeechToText _speech = stt.SpeechToText();
 
   bool _ownsFocusNode = false;
   bool _isInitialized = false;
   bool _isSending = false;
+  bool _isListening = false;
+  bool _speechAvailable = false;
   bool _didSendInitialMessage = false;
   bool _hasStartedConsultation = false;
   bool _latestIntakeCompleted = false;
@@ -97,6 +103,32 @@ class _ConsultationChatWidgetState extends ConsumerState<ConsultationChatWidget>
   String? _pendingInitialMessage;
   String? _completedSummaryId;
   String? _recommendedSpecialty;
+  String _speechBaseText = '';
+  String _micLocaleLabel = '';
+
+  bool _micDialogOpen = false;
+  bool _micDialogClosing = false;
+  bool _autoRestartListening = false;
+  bool _manualStopRequested = false;
+  bool _heardSpeech = false;
+  bool _wakeWordDetected = false;
+
+  Timer? _micRestartTimer;
+  final ValueNotifier<_MicUiState> _micUiState =
+      ValueNotifier<_MicUiState>(_MicUiState.initial());
+
+  static const List<String> _wakeWords = <String>[
+    'hey pulsecare',
+    'hey pulse care',
+    'hi pulsecare',
+    'hi pulse care',
+    'ok pulsecare',
+    'ok pulse care',
+    'hello pulsecare',
+    'hello pulse care',
+    'pulsecare',
+    'pulse care',
+  ];
 
   List<ChatMessage> _messages = const <ChatMessage>[];
   double _lastKeyboardInset = 0;
@@ -116,6 +148,139 @@ class _ConsultationChatWidgetState extends ConsumerState<ConsultationChatWidget>
         : initial;
 
     _initializeConversation();
+    _initSpeech();
+  }
+
+  Future<void> _initSpeech() async {
+    try {
+      final available = await _speech.initialize(
+        onStatus: _handleSpeechStatus,
+        onError: _handleSpeechError,
+      );
+      if (!mounted) return;
+      setState(() {
+        _speechAvailable = available;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _speechAvailable = false;
+      });
+    }
+  }
+
+  void _handleSpeechStatus(String status) {
+    if (!mounted) return;
+    if (status == 'done' || status == 'notListening') {
+      if (_isListening) {
+        setState(() {
+          _isListening = false;
+        });
+      }
+    }
+  }
+
+  void _handleSpeechError(Object error) {
+    if (!mounted) return;
+    if (_isListening) {
+      setState(() {
+        _isListening = false;
+      });
+    }
+  }
+
+  Future<bool> _ensureSpeechAvailable() async {
+    if (_speechAvailable) return true;
+    try {
+      final available = await _speech.initialize(
+        onStatus: _handleSpeechStatus,
+        onError: _handleSpeechError,
+      );
+      if (!mounted) return false;
+      setState(() {
+        _speechAvailable = available;
+      });
+      return available;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<void> _handleMicTap() async {
+    if (_isListening) {
+      await _stopListening();
+      return;
+    }
+    await _startListening();
+  }
+
+  Future<void> _startListening() async {
+    final available = await _ensureSpeechAvailable();
+    if (!available) {
+      _showSpeechUnavailable();
+      return;
+    }
+
+    _speechBaseText = _controller.text.trimRight();
+    if (mounted) {
+      setState(() {
+        _isListening = true;
+      });
+    }
+
+    try {
+      await _speech.listen(
+        onResult: (result) {
+          final recognized = result.recognizedWords.trim();
+          if (recognized.isEmpty) return;
+          final base = _speechBaseText;
+          final updated = base.isEmpty ? recognized : '$base $recognized';
+          _controller.value = TextEditingValue(
+            text: updated,
+            selection: TextSelection.collapsed(offset: updated.length),
+          );
+          if (result.finalResult) {
+            _speechBaseText = updated;
+          }
+        },
+        listenOptions: stt.SpeechListenOptions(
+          listenMode: stt.ListenMode.dictation,
+          partialResults: true,
+          cancelOnError: true,
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _isListening = false;
+      });
+    }
+  }
+
+  Future<void> _stopListening() async {
+    if (!_speech.isListening) {
+      if (mounted && _isListening) {
+        setState(() {
+          _isListening = false;
+        });
+      }
+      return;
+    }
+    await _speech.stop();
+    if (!mounted) return;
+    setState(() {
+      _isListening = false;
+    });
+  }
+
+  void _showSpeechUnavailable() {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Microphone access is required for voice input.'),
+        duration: Duration(seconds: 2),
+      ),
+    );
   }
 
   Future<void> _initializeConversation() async {
@@ -288,6 +453,10 @@ class _ConsultationChatWidgetState extends ConsumerState<ConsultationChatWidget>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _inputFocusNode.removeListener(_handleInputFocusChanged);
+    unawaited(_speech.stop());
+    unawaited(_speech.cancel());
+    _micRestartTimer?.cancel();
+    _micUiState.dispose();
     _controller.dispose();
     _chatScrollController.dispose();
     if (_ownsFocusNode) {
@@ -409,6 +578,9 @@ class _ConsultationChatWidgetState extends ConsumerState<ConsultationChatWidget>
           controller: _controller,
           focusNode: _inputFocusNode,
           isSending: _isSending,
+          isListening: _isListening,
+          isSpeechAvailable: _speechAvailable,
+          onMicTap: _handleMicTap,
           onSend: sendMessage,
           bottomPadding: widget.inputBottomPadding,
           onTapOutside: _hideKeyboardKeepFocus,
@@ -502,6 +674,9 @@ class _ConsultationChatWidgetState extends ConsumerState<ConsultationChatWidget>
 
     final message = (initialMessage ?? _controller.text).trim();
     if (message.isEmpty || _isSending || _conversationId.isEmpty) return;
+    if (_isListening) {
+      await _stopListening();
+    }
 
     setState(() {
       _isSending = true;
@@ -1269,6 +1444,9 @@ class _ChatInputField extends StatelessWidget {
     required this.controller,
     required this.focusNode,
     required this.isSending,
+    required this.isListening,
+    required this.isSpeechAvailable,
+    required this.onMicTap,
     required this.onSend,
     required this.bottomPadding,
     required this.onTapOutside,
@@ -1278,6 +1456,9 @@ class _ChatInputField extends StatelessWidget {
   final TextEditingController controller;
   final FocusNode focusNode;
   final bool isSending;
+  final bool isListening;
+  final bool isSpeechAvailable;
+  final VoidCallback onMicTap;
   final void Function([String? initialMessage]) onSend;
   final double bottomPadding;
   final VoidCallback onTapOutside;
@@ -1314,11 +1495,32 @@ class _ChatInputField extends StatelessWidget {
                       borderRadius: BorderRadius.circular(30),
                       borderSide: BorderSide(color: Colors.grey.shade200),
                     ),
-                    suffixIcon: SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: Center(
-                        child: SvgPicture.asset('assets/icons/mick.svg'),
+                    suffixIcon: GestureDetector(
+                      onTap: onMicTap,
+                      child: Container(
+                        width: 36,
+                        height: 36,
+                        margin: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: isListening
+                              ? const Color(0xffE6EEFF)
+                              : Colors.transparent,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: SvgPicture.asset(
+                            'assets/icons/mick.svg',
+                            height: 18,
+                            colorFilter: ColorFilter.mode(
+                              isListening
+                                  ? const Color(0xff3F67FD)
+                                  : (isSpeechAvailable
+                                        ? Colors.grey.shade700
+                                        : Colors.grey.shade400),
+                              BlendMode.srcIn,
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                     hintText: 'Ask Dr. Elara Anything...',

@@ -1,28 +1,28 @@
 {
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "name": "pulsecare",
-            "cwd": "pulsecare",
-            "request": "launch",
-            "type": "dart"
-        },
-        {
-            "name": "pulsecare (profile mode)",
-            "cwd": "pulsecare",
-            "request": "launch",
-            "type": "dart",
-            "flutterMode": "profile"
-        },
-        {
-            "name": "pulsecare (release mode)",
-            "cwd": "pulsecare",
-            "request": "launch",
-            "type": "dart",
-            "flutterMode": "release"
-        }
-    ]
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "pulsecare",
+      "type": "dart",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/pulsecare",
+      "program": "lib/main.dart"
+    },
+    {
+      "name": "pulsecare (profile mode)",
+      "type": "dart",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/pulsecare",
+      "program": "lib/main.dart",
+      "flutterMode": "profile"
+    },
+    {
+      "name": "pulsecare (release mode)",
+      "type": "dart",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/pulsecare",
+      "program": "lib/main.dart",
+      "flutterMode": "release"
+    }
+  ]
 }

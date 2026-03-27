@@ -49,5 +49,9 @@
 	<string>PulseCare uses your camera to scan medical reports.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>PulseCare uses your photo library to select report files and images.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>PulseCare uses the microphone for voice input in chat.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>PulseCare uses speech recognition to convert your voice to text.</string>
 </dict>
 </plist>

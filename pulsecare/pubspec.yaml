@@ -57,6 +57,11 @@ dependencies:
   open_filex: ^4.7.0
   flutter_file_dialog: ^3.0.2
   share_plus: ^10.1.2
+  speech_to_text: ^6.6.2
+
+dependency_overrides:
+  speech_to_text:
+    path: packages/speech_to_text
 
 dev_dependencies:
   flutter_test:
