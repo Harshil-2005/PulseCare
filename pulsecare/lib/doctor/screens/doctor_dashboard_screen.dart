@@ -424,7 +424,7 @@ class DashboardHeader extends ConsumerWidget {
                 children: [
                   Text(
                     'Hi, $doctorName',
-                    maxLines: 2,
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(fontWeight: FontWeight.w700, fontSize: 24),
                   ),
