@@ -592,9 +592,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
   Widget build(BuildContext context) {
     bool isRegister = currentPage == 1;
     final media = MediaQuery.of(context);
-    final bottomSafePadding = media.padding.bottom;
     final keyboardInset = media.viewInsets.bottom;
-    final bottomPadding = keyboardInset + bottomSafePadding + 16;
+    final bottomPadding = keyboardInset;
 
     return Scaffold(
       backgroundColor: const Color(0xFFEFEFEF),
@@ -692,11 +691,11 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                                   left: 20,
                                   right: 20,
                                   top: 40,
-                                  bottom: bottomPadding + 4,
+                                  bottom: bottomPadding + 32,
                                 ),
                                 child: ConstrainedBox(
                                   constraints: BoxConstraints(
-                                    minHeight: constraints.maxHeight - 40,
+                                    minHeight: constraints.maxHeight - 56,
                                   ),
                                   child: Column(
                                     mainAxisSize: MainAxisSize.min,
@@ -725,107 +724,122 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                                         ),
                                       ),
                                       const SizedBox(height: 20),
-                                      NextActionButton(
-                                        text: isRegister ? "Sign Up" : "Login",
-                                        isLoading:
-                                            _authBusy &&
-                                            ((isRegister &&
-                                                    _busyAction ==
-                                                        _busyActionRegister) ||
-                                                (!isRegister &&
-                                                    _busyAction ==
-                                                        _busyActionLogin)),
-                                        loadingText: isRegister
-                                            ? 'Signing up...'
-                                            : 'Logging in...',
-                                        onTap: () {
-                                          if (_authBusy) return;
-                                          if (isRegister) {
-                                            _handleRegisterSubmit();
-                                          } else {
-                                            _handleLoginSubmit();
-                                          }
-                                        },
-                                      ),
-                                      if (!isKeyboardOpen) ...[
-                                        const SizedBox(height: 20),
-                                        const Text("OR"),
-                                        const SizedBox(height: 20),
-                                        GestureDetector(
-                                          onTap: () async {
-                                            if (_authBusy) return;
-                                            if (mounted) {
-                                              setState(() {
-                                                _authBusy = true;
-                                                _busyAction = _busyActionGoogle;
-                                              });
-                                            }
-                                            try {
-                                              final authRepository = ref.read(
-                                                authRepositoryProvider,
-                                              );
-
-                                              final uid = await authRepository
-                                                  .signInWithGoogle();
-
-                                              final sessionRepository =
-                                                  SessionRepository();
-                                              await sessionRepository
-                                                  .setCurrentUser(uid);
-                                              ref
-                                                      .read(
-                                                        sessionUserIdProvider
-                                                            .notifier,
-                                                      )
-                                                      .state =
-                                                  uid;
-
-                                              await _navigateAfterLogin(uid);
-                                            } catch (e) {
-                                              if (!context.mounted) return;
-                                              showAppToast(
-                                                context,
-                                                'Google sign-in failed. Please try again.',
-                                                position: AppToastPosition.top,
-                                              );
-                                            } finally {
-                                              if (mounted) {
-                                                setState(() {
-                                                  _authBusy = false;
-                                                  _busyAction = null;
-                                                });
+                                      Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          NextActionButton(
+                                            text: isRegister
+                                                ? "Sign Up"
+                                                : "Login",
+                                            isLoading:
+                                                _authBusy &&
+                                                ((isRegister &&
+                                                        _busyAction ==
+                                                            _busyActionRegister) ||
+                                                    (!isRegister &&
+                                                        _busyAction ==
+                                                            _busyActionLogin)),
+                                            loadingText: isRegister
+                                                ? 'Signing up...'
+                                                : 'Logging in...',
+                                            onTap: () {
+                                              if (_authBusy) return;
+                                              if (isRegister) {
+                                                _handleRegisterSubmit();
+                                              } else {
+                                                _handleLoginSubmit();
                                               }
-                                            }
-                                          },
-                                          child: Container(
-                                            height: 55,
-                                            width: double.infinity,
-                                            alignment: Alignment.center,
-                                            decoration: BoxDecoration(
-                                              color: Colors.white,
-                                              border: Border.all(width: 1.5),
-                                              borderRadius:
-                                                  BorderRadius.circular(30),
-                                            ),
-                                            child: Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.center,
-                                              children: [
-                                                SizedBox(
-                                                  height: 30,
-                                                  child: Image.asset(
-                                                    'assets/images/google.png',
-                                                  ),
-                                                ),
-                                                const SizedBox(width: 10),
-                                                const Text(
-                                                  "Continue With Google",
-                                                ),
-                                              ],
-                                            ),
+                                            },
                                           ),
-                                        ),
-                                      ],
+                                          if (!isKeyboardOpen) ...[
+                                            const SizedBox(height: 20),
+                                            const Text("OR"),
+                                            const SizedBox(height: 20),
+                                            GestureDetector(
+                                              onTap: () async {
+                                                if (_authBusy) return;
+                                                if (mounted) {
+                                                  setState(() {
+                                                    _authBusy = true;
+                                                    _busyAction =
+                                                        _busyActionGoogle;
+                                                  });
+                                                }
+                                                try {
+                                                  final authRepository = ref
+                                                      .read(
+                                                        authRepositoryProvider,
+                                                      );
+
+                                                  final uid =
+                                                      await authRepository
+                                                          .signInWithGoogle();
+
+                                                  final sessionRepository =
+                                                      SessionRepository();
+                                                  await sessionRepository
+                                                      .setCurrentUser(uid);
+                                                  ref
+                                                          .read(
+                                                            sessionUserIdProvider
+                                                                .notifier,
+                                                          )
+                                                          .state =
+                                                      uid;
+
+                                                  await _navigateAfterLogin(
+                                                    uid,
+                                                  );
+                                                } catch (e) {
+                                                  if (!context.mounted) return;
+                                                  showAppToast(
+                                                    context,
+                                                    'Google sign-in failed. Please try again.',
+                                                    position:
+                                                        AppToastPosition.top,
+                                                  );
+                                                } finally {
+                                                  if (mounted) {
+                                                    setState(() {
+                                                      _authBusy = false;
+                                                      _busyAction = null;
+                                                    });
+                                                  }
+                                                }
+                                              },
+                                              child: Container(
+                                                height: 55,
+                                                width: double.infinity,
+                                                alignment: Alignment.center,
+                                                decoration: BoxDecoration(
+                                                  color: Colors.white,
+                                                  border: Border.all(
+                                                    width: 1.5,
+                                                  ),
+                                                  borderRadius:
+                                                      BorderRadius.circular(30),
+                                                ),
+                                                child: Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment.center,
+                                                  children: [
+                                                    SizedBox(
+                                                      height: 30,
+                                                      child: Image.asset(
+                                                        'assets/images/google.png',
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 10),
+                                                    const Text(
+                                                      "Continue With Google",
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ],
+                                      ),
                                     ],
                                   ),
                                 ),
